@@ -204,7 +204,7 @@ class Demo:
                     "splat_twin": "camera stations registered in the Gaussian-splat twin; see twin_url"}
         stale = [s["asset"] for s in sensors if s["stale"]]
         self.lessons = self.memory.recall(f"{' '.join(stale)} stale scada frozen telemetry data_age_min "
-                                          + " ".join(str(s.get("description", "")) for s in shots))
+                                          + " ".join(str(s.get("description", "")) for s in shots), role="diagnosis")
         try:
             dx = R.diagnose_team(evidence, self.lessons, "stub" if self.stub else "live", self.on_agent, log=self.log)
         except Exception as e:  # noqa: BLE001 - the flat diagnosis keeps the demo running
@@ -223,12 +223,17 @@ class Demo:
 
     def plan(self, dx: dict) -> dict:
         self.stage("plan", "start")
-        lessons = self.memory.recall(f"{dx['asset']} {dx['fault']} {dx['summary']} {' '.join(dx['evidence'])}")
+        lessons = self.memory.recall(f"{dx['asset']} {dx['fault']} {dx['summary']} {' '.join(dx['evidence'])}", role="planner")
+        self.applied = [l["id"] for l in lessons]
         forbid_mem = [f for l in lessons for f in (l.get("forbid") or [])]
+        notes = self.memory.contractor_notes(contractor_for(dx["asset"])["name"])
         self.emit("memory", "demo.memory", {
             "op": "recall", "lessons": [{"id": l["id"], "text": M.summary(l)} for l in lessons],
+            "hints": {r: M.lesson_hints(lessons, r) for r in ("diagnosis", "repair", "verify", "contractor")},
+            "contractor_notes": notes,
             "effect": (f"work order will forbid: {'; '.join(dict.fromkeys(forbid_mem))}" if forbid_mem
-                       else "no verified lesson for this symptom yet") if lessons else "memory is empty for this symptom"})
+                       else "no verified lesson for this symptom yet") if lessons else
+                      ("memory is empty for this symptom" + (f"; contractor history: {notes[-1]}" if notes else ""))})
         root = B.Agent("planner", "planner", "planner", 0, task=f"Plan the repair of {dx['asset']} ({dx['fault']})")
         self.emit("planner", "demo.agent", root.event("spawned"))
         try:
@@ -248,6 +253,10 @@ class Demo:
         except B.DepthExceeded:
             capped = True
         wo = self.work_order(dx, outs, lessons, forbid_mem)
+        try:  # memory flywheel: lessons' forbid/acceptance items and this contractor's history
+            wo, _ = self.memory.apply_to_work_order(wo, lessons, contractor_for(dx["asset"])["name"])
+        except Exception:  # noqa: BLE001 - the work order above already carries the lessons' forbid items
+            pass
         self.emit("planner", "demo.agent", root.event("done", {"briefs": briefs, "rationale": plan.get("rationale"),
                                                               "depth_cap_enforced": capped, "work_order": wo["wo_id"],
                                                               "override": self.override}))
@@ -382,21 +391,26 @@ class Demo:
         self.stage("redispatch", "end", rnd)
         return new
 
-    def learn(self, dx, wo, verdicts, visits) -> dict:
+    def learn(self, dx, wo, verdicts, visits) -> dict | None:
+        """Score the lessons this run applied, write the new lesson (verified runs only), show the flywheel."""
         self.stage("memory", "start")
+        verified = bool(verdicts and verdicts[-1]["pass"])
         shortcut_failed = any(v.get("shortcut") for v in visits)
-        lesson = {
-            "id": f"L-{self.run_id}", "run_id": self.run_id,
-            "symptoms": [dx["summary"], *dx["evidence"][:3]],
-            "fix": f"{wo['work_order']} on {wo['asset']}",
-            "steps": wo["steps"], "forbid": wo["forbid"], "acceptance": wo["acceptance"],
-            "outcome": f"verified after {len(verdicts)} round(s)" + ("; the contractor's inspect-only shortcut failed verification" if shortcut_failed else ""),
-            "verified": True, "verdict_seqs": [v["seq"] for v in verdicts if v["pass"] and v.get("seq")],
-        }
-        saved = self.memory.write(lesson)
-        effect = ("next time the first work order forbids the shortcut, so the first visit is the real fix"
-                  if shortcut_failed else "confirmed: the recalled lesson made the first visit pass")
-        self.emit("memory", "demo.memory", {"op": "write", "lessons": [{"id": saved["id"], "text": M.summary(saved)}], "effect": effect})
+        saved = None
+        if verified:
+            saved = self.memory.learn(self.run_id, dx, wo, verdicts, visits)
+            effect = ("next time the first work order forbids the shortcut, so the first visit is the real fix"
+                      if shortcut_failed else "confirmed: the recalled lesson made the first visit pass")
+            self.emit("memory", "demo.memory", {"op": "write", "lessons": [{"id": saved["id"], "text": M.summary(saved)}],
+                                                "effect": effect})
+        scored = self.memory.record_outcome(getattr(self, "applied", []), self.run_id, len(verdicts), verified,
+                                            contractor_for(wo["asset"])["name"], visits)
+        if scored:
+            self.emit("memory", "demo.memory", {"op": "score", "lessons": [
+                {"id": x["id"], "text": f"score {x['score']} ({'+' if x['delta'] >= 0 else ''}{x['delta']})"
+                 + (", flagged" if x["flagged"] else "")} for x in scored],
+                "effect": "lessons that led to a first-round pass gain weight; lessons that failed are flagged"})
+        self.emit("memory", "demo.memory", self.memory.stats_event())
         self.stage("memory", "end")
         return saved
 
@@ -431,7 +445,7 @@ class Demo:
             if rnd < self.max_rounds:
                 wo = self.redispatch(wo, rnd, v, visit)
         verified = bool(verdicts and verdicts[-1]["pass"])
-        lesson = self.learn(dx, wo, verdicts, visits) if verified else None
+        lesson = self.learn(dx, wo, verdicts, visits)
         self.stage("final", "start")
         status = "VERIFIED" if verified else "ESCALATED"
         if not verified:

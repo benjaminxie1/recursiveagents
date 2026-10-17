@@ -34,7 +34,7 @@ All events go through the existing EventLog (`log.emit(actor, type, data)`) into
 | `demo.jev` | `verifier` | `{wo_id, round, input (the interpreted JSON), output: {verdict, p_verified, uncertainty, backend, reason}}` |
 | `demo.diffusion` | `verifier` | `{wo_id, round, image, backend: "diffusion"|"photo_bank", prompt, source}` |
 | `demo.verdict` | `verifier` | `{wo_id, round, pass, failed: [check name]}` |
-| `demo.memory` | `memory` | `{op: "recall"|"write", lessons: [{id, text}], effect}` |
+| `demo.memory` | `memory` | `{op: "recall"|"write"|"score"|"stats", lessons: [{id, text}], effect}`; recall adds `hints` (per role) and `contractor_notes`; stats adds `stats: {runs, lessons, rounds_by_run, lesson_scores}` (gridtwin/demo/memory.py) |
 | `demo.final` | `orchestrator` | `{status: "VERIFIED"|"ESCALATED", rounds, summary, usd, wall_s}` |
 
 Image paths are repo-relative (e.g. `assets/photos/INV-3/display_off/01_ai_generated.jpg` or `runs/<id>/img/expected-r1.png`); the server serves the repo root.
