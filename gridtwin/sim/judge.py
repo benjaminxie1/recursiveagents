@@ -11,9 +11,12 @@ def score(sim, scenario, log, result) -> dict:
 
     resolved_at_end = all(f.is_resolved(sim) for f in sim.faults)
     sim_minutes = sim.elapsed_min
-    energy, potential = sim.truth["energy_mwh"], sim.truth["potential_mwh"]
     sim.advance(HOLD_MIN)  # faults that only look fixed relapse here
     resolved = resolved_at_end and all(f.is_resolved(sim) for f in sim.faults)
+    # charge every run over the same horizon, so quitting early on an unfixed fault isn't "cheap"
+    horizon = max(scenario.get("budget", {}).get("sim_minutes", 0), sim_minutes + HOLD_MIN)
+    sim.advance(horizon - sim.elapsed_min)
+    energy, potential = sim.truth["energy_mwh"], sim.truth["potential_mwh"]
 
     paged = bool(sim.pages)
     need = exp.get("human_page", "either")
@@ -56,6 +59,7 @@ def score(sim, scenario, log, result) -> dict:
         "energy_lost_mwh": round(lost, 4),
         "revenue_lost_usd": round(lost * CFG["plant"]["revenue_usd_per_mwh"], 2),
         "sim_minutes": sim_minutes,
+        "horizon_min": horizon,
         "tool_calls": sum(1 for e in log.events if e["type"] == "tool_call"),
         "work_orders_usd": sum(t["cost_usd"] for t in sim.tickets),
         "usage": usage,
