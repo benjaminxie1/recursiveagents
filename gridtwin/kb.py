@@ -41,6 +41,11 @@ _SPLIT = re.compile(r"[-._]")
 _STOP = frozenset(
     "a an and are as at be by for from in is it its of on or that the this to was were with".split()
 )
+# plant asset ids as _TOKEN matches them, after gridtwin/sim/plant.yaml (kb.py imports nothing from the sim):
+# inv-3, xfmr-1, bess-1, poi-1, met-1, cb-2.3, 52-i4, 52-b1, 52-m, b3. A new asset family needs a line here.
+_ASSET = re.compile(r"(?:inv|xfmr|bess|poi|met)-\d+|cb-\d+\.\d+|52-[a-z]\d*|b\d+")
+# plant-wide points: curtailing at POI-1 or reading MET-1 is part of many fixes, not what a lesson is about
+_PLANT_WIDE = frozenset({"poi-1", "met-1"})
 
 
 # ---------- text ----------
@@ -60,10 +65,12 @@ def tokenize(text) -> list[str]:
 
 
 def _norm_fix(fix) -> str:
-    """Fix text compared for equality: lowercase, punctuation dropped, whitespace collapsed."""
+    """Fix text compared for equality: lowercase, punctuation dropped, whitespace collapsed, asset ids masked
+    (reseat INV-2 comms card and reseat INV-3 comms card are the same fix)."""
     if isinstance(fix, (list, tuple)):
         fix = " ".join(str(x) for x in fix)
-    return " ".join(m.group(0) for m in _TOKEN.finditer(str(fix or "").lower()))
+    toks = (m.group(0) for m in _TOKEN.finditer(str(fix or "").lower()))
+    return " ".join("<asset>" if _ASSET.fullmatch(t) else t for t in toks)
 
 
 def _as_list(v) -> list:
@@ -197,6 +204,15 @@ def _lesson_summary(lesson: dict, n: int = 200) -> str:
 
 def _symptom_tokens(lesson: dict) -> list[str]:
     return tokenize(" ".join(str(s) for s in _as_list(lesson.get("symptoms"))))
+
+
+def _lesson_assets(lesson: dict) -> set[str]:
+    """Equipment ids in the fix, which lists the run's operate, dispatch_tech and page_human calls. Not the steps:
+    they also hold diagnostics on peers (run_diagnostic INV-3 during an INV-2 incident). Not the symptoms: they
+    are phrased to fit any asset and cite peers and the POI-1 meter. Either would tie an INV-2 lesson to an
+    INV-3 one. Plant-wide points (POI-1, MET-1) don't count either."""
+    text = str(lesson.get("fix") or "").lower()
+    return {m.group(0) for m in _TOKEN.finditer(text) if _ASSET.fullmatch(m.group(0))} - _PLANT_WIDE
 
 
 # ---------- KB ----------
@@ -370,7 +386,7 @@ class KB:
         return new
 
     def _supersede_targets(self, new: dict) -> list[dict]:
-        """Active lessons describing the same symptoms with a different fix, best match first."""
+        """Active lessons about the same asset(s) describing the same symptoms with a different fix, best match first."""
         new_tok = _symptom_tokens(new)
         if not new_tok:
             return []
@@ -380,9 +396,15 @@ class KB:
         docs = [_symptom_tokens(l) for l in actives]
         scores = BM25(docs).scores(new_tok)
         top = max(range(len(actives)), key=lambda i: scores[i])
-        new_set, new_fix = set(new_tok), _norm_fix(new.get("fix"))
+        new_set, new_fix, new_assets = set(new_tok), _norm_fix(new.get("fix")), _lesson_assets(new)
         hits = []
         for i, old in enumerate(actives):
+            old_assets = _lesson_assets(old)
+            # an INV-2 lesson never retires an INV-3 one. If only one of the two names an asset, nothing shows they
+            # are about the same equipment, so both stay (verified lessons are safe to keep); two that name none
+            # compare on symptoms and fix alone, as before
+            if (new_assets or old_assets) and not new_assets & old_assets:
+                continue
             jac = _jaccard(new_set, set(docs[i]))
             is_top = i == top and scores[i] > 0 and _overlap(new_set, set(docs[i])) >= TOP_HIT_OVERLAP_MIN
             if (jac >= JACCARD_MIN or is_top) and _norm_fix(old.get("fix")) != new_fix:

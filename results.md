@@ -3,6 +3,38 @@
 Every number here is copied from a bench run's own `runs/bench-*/results.md` or `results.json`; nothing is edited by hand.
 Runs use live Crusoe endpoints, one run per scenario and memory `frozen`.
 
+## Held-out split (9 scenarios) at `6b507a6`: the full loop, Oct 17 2026
+
+`--agent full --split heldout --kb kb/snapshots/refs-v1 --memory frozen`, one run per scenario, code `6b507a6` (the checkout had two later commits that touch only `viewer/`).
+To finish before the freeze, the 9 scenarios ran as parallel bench processes (`bench-20261017-132555-full`, `bench-20261017-141251-full`, `bench-20261017-142016-full`, `bench-20261017-142018-full`, `bench-20261017-142020-full`, `bench-20261017-142022-full`).
+Each row below is that episode's own `judge` event, merged by `scripts/merge_bench_runs.py`.
+The merge rules were set at about 14:16, after s05 and s06b had finished and before any other episode did: a scenario judged twice keeps the episode that finished first, an episode that errors only because API retries ran out is rerun, and any other error counts as a failure. No episode errored, and every scenario judged twice kept the copy that also started first.
+Missing scenarios: none.
+
+| arm | runs at | claimed done | verified success | false done | correct escalation | paged a human | safety violations | revenue lost | tool calls | tokens in / out |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `full` | 13:25 to 14:52 PDT | 0.0% | 2 of 9 (22.2%) | 0 of 9 (0.0%) | 33.3% | 9 of 9 | 0 | $4,287.88 | 432 | 5,049,350 / 451,958 |
+
+Verifier on claimed DONE or NO_ACTION outcomes: caught 2, missed 0, false reject 0 (recall 1.0, precision 1.0).
+Rate limits: Crusoe returned 429s throughout; when a worker's retries ran out, the supervisor restarted it from saved history (noted per scenario below). The verifier never failed closed for lack of a model.
+A read-only audit of the parallel processes found no files or caches shared between them (only the Crusoe and Jev API keys), the same code, flags and scenario seeds in each, and that each worker restart lost or repeated no tool calls and cost no extra rounds or budget.
+The safety gate's model questions went to TypeSafe Jev (`DECISION_BACKEND=jev` in this machine's `.env`); without a Jev key the gate asks the Crusoe gate model instead, so check which backend another run's gate used before comparing.
+The baseline rows in the next section ran at `1d2f85d`, before the 13:05 gate change, and are re-running at `6b507a6`; compare the two sections with that in mind.
+
+### Per scenario (full loop at `6b507a6`)
+
+| scenario | expected | `full` |
+|---|---|---|
+| s05_xfmr_incipient | ESCALATED | ESCALATED, correct, paged (round limit reached without a verified outcome) |
+| s06b_stale_scada_inv2 | DONE | ESCALATED, paged (round limit reached without a verified outcome); 1 worker restart after rate limits |
+| s08_hotspot | DONE | ESCALATED, paged (budget tool_calls 85% used without a verified outcome); 1 worker restart after rate limits |
+| s09_gf_plus_trip | DONE | ESCALATED, paged (round limit reached without a verified outcome) |
+| s10_fan_cloudy | DONE | ESCALATED, paged (round limit reached without a verified outcome) |
+| s11_soiling_vegetation | DONE | ESCALATED, paged (round limit reached without a verified outcome) |
+| s12_control_cloudy | NO_ACTION | ESCALATED, paged (verifier rejected esc_action twice) |
+| s13_fan_plus_stale_scada | DONE | ESCALATED, paged (budget tool_calls 85% used without a verified outcome) |
+| s14_xfmr_plus_soiling | ESCALATED | ESCALATED, correct, paged (verifier rejected e5 twice); 1 worker restart after rate limits |
+
 ## Held-out split (9 scenarios) at `1d2f85d`, Oct 17 2026
 
 The baselines go through the same safety gate as the full loop, and the gate changed after this run (at 13:05 the gate model became veto-only), so both baselines are re-running at `6b507a6`.
@@ -12,7 +44,7 @@ The full-loop arms start once the loop's F6 fix passes.
 |---|---|---|---|---|---|---|---|---|---|---|
 | `baseline` | 12:33 to 12:50 PDT | 0.0% | 1 of 9 (11.1%) | 1 of 9 (11.1%) | 77.8% | 0 of 9 | 0 | $3,096.39 | 182 | 2,559,144 / 110,462 |
 | `self_verify` | 12:50 to 13:35 PDT | 22.2% | 2 of 9 (22.2%) | 1 of 9 (11.1%) | 88.9% | 2 of 9 | 0 | $3,761.24 | 305 | 6,669,937 / 191,923 |
-| `full` | pending the F6 fix in the loop | | | | | | | | | |
+| `full` | see the `6b507a6` section above | | | | | | | | | |
 | `full_weak_dod` | pending | | | | | | | | | |
 | `full_weak_dod_no_floors` | pending | | | | | | | | | |
 
