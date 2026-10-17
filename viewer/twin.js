@@ -1031,68 +1031,6 @@ addEventListener('message', (e) => {
   else if (m.twin === 'fail') setFailed(m.asset, m.text, m.should_be);
 });
 
-// ---------- case data: one scenario's evidence per object (SCADA, camera, infrared) ----------
-// The registration's "viewer": {"case": "assets/demo/s06_case"} (or ?case=) names the pack; its agent/objects.json holds
-// each object's data and no verdict. The failed object comes from the run's diagnosis, else ?failed=<asset>, else the
-// pack's answer key with ?reveal=1. An agent or the demo page opens an object with window.twin.openObject(asset) or
-// postMessage({twin: 'open', asset}), and marks one with postMessage({twin: 'fail', asset, text}).
-let caseRoot = null, caseData = null, failedSet = null;
-async function loadCase() {
-  const root = params.get('case') ?? reg?.viewer?.case;
-  if (!root) return;
-  caseRoot = `/${root.replace(/^\/+|\/+$/g, '')}`;
-  caseData = await getJSON(`${caseRoot}/agent/objects.json`);
-  if (params.get('failed')) failedSet = { asset: params.get('failed'), text: params.get('why') || '' };
-  else if (params.get('reveal') === '1') {
-    const k = await getJSON(`${caseRoot}/answer_key/finding.json`);
-    if (k?.failed_asset) failedSet = { asset: k.failed_asset, text: k.failure || '', shouldBe: k.failed_to_be || '' };
-  }
-}
-const failedNow = (S) => S?.failed ?? failedSet;
-const failedStatus = (F) => (F.fixed ? ['verified', 'Fixed', 'the fix was verified'] : ['failed', 'Failed', F.text]);
-function setFailed(asset, text = '', shouldBe = '') {
-  failedSet = asset ? { asset, text, shouldBe } : null;
-  render();
-}
-function openObject(asset) {
-  if (!pins.some((p) => p.asset === asset)) return false;
-  openDrawer(asset);
-  return true;
-}
-const hhmm = (t) => (typeof t === 'string' && t.length >= 16 ? t.slice(11, 16) : String(t ?? ''));
-function failNote(F) {
-  return `<div class="failnote"><b>Failed</b>${esc(F.text)}${F.shouldBe ? `<div>Should be ${esc(F.shouldBe)}</div>` : ''}</div>`;
-}
-function objectData(asset, o) {
-  const at = (p) => esc(`${caseRoot}/${p}`);
-  const sc = o.scada_latest || {};
-  const fmt = (v, unit) => (typeof v === 'number' ? `${v.toLocaleString('en-US', { maximumFractionDigits: 1 })}${unit ? `&nbsp;${unit}` : ''}` : esc(v));
-  const age = sc.last_update && caseData.as_of ? Math.round((Date.parse(caseData.as_of) - Date.parse(sc.last_update)) / 60000) : 0;
-  const rows = [['AC power', 'ac_kw', 'kW'], ['DC power', 'dc_kw', 'kW'], ['DC voltage', 'dc_v', 'V'], ['Heatsink', 'heatsink_c', '°C'],
-    ['Fan', 'fan_rpm', 'rpm'], ['Status', 'status', '']].filter(([, k]) => sc[k] != null)
-    .map(([name, k, unit]) => `<tr><td>${name}</td><td>${fmt(sc[k], unit)}</td></tr>`);
-  if (sc.last_update) rows.push(`<tr><td>Last update</td><td>${esc(hhmm(sc.last_update))}${age > 2 ? ` <span class="stale">${age} min old</span>` : ''}</td></tr>`);
-  const meter = caseData.meter;
-  const cam = o.camera, ir = o.infrared;
-  const spots = Object.entries(ir?.readings || {}).map(([id, r]) => `<li><span><b>${esc(id)}</b> ${esc(r.label)}</span><span>${r.temp_c != null
-    ? fmt(r.temp_c, '°C') : `max ${fmt(r.max_c, '°C')} · mean ${fmt(r.mean_c, '°C')}`}</span></li>`).join('');
-  const files = [o.sensors?.file && [o.sensors.file, 'SCADA, one row a minute'], ir?.radiometric && [ir.radiometric, 'Infrared, radiometric °C']].filter(Boolean);
-  return `<h3>SCADA at ${esc(hhmm(sc.t || caseData.as_of))}</h3><table class="kv">${rows.join('')}</table>
-    ${meter ? `<div class="cap">Plant revenue meter ${esc(meter.id)}: ${fmt(meter.export_kw, 'kW')}</div>` : ''}
-    ${cam?.file ? `<h3>Camera</h3><a href="${at(cam.file)}" target="_blank"><img src="${at(cam.file)}" alt="${esc(asset)} display camera"></a>
-      <div class="cap">${esc(cam.camera_id || '')} · ${esc(hhmm(cam.captured))}</div>` : ''}
-    ${ir?.file ? `<h3>Infrared</h3><a href="${at(ir.file)}" target="_blank"><img src="${at(ir.file)}" alt="${esc(asset)} infrared"></a>
-      <div class="cap">${esc(ir.camera_id || '')} · ${esc(hhmm(ir.captured))}${ir.span_c ? ` · scale ${esc(ir.span_c[0])} to ${esc(ir.span_c[1])} °C` : ''}</div>
-      ${spots ? `<ul class="spots">${spots}</ul>` : ''}` : ''}
-    ${files.length ? `<h3>Data</h3><div class="files">${files.map(([p, name]) => `<a href="${at(p)}" target="_blank">${esc(name)} <span class="muted">${esc(p.split('/').pop())}</span></a>`).join('')}</div>` : ''}`;
-}
-addEventListener('message', (e) => {
-  if (e.origin !== location.origin && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(e.origin)) return;
-  const m = e.data || {};
-  if (m.twin === 'open' && m.asset) openObject(m.asset);
-  else if (m.twin === 'fail') setFailed(m.asset, m.text, m.should_be);
-});
-
 // ---------- runs: live polling or replay, same conventions as the wall ----------
 const runPath = (id) => id.split('/').map(encodeURIComponent).join('/');
 function urlFor(id, rep) {
