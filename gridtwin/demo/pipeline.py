@@ -314,10 +314,10 @@ class Demo:
         if src:
             atts.append({"name": "verifier-photo.jpg", "path": src})
         prof = contractor_for(wo["asset"])
+        self.emit("planner", "demo.workorder", new)  # the revised order first, then the email that carries it
         mail = self.mail.write("out", wo["wo_id"], rnd + 1, OPS_ADDR, f"{prof['name']} <{prof['addr']}>",
                                f"Re: [{wo['wo_id']}] not verified, please return ({', '.join(verdict['failed'])})", body, atts)
         self.emit("verifier", "demo.email", mail)
-        self.emit("planner", "demo.workorder", new)
         self.stage("redispatch", "end", rnd)
         return new
 
