@@ -255,3 +255,18 @@ def test_gate_catches_client_exception():
 
     out = gate_mod.Gate(Boom(), "local")(PROPOSED, STATE)
     assert out["route"] == "confirm" and out["unsafe"] == 0.5 and "kaboom" in out["reason"]
+
+
+def test_gate_blocks_reenergizing_during_lockout_work():
+    from gridtwin.agents.gate import work_in_progress
+
+    class L:
+        events = [
+            {"seq": 1, "t_sim": "2026-07-14T12:04", "type": "tool_result", "data": {"name": "dispatch_tech", "result": {
+                "ticket": "WO-001", "asset": "INV-1", "eta": "2026-07-14T13:04", "needs_deenergized": True}}},
+            {"seq": 2, "t_sim": "2026-07-14T12:07", "type": "tool_call", "data": {"name": "operate", "args": {}}},
+        ]
+    d = work_in_progress({"tool": "operate", "asset": "52-I1", "action": "close"}, L())
+    assert d and d["route"] == "reject"
+    assert work_in_progress({"tool": "operate", "asset": "52-I2", "action": "close"}, L()) is None
+    assert work_in_progress({"tool": "operate", "asset": "52-I1", "action": "open"}, L()) is None

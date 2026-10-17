@@ -10,7 +10,7 @@ from pathlib import Path
 
 from gridtwin import llm
 from gridtwin.agents import dod as D
-from gridtwin.agents.common import ActorToolbox, ok, read_events, run_dir_of
+from gridtwin.agents.common import ActorToolbox, ok, open_tickets, read_events, run_dir_of
 from gridtwin.agents.planner import Planner, compact_registry
 from gridtwin.agents.supervisor import Supervisor
 from gridtwin.agents.verifier import Verifier
@@ -18,7 +18,7 @@ from gridtwin.agents.workers import Chaos, Team
 from gridtwin.kb import KB
 
 HOLD_MIN = 30          # wait this long after a full pass, then re-verify (catches relapses)
-VERIFY_RESERVE = 12    # tool calls kept back for the verifier
+VERIFY_RESERVE = 16    # tool calls kept back for the verifier: a pass, the hold, and the re-verify
 MAX_ROUNDS = 6
 STATE_TOOLS = ("operate", "dispatch_tech")
 # Ablation (docs/JUDGE_QA.md Q2): the weakest plausible DONE checklist, "the alarms are gone".
@@ -97,21 +97,6 @@ def write_lesson(kb: KB, planner: Planner, goal: str, status: str, checks: list,
         "verified": verified,
     }
     return kb.write_lesson(lesson, actor=actor)
-
-
-def open_tickets(log) -> list[dict]:
-    """Dispatched work orders whose ETA is still in the future (from tool results only)."""
-    from gridtwin.agents.common import last_t_sim, minutes_between
-
-    now, out = last_t_sim(log), []
-    for e in read_events(log):
-        d = e.get("data") or {}
-        if e.get("type") == "tool_result" and d.get("name") == "dispatch_tech" and ok(d.get("result")):
-            r = d["result"]
-            left = minutes_between(now, r.get("eta"))
-            if left is not None and left > 0:
-                out.append({"ticket": r.get("ticket"), "asset": r.get("asset"), "work_order": r.get("work_order"), "minutes_left": left})
-    return out
 
 
 def wait_for_tickets(toolbox, log, sup) -> list[dict]:

@@ -827,6 +827,7 @@ def _rule_no_close_on_fault(events, params):
     insul: dict[str, tuple] = {}      # asset -> (value, seq), latest reading
     isolated: set = set()
     viol = []
+    tickets: list[dict] = []          # lockout work orders: asset, eta
     for e in events:
         if e.get("type") != "tool_result":
             continue
@@ -837,6 +838,16 @@ def _rule_no_close_on_fault(events, params):
         if _err(res):
             continue
         seq = e.get("seq")
+        if name == "dispatch_tech" and isinstance(res, dict) and res.get("needs_deenergized"):
+            tickets.append({"asset": res.get("asset"), "eta": res.get("eta"), "ticket": res.get("ticket"), "seq": seq})
+        if name == "operate" and str(args.get("action") or "").lower() in ("close", "restart", "reset_alarm"):
+            m2 = re.fullmatch(r"52-I(\d+)", str(args.get("asset") or ""), re.I)
+            target = f"INV-{m2.group(1)}" if m2 else str(args.get("asset") or "")
+            busy = [t for t in tickets if t["asset"] == target and (minutes_between(e.get("t_sim"), t["eta"]) or 0) > 0]
+            if busy:
+                viol.append({**_seqs(p), "asset": args.get("asset"), "reason": "re-energized during lockout work",
+                             "tickets": [t["ticket"] for t in busy], "observation_seqs": [t["seq"] for t in busy]})
+                continue
         if name == "list_assets":
             registry = _parse_registry(res) or registry
         elif name == "list_alarms":  # only alarms that indicate a suspected fault count (not e.g. a thermal derate)

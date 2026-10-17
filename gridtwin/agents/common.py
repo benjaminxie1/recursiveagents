@@ -296,3 +296,18 @@ def allow_c2_types(log):
     types = getattr(mod, "TYPES", None)
     if isinstance(types, set) and "finding" not in types:
         types.add("finding")
+
+
+def open_tickets(log, now=None) -> list[dict]:
+    """Dispatched work orders still in progress (ETA in the future), from tool results only."""
+    now = now or last_t_sim(log)
+    out = []
+    for e in read_events(log):
+        d = e.get("data") or {}
+        if e.get("type") == "tool_result" and d.get("name") == "dispatch_tech" and ok(d.get("result")):
+            r = d["result"]
+            left = minutes_between(now, r.get("eta"))
+            if left is not None and left > 0:
+                out.append({"ticket": r.get("ticket"), "asset": r.get("asset"), "work_order": r.get("work_order"),
+                            "needs_deenergized": bool(r.get("needs_deenergized")), "minutes_left": left, "seq": e.get("seq")})
+    return out

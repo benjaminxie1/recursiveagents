@@ -340,6 +340,27 @@ def fast_path(proposed: dict, state: dict) -> dict | None:
     return None
 
 
+def work_in_progress(proposed: dict, log) -> dict | None:
+    """Policy rule 2, second half: while lockout work is in progress, nothing may re-energize that equipment."""
+    if log is None or proposed.get("tool") != "operate":
+        return None
+    action, asset = proposed.get("action"), str(proposed.get("asset", ""))
+    if action not in ("close", "restart", "reset_alarm", "restore"):
+        return None
+    from gridtwin.agents.common import open_tickets
+
+    m = re.fullmatch(r"52-I(\d+)", asset)
+    targets = {f"INV-{m.group(1)}"} if m else {asset}
+    if asset == "52-M":
+        targets = {"XFMR-1"}
+    busy = [t for t in open_tickets(log) if t["needs_deenergized"] and t["asset"] in targets]
+    if busy:
+        t = busy[0]
+        return {"route": "reject", "unsafe": 0.95, "reason": f"policy rule 2: lockout work {t['ticket']} ({t['work_order']}) on {t['asset']} "
+                f"is still in progress for {t['minutes_left']:.0f} min; wait for it before re-energizing"}
+    return None
+
+
 class Gate:
     """Callable gate(proposed, state) with `.backend` (effective backend name) and `.client`."""
 
@@ -349,6 +370,9 @@ class Gate:
 
     def __call__(self, proposed, state) -> dict:
         try:
+            busy = work_in_progress(proposed if isinstance(proposed, dict) else {}, getattr(self.client, "log", None))
+            if busy is not None:
+                return busy
             fast = fast_path(proposed if isinstance(proposed, dict) else {}, state if isinstance(state, dict) else {})
             if fast is not None:
                 return fast
