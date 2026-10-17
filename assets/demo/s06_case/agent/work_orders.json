@@ -1,0 +1,42 @@
+{
+  "inspect": {
+    "minutes": 30,
+    "cost_usd": 400,
+    "needs_deenergized": false
+  },
+  "replace_fan_filter": {
+    "minutes": 60,
+    "cost_usd": 1800,
+    "needs_deenergized": true
+  },
+  "reseat_comms_card": {
+    "minutes": 45,
+    "cost_usd": 900,
+    "needs_deenergized": true
+  },
+  "replace_mc4_connector": {
+    "minutes": 60,
+    "cost_usd": 1200,
+    "needs_deenergized": true
+  },
+  "clean_modules": {
+    "minutes": 120,
+    "cost_usd": 2500,
+    "needs_deenergized": false
+  },
+  "mow_vegetation": {
+    "minutes": 90,
+    "cost_usd": 1500,
+    "needs_deenergized": false
+  },
+  "replace_module": {
+    "minutes": 90,
+    "cost_usd": 2200,
+    "needs_deenergized": true
+  },
+  "transformer_oil_service": {
+    "minutes": 120,
+    "cost_usd": 6000,
+    "needs_deenergized": true
+  }
+}

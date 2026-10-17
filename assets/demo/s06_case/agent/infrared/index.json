@@ -1,0 +1,218 @@
+[
+  {
+    "asset": "INV-1",
+    "camera_id": "IR-B1-01",
+    "captured": "2026-07-14T11:00:20",
+    "file": "agent/infrared/INV-1_ir.png",
+    "radiometric": "agent/infrared/INV-1_ir.csv",
+    "radiometric_size": [
+      320,
+      240
+    ],
+    "image_size": [
+      640,
+      480
+    ],
+    "span_c": [
+      20.0,
+      50.0
+    ],
+    "palette": "ironbow",
+    "emissivity": 0.95,
+    "reflected_temp_c": 20.0,
+    "distance_m": 4.0,
+    "readings": {
+      "Sp1": {
+        "label": "upper louvre, left door",
+        "xy": [
+          118,
+          63
+        ],
+        "temp_c": 39.2
+      },
+      "Sp2": {
+        "label": "display",
+        "xy": [
+          206,
+          72
+        ],
+        "temp_c": 37.4
+      },
+      "Bx1": {
+        "label": "cabinet",
+        "box": [
+          72,
+          12,
+          247,
+          205
+        ],
+        "box_convention": "x0, y0, x1, y1 in the 320x240 grid; x1 and y1 exclusive",
+        "max_c": 39.5,
+        "min_c": 33.1,
+        "mean_c": 36.9
+      }
+    }
+  },
+  {
+    "asset": "INV-2",
+    "camera_id": "IR-B2-01",
+    "captured": "2026-07-14T11:00:20",
+    "file": "agent/infrared/INV-2_ir.png",
+    "radiometric": "agent/infrared/INV-2_ir.csv",
+    "radiometric_size": [
+      320,
+      240
+    ],
+    "image_size": [
+      640,
+      480
+    ],
+    "span_c": [
+      20.0,
+      50.0
+    ],
+    "palette": "ironbow",
+    "emissivity": 0.95,
+    "reflected_temp_c": 20.0,
+    "distance_m": 4.0,
+    "readings": {
+      "Sp1": {
+        "label": "upper louvre, left door",
+        "xy": [
+          118,
+          66
+        ],
+        "temp_c": 38.6
+      },
+      "Sp2": {
+        "label": "display",
+        "xy": [
+          207,
+          75
+        ],
+        "temp_c": 37.6
+      },
+      "Bx1": {
+        "label": "cabinet",
+        "box": [
+          71,
+          13,
+          251,
+          212
+        ],
+        "box_convention": "x0, y0, x1, y1 in the 320x240 grid; x1 and y1 exclusive",
+        "max_c": 39.9,
+        "min_c": 32.7,
+        "mean_c": 36.9
+      }
+    }
+  },
+  {
+    "asset": "INV-3",
+    "camera_id": "IR-B3-01",
+    "captured": "2026-07-14T11:00:20",
+    "file": "agent/infrared/INV-3_ir.png",
+    "radiometric": "agent/infrared/INV-3_ir.csv",
+    "radiometric_size": [
+      320,
+      240
+    ],
+    "image_size": [
+      640,
+      480
+    ],
+    "span_c": [
+      20.0,
+      50.0
+    ],
+    "palette": "ironbow",
+    "emissivity": 0.95,
+    "reflected_temp_c": 20.0,
+    "distance_m": 4.0,
+    "readings": {
+      "Sp1": {
+        "label": "upper louvre, left door",
+        "xy": [
+          118,
+          60
+        ],
+        "temp_c": 29.7
+      },
+      "Sp2": {
+        "label": "display",
+        "xy": [
+          205,
+          68
+        ],
+        "temp_c": 34.2
+      },
+      "Bx1": {
+        "label": "cabinet",
+        "box": [
+          71,
+          4,
+          249,
+          212
+        ],
+        "box_convention": "x0, y0, x1, y1 in the 320x240 grid; x1 and y1 exclusive",
+        "max_c": 35.8,
+        "min_c": 29.0,
+        "mean_c": 32.3
+      }
+    }
+  },
+  {
+    "asset": "INV-4",
+    "camera_id": "IR-B4-01",
+    "captured": "2026-07-14T11:00:20",
+    "file": "agent/infrared/INV-4_ir.png",
+    "radiometric": "agent/infrared/INV-4_ir.csv",
+    "radiometric_size": [
+      320,
+      240
+    ],
+    "image_size": [
+      640,
+      480
+    ],
+    "span_c": [
+      20.0,
+      50.0
+    ],
+    "palette": "ironbow",
+    "emissivity": 0.95,
+    "reflected_temp_c": 20.0,
+    "distance_m": 4.0,
+    "readings": {
+      "Sp1": {
+        "label": "upper louvre, left door",
+        "xy": [
+          119,
+          62
+        ],
+        "temp_c": 38.2
+      },
+      "Sp2": {
+        "label": "display",
+        "xy": [
+          206,
+          71
+        ],
+        "temp_c": 37.6
+      },
+      "Bx1": {
+        "label": "cabinet",
+        "box": [
+          74,
+          10,
+          248,
+          208
+        ],
+        "box_convention": "x0, y0, x1, y1 in the 320x240 grid; x1 and y1 exclusive",
+        "max_c": 40.0,
+        "min_c": 32.6,
+        "mean_c": 36.8
+      }
+    }
+  }
+]

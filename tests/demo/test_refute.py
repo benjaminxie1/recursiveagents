@@ -92,6 +92,18 @@ def test_a_fooled_jev_and_camera_cannot_verify_an_unfixed_plant(tmp_path, monkey
     assert all(c["pass"] for c in of(events, "demo.check", kind="jev"))
 
 
+@pytest.mark.parametrize("grounds", [None, "heatsink_band", "scada_stale"])
+def test_a_meta_judge_that_always_vetoes_cannot_fail_a_fixed_plant(tmp_path, monkeypatch, grounds):
+    """An invented band, no ground, or a real ground key the plant does not show: each veto is overruled."""
+    from gridtwin.demo import recursion
+
+    monkeypatch.setattr(recursion, "_meta_stub", lambda checks, found: {
+        "verdict": "fail", "grounds": grounds, "reason": "heatsink 33 C is outside the 40 +- 2 C band"})
+    result, events = run(tmp_path, f"veto-{grounds}")
+    assert (result["status"], result["rounds"]) == ("VERIFIED", 2), result
+    assert not of(events, "demo.check", kind="meta")
+
+
 def test_a_contractor_who_always_takes_the_shortcut_is_escalated(tmp_path, monkeypatch):
     real_visit = contractors.Contractor.visit
 
