@@ -3,6 +3,7 @@
 ## Team memory (read first)
 
 - Start every session by reading `docs/HACKATHON.md` (rules, judging, deadline, credits) and then `docs/MEMORY.md` (decisions, owners, open questions).
+- In Benjamin's sessions, also read `docs/BENJAMINXIE_MEMORY.md` (his preferences, research, and to-dos) and append to it.
 - When you make a decision, change ownership or learn something the next agent needs, append one `HH:MM name: text` line to `docs/MEMORY.md` and commit it with the change.
 - If you have Alike, call `resolve_work_item` with anchor `{type: "git_branch", value: "benjaminxie1/recursiveagents:claude/sweet-faraday-yssuo9"}` and record decisions there too.
 - `AGENTS.md` is a link to this file, so Codex and Claude read the same notes.

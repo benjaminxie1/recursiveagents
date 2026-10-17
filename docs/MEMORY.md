@@ -24,6 +24,7 @@ Read it at the start of a session, after `docs/HACKATHON.md`.
 - 09:47 Benjamin: every core role runs on Nemotron except the verifier, which uses gpt-oss-120b so its mistakes do not line up with the workers' (`gridtwin/config.py`).
 - 09:47 Benjamin: all LLM calls go through `gridtwin/llm.py`.
 - 10:05 Will: team memory lives in this file plus `docs/HACKATHON.md`, mirrored to Alike; `AGENTS.md` links to `CLAUDE.md` so Codex and Claude read the same notes.
+- 10:18 Benjamin: Benjamin's own context and research notes live in `docs/BENJAMINXIE_MEMORY.md`, standing in for Alike until his cloud sessions can sign in to it.
 
 ## Open questions
 
