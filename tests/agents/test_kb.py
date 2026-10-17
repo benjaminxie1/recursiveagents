@@ -169,6 +169,79 @@ def test_bm25_top_hit_supersedes_long_baseline_lesson(kbdir):
     assert [e["data"]["id"] for e in log.of("supersede")] == [base["id"]]
 
 
+STALE = ["one inverter has a frozen last_update_ts while its peers update",
+         "telemetry for that inverter is stale and ac_kw reads 0", "comms alarm on the inverter"]
+
+
+def test_lesson_assets_and_fix_shape():
+    l = lesson("r1", [], "operate POI-1 set_plant_limit_kw=3500; operate 52-B1 open; dispatch_tech CB-2.3 inspect")
+    l["steps"] = ["run_diagnostic B3 iv_curve", "run_diagnostic INV-3 comms_ping", l["fix"]]
+    assert kbmod._lesson_assets(l) == {"52-b1", "cb-2.3"}  # 52-B1 is not also block B1; steps and POI-1 don't count
+    no_asset = lesson("r2", ["INV-3 stale while POI-1 export is short"], "page_human high")
+    assert kbmod._lesson_assets(no_asset) == set()  # symptoms don't count
+    assert kbmod._norm_fix("Reseat INV-2 comms card.") == kbmod._norm_fix("reseat INV-3 comms card")
+    assert kbmod._norm_fix("reseat INV-2 comms card") != kbmod._norm_fix("restart INV-2")
+
+
+def test_same_fix_on_another_asset_keeps_both(kbdir):
+    """s06 then s06b: the INV-3 lesson is still right once the INV-2 one is written."""
+    log = FakeLog()
+    k = KB(kbdir, log=log)
+    inv3 = k.write_lesson(lesson("s06", STALE, "dispatch_tech INV-3 reseat_comms_card", [7]))
+    inv2 = k.write_lesson(lesson("s06b", STALE, "dispatch_tech INV-2 reseat_comms_card", [9]))
+    assert inv2["supersedes"] is None and {l["id"] for l in k.lessons()} == {inv3["id"], inv2["id"]}
+    # this run also pinged INV-3, as the old lesson suggested, and its fix has a different shape: a diagnostic
+    # doesn't make it a lesson about INV-3, and neither does curtailing at POI-1
+    pinged = lesson("s06b-2", STALE, "operate POI-1 set_plant_limit_kw=3500; operate 52-I2 open; "
+                    "dispatch_tech INV-2 reseat_comms_card; operate 52-I2 close; operate 52-I2 close", [11])
+    pinged["steps"] = ["run_diagnostic INV-3 comms_ping", "run_diagnostic INV-2 comms_ping", pinged["fix"]]
+    k.write_lesson(pinged)
+    assert inv3["id"] in {l["id"] for l in k.lessons()}
+    assert [e["data"]["id"] for e in log.of("supersede")] == [inv2["id"]]  # only the older INV-2 lesson is replaced
+
+
+def test_every_plant_id_is_an_asset():
+    from gridtwin.sim import plant
+    ids = [*plant.INVERTERS, *plant.BREAKERS, *plant.COMBINERS, *plant.BLOCKS, "XFMR-1", "BESS-1", "POI-1", "MET-1"]
+    for i in ids:
+        want = set() if i in ("POI-1", "MET-1") else {i.lower()}
+        assert kbmod._lesson_assets(lesson("r", [], f"operate {i} x")) == want, i
+
+
+def test_overlapping_assets_supersede(kbdir):
+    """The fix that worked adds the lockout breaker: {52-i3, inv-3} still overlaps {inv-3}."""
+    k = KB(kbdir, log=FakeLog())
+    old = k.write_lesson(lesson("s06", STALE, "operate INV-3 restart", [3]))
+    new = k.write_lesson(lesson("s06-2", STALE, "operate 52-I3 open; dispatch_tech INV-3 reseat_comms_card; "
+                                "operate 52-I3 close", [5]))
+    assert new["supersedes"] == old["id"] and {l["id"] for l in k.lessons()} == {new["id"]}
+
+
+def test_different_fix_supersedes_only_on_the_same_asset(kbdir):
+    log = FakeLog()
+    k = KB(kbdir, log=log)
+    inv3 = k.write_lesson(lesson("s06", STALE, "dispatch_tech INV-3 reseat_comms_card", [7]))
+    inv2 = k.write_lesson(lesson("s06b", STALE, "operate INV-2 restart", [9]))
+    assert inv2["supersedes"] is None and log.of("supersede") == []
+    assert json.loads((kbdir / "lessons" / f"{inv3['id']}.json").read_text())["status"] == "active"
+    new3 = k.write_lesson(lesson("s06c", STALE, "operate INV-3 restart", [11]))
+    assert new3["supersedes"] == inv3["id"]
+    assert {l["id"] for l in k.lessons()} == {inv2["id"], new3["id"]}
+    assert [e["data"]["id"] for e in log.of("supersede")] == [inv3["id"]]
+
+
+def test_lesson_naming_no_asset_only_supersedes_another_like_it(kbdir):
+    k = KB(kbdir, log=FakeLog())
+    inv3 = k.write_lesson(lesson("r1", STALE, "dispatch_tech INV-3 reseat_comms_card", [3]))
+    page = k.write_lesson(lesson("r2", STALE, "page_human high", [5]))
+    assert page["supersedes"] is None  # names no asset, so the INV-3 lesson stays
+    new3 = k.write_lesson(lesson("r3", STALE, "operate INV-3 restart", [7]))
+    assert new3["supersedes"] == inv3["id"]  # the page lesson isn't about INV-3 either way, so it stays too
+    late = k.write_lesson(lesson("r4", STALE, "no plant change", [9]))
+    assert late["supersedes"] == page["id"]  # two that name no asset compare on symptoms and fix, as before
+    assert {l["id"] for l in k.lessons()} == {new3["id"], late["id"]}
+
+
 def test_search_emits_one_read_per_lesson_returned(kbdir):
     log = FakeLog()
     k = KB(kbdir, log=log)
