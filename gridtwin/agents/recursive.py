@@ -17,6 +17,7 @@ hold, exactly as in `full`. One `claim` and one `final` per run, so the judge an
 """
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from gridtwin import llm
@@ -41,6 +42,9 @@ SUB_ROUNDS = 2
 
 TRIAGE_REQUEST = """TRIAGE. {scope}Team board:
 {board}
+
+Checks that are failing now (check id, evidence):
+{failing}
 
 Before anyone fixes anything, decide how many independent causes the evidence shows. Causes are independent when they sit on different equipment or need different fixes. An alarm and the output drop it explains are one cause, not two.
 Each cause gets its own sub-agent: a fresh team that confirms the cause, fixes it and proves the fix with its own checks, while other sub-agents handle the other causes.
@@ -124,10 +128,11 @@ class Ctx:
     def emit(self, decision: str, reason: str, **data):
         self.log.emit("supervisor", "supervisor", {"decision": decision, "reason": reason, **data})
 
-    def triage(self, board_posts: list[dict], scope: str = "") -> list[dict]:
+    def triage(self, board_posts: list[dict], scope: str = "", failing: list[dict] | None = None) -> list[dict]:
         btxt = "\n".join(f"- [{p['worker']}] {p['text'][:300]}" for p in board_posts[-15:]) or "(no posts)"
+        ftxt = "\n".join(f"- {v['check_id']}: {json.dumps(v.get('evidence'), default=str)[:300]}" for v in (failing or [])[-12:]) or "(none)"
         try:
-            reply = self.planner._ask(TRIAGE_REQUEST.format(scope=scope, board=btxt, max_checks=MAX_SUB_CHECKS),
+            reply = self.planner._ask(TRIAGE_REQUEST.format(scope=scope, board=btxt, failing=ftxt, max_checks=MAX_SUB_CHECKS),
                                       max_tokens=8192, low_effort=True)
         except Exception as e:  # triage is an optimisation: without it the root runs as the flat loop
             self.emit("continue", f"triage failed ({type(e).__name__}); no split")
@@ -199,7 +204,7 @@ class SubAgent:
         self.feedback = "YOUR VERIFIER REJECTED the claim for your scope. " + _feedback(v)
         if self.depth < MAX_DEPTH and self.left() >= 2 * SUB_MIN_CALLS:
             scope = SPLIT_SCOPE.format(agent=self.agent, label=self.cause["label"], assets=", ".join(self.cause["assets"]), failing=", ".join(bad))
-            kids = self.ctx.triage(self.team.board.read(), scope=scope)
+            kids = self.ctx.triage(self.team.board.read(), scope=scope, failing=[x for x in v["verdicts"] if not x["pass"]])
             if len(kids) >= 2:
                 share = min(SUB_MAX_CALLS, self.left() // len(kids))
                 self.ctx.emit("split", f"{self.agent} splits into {len(kids)} sub-agents after its verifier rejected {', '.join(bad)}",
@@ -312,7 +317,7 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
 
         if not triaged:  # after the survey: one cause stays flat, several get a sub-agent each
             triaged = True
-            causes = ctx.triage(team.board.read())
+            causes = ctx.triage(team.board.read(), failing=failed_before)
             left = sup.calls_left()
             avail = (60 if left is None else left) - ROOT_RESERVE
             if len(causes) >= 2 and avail >= 2 * SUB_MIN_CALLS:
