@@ -4,6 +4,7 @@ Serves viewer/ at /, plus assets/ and runs/. Stdlib only, so it works with Wi-Fi
 truth.jsonl is never served (contract C2: only the judge reads hidden truth).
 GET /api/runs lists every run folder that has an events.jsonl, newest first.
 GET /api/viewpoints lists the camera stations (contract C5) for the inspection wall, without the photo states.
+GET /api/requirements returns the requirement catalog and standards titles (dashboard.html).
 """
 import argparse
 import json
@@ -53,6 +54,14 @@ def list_viewpoints():
     return [{"id": vid, **{k: vp[k] for k in keep if k in vp}} for vid, vp in sorted(merged.items())]
 
 
+def list_requirements():
+    """The requirement catalog and standards titles from plant.yaml (public: the agents read the same via list_requirements)."""
+    import yaml
+
+    doc = yaml.safe_load((REPO / "gridtwin" / "sim" / "plant.yaml").read_text())
+    return {"requirements": doc.get("requirements") or [], "standards": doc.get("standards") or {}}
+
+
 class Handler(SimpleHTTPRequestHandler):
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map,
                       ".jsonl": "text/plain; charset=utf-8", ".js": "text/javascript"}
@@ -66,7 +75,7 @@ class Handler(SimpleHTTPRequestHandler):
         return str(VIEWER.joinpath(*parts))
 
     def do_GET(self):
-        api = {"/api/runs": list_runs, "/api/viewpoints": list_viewpoints}.get(urlsplit(self.path).path)
+        api = {"/api/runs": list_runs, "/api/viewpoints": list_viewpoints, "/api/requirements": list_requirements}.get(urlsplit(self.path).path)
         if api:
             body = json.dumps(api()).encode()
             self.send_response(200)

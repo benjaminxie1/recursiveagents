@@ -183,8 +183,9 @@ def ground(g):
         g.face((cx, 0, cz), (w, 0, 0), (0, 0, -h), (0.55, 0.5, 0.4), 1.4, thick=0.05, jitter=0.45, noise=0.02,
                color_fn=tex(HORIZON, SOIL_BOX, (w / 12, h / 12), mirror=True, res=(24, 8)))
     # inside the fence: crushed-rock pad, tiled from the gravel around the PSE transformer photo
-    g.face((160, 0.0, 121), (316, 0, 0), (0, 0, -258), (0.56, 0.54, 0.5), 0.75, thick=0.02, jitter=0.4, noise=0.02,
-           color_fn=tex(GRAVEL, GRAVEL_BOX, (316 / 8, 258 / 12), mirror=True, res=(10, 14), gain=1.12))
+    g.face((160, 0.0, 121), (316, 0, 0), (0, 0, -258), (0.56, 0.54, 0.5), 0.75, thick=0.02, jitter=0.45, noise=0.025,
+           color_fn=lambda s, t: 0.55 * tex(GRAVEL, GRAVEL_BOX, (1, 1), res=(1, 1), gain=1.15)(s, t)
+           + 0.45 * tex(HORIZON, SOIL_BOX, (1, 1), res=(1, 1))(s, t))           # graded site: the photos' mean gravel and soil
     # access road and cable trenches
     g.face((160, 0.05, 245), (316, 0, 0), (0, 0, -5), (0.42, 0.4, 0.37), 0.6, thick=0.02)
     g.face((BUS_X, 0.06, 126), (0.8, 0, 0), (0, 0, -200), (0.66, 0.66, 0.64), 0.4, thick=0.02)

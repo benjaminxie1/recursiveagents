@@ -134,7 +134,8 @@ class Toolbox:
 
     def call(self, name: str, args: dict | None = None) -> dict:
         args = dict(args or {})
-        self.log.emit("sim", "tool_call", {"name": name, "args": args})
+        by = getattr(self, "actor", None)  # set by agents.common.ActorToolbox; lets viewers attribute calls (additive, C2)
+        self.log.emit("sim", "tool_call", {"name": name, "args": args, **({"by": by} if isinstance(by, str) else {})})
         if self._exhausted():
             result = {"error": "budget_exhausted"}
         else:

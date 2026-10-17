@@ -60,7 +60,7 @@ export class PlantView {
     this.touch();
   }
 
-  overview() { this.look([160, 150, 330], [160, 0, 115], 45); }
+  overview() { this.look([150, 85, 290], [140, 0, 105], 45); }
 
   // Station markers: a camera post with a coloured head and a short sightline toward its target.
   setStations(stations, colorOf) {
@@ -114,21 +114,27 @@ export class PlantView {
           aspect: { value: 1 } },
         vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
         fragmentShader: `uniform sampler2D tex; uniform vec3 hot[8]; uniform int nHot; uniform float aspect; varying vec2 vUv;
-          vec3 ironbow(float t) {
-            vec3 c0 = vec3(0.0, 0.0, 0.05), c1 = vec3(0.25, 0.0, 0.55), c2 = vec3(0.75, 0.1, 0.45), c3 = vec3(0.95, 0.45, 0.05), c4 = vec3(1.0, 0.85, 0.2), c5 = vec3(1.0, 1.0, 0.9);
-            t = clamp(t, 0.0, 1.0) * 5.0;
-            if (t < 1.0) return mix(c0, c1, t); if (t < 2.0) return mix(c1, c2, t - 1.0); if (t < 3.0) return mix(c2, c3, t - 2.0);
-            if (t < 4.0) return mix(c3, c4, t - 3.0); return mix(c4, c5, t - 4.0);
+          // rainbow thermography palette, 20-48 C (same stops as scripts/render_splat_views.py)
+          vec3 pal(float t) {
+            const int N = 11;
+            float xs[N] = float[N](20.0, 23.0, 26.0, 28.5, 31.0, 33.5, 35.0, 37.5, 40.0, 42.0, 48.0);
+            vec3 cs[N] = vec3[N](vec3(42, 10, 110), vec3(26, 47, 208), vec3(16, 168, 224), vec3(31, 191, 90), vec3(61, 209, 58),
+              vec3(200, 232, 48), vec3(245, 229, 42), vec3(245, 154, 30), vec3(229, 43, 35), vec3(240, 160, 176), vec3(255, 236, 240));
+            if (t <= xs[0]) return cs[0] / 255.0;
+            for (int i = 1; i < N; i++) if (t < xs[i]) return mix(cs[i - 1], cs[i], (t - xs[i - 1]) / (xs[i] - xs[i - 1])) / 255.0;
+            return cs[N - 1] / 255.0;
           }
           void main() {
-            vec3 c = texture2D(tex, vUv).rgb;
-            float t = 0.16 + 0.3 * dot(c, vec3(0.3, 0.55, 0.15));
+            vec3 c = pow(texture2D(tex, vUv).rgb, vec3(1.0 / 2.2));  // render target is linear; the heuristic expects sRGB
+            float lum = dot(c, vec3(0.3, 0.55, 0.15));
+            float t = 38.5 - 11.0 * lum;
+            if (c.b > c.r + 0.06 && lum > 0.45 && vUv.y > 0.4) t = 20.5 + 2.0 * (1.0 - lum);
             for (int i = 0; i < 8; i++) {
               if (i >= nHot) break;
               vec2 d = (vUv - hot[i].xy) * vec2(aspect, 1.0);
-              t = max(t, 0.98 * exp(-dot(d, d) / (2.0 * hot[i].z * hot[i].z)));
+              t += 24.0 * exp(-dot(d, d) / (2.0 * hot[i].z * hot[i].z));
             }
-            gl_FragColor = vec4(ironbow(t), 1.0);
+            gl_FragColor = vec4(pal(t), 1.0);
           }`,
         depthTest: false, depthWrite: false,
       });

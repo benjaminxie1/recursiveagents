@@ -26,26 +26,86 @@ HOT = {"thermal_hot", "thermal_hotspot"}
 SIZE = (800, 600)
 
 
+# Rainbow thermography palette (FLIR-style "rainbow HC"), as (deg C, rgb): indigo sky, green-yellow panels, red-white hot spots.
+PALETTE = [(20, (42, 10, 110)), (23, (26, 47, 208)), (26, (16, 168, 224)), (28.5, (31, 191, 90)), (31, (61, 209, 58)),
+           (33.5, (200, 232, 48)), (35, (245, 229, 42)), (37.5, (245, 154, 30)), (40, (229, 43, 35)), (42, (240, 160, 176)), (48, (255, 236, 240))]
+T_MIN, T_MAX = 20.0, 42.0
+
+
+def temperature(rgb: Image.Image) -> np.ndarray:
+    """Apparent temperature (deg C) from the rgb render: sky reads cold, dark surfaces (modules, gravel in sun) warm."""
+    a = np.asarray(rgb.filter(ImageFilter.GaussianBlur(1.5)), float) / 255
+    lum = a @ np.array([0.3, 0.55, 0.15])
+    t = 38.5 - 11.0 * lum
+    sky = (a[..., 2] > a[..., 0] + 0.06) & (lum > 0.45)
+    sky = np.cumprod(sky, axis=0).astype(bool)            # sky only where everything above it is sky too
+    return np.where(sky, 20.5 + 2.0 * (1 - lum), t)
+
+
+def colorize(t: np.ndarray) -> np.ndarray:
+    xs = np.array([p[0] for p in PALETTE])
+    cols = np.array([p[1] for p in PALETTE], float)
+    return np.stack([np.interp(t, xs, cols[:, c]) for c in range(3)], -1).astype(np.uint8)
+
+
 def ironbow(rgb: Image.Image, hot_xy=None, hot=False) -> Image.Image:
-    """False-colour thermal look: ambient scene cool and flat, equipment slightly warmer, optional hot spot."""
-    g = np.asarray(rgb.convert("L").filter(ImageFilter.GaussianBlur(3)), float) / 255
-    t = 0.18 + 0.32 * (g - g.min()) / max(1e-6, np.ptp(g))
-    if hot and hot_xy is not None:
-        h, w = t.shape
-        yy, xx = np.mgrid[0:h, 0:w]
+    """Thermal frame in the style of a radiometric IR camera: rainbow palette, deg C scale bar, ROI readouts."""
+    from PIL import ImageDraw
+    t = temperature(rgb)
+    h, w = t.shape
+    rois = []
+    if hot_xy is not None:
         x, y = hot_xy
-        r = 0.05 * w
-        t = np.maximum(t, 0.98 * np.exp(-(((xx - x) ** 2 + (yy - y) ** 2) / (2 * r * r))))
-    stops = np.array([[0, 0, 0.05], [0.25, 0, 0.55], [0.75, 0.1, 0.45], [0.95, 0.45, 0.05], [1, 0.85, 0.2], [1, 1, 0.9]])
-    pos = np.linspace(0, 1, len(stops))
-    out = np.stack([np.interp(t, pos, stops[:, c]) for c in range(3)], -1)
-    return Image.fromarray((out * 255).astype(np.uint8))
+        yy, xx = np.mgrid[0:h, 0:w]
+        if hot:
+            r = 0.035 * w
+            t = t + 24.0 * np.exp(-(((xx - x) ** 2 + (yy - y) ** 2) / (2 * r * r)))
+            rois.append((x, y, float(t[int(np.clip(y, 0, h - 1)), int(np.clip(x, 0, w - 1))])))
+        else:
+            rois.append((x, y, float(t[int(np.clip(y, 0, h - 1)), int(np.clip(x, 0, w - 1))])))
+    img = Image.fromarray(colorize(t))
+    d = ImageDraw.Draw(img)
+    for k, (x, y, v) in enumerate(rois, 1):
+        d.line([(x - 6, y), (x + 6, y)], fill=(255, 255, 255), width=1)
+        d.line([(x, y - 6), (x, y + 6)], fill=(255, 255, 255), width=1)
+        label = f"ROI {k:03d} {v:.1f} \u00b0C"
+        tx, ty = x + 10, y - 24
+        tw = 7 * len(label)
+        d.rectangle([tx - 3, ty - 2, tx + tw, ty + 13], fill=(255, 255, 255), outline=(0, 0, 0))
+        d.text((tx, ty), label, fill=(0, 0, 0))
+    # scale bar on the right, like the camera's own overlay
+    bw = 92
+    canvas = Image.new("RGB", (w + bw, h), (255, 255, 255))
+    canvas.paste(img, (0, 0))
+    d = ImageDraw.Draw(canvas)
+    top, bot = 16, h - 16
+    ramp = colorize(np.linspace(T_MAX, T_MIN, bot - top)[:, None].repeat(16, 1))
+    canvas.paste(Image.fromarray(ramp), (w + 64, top))
+    for v in np.arange(T_MIN, T_MAX + 0.1, 2.5):
+        yv = bot - (v - T_MIN) / (T_MAX - T_MIN) * (bot - top)
+        d.line([(w + 58, yv), (w + 63, yv)], fill=(0, 0, 0))
+        d.text((w + 8, yv - 6), f"{v:.1f} \u00b0C".replace(".", ","), fill=(0, 0, 0))
+    return canvas
+
+
+def rethermal():
+    index = json.loads((OUT / "index.json").read_text())
+    for vid, entry in index.items():
+        rgb = [e for e in entry.values() if e["mode"] == "rgb"]
+        ref = next((e for st, e in entry.items() if st in ("healthy", "connector_normal", "array_normal")), rgb[0] if rgb else None)
+        for st, e in entry.items():
+            if e["mode"] == "thermal" and ref:
+                ironbow(Image.open(REPO / ref["file"]).convert("RGB"), e["anchor_px"], st in HOT).save(REPO / e["file"], "JPEG", quality=86)
+                print(f"{vid}/{st} (thermal)")
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", help="comma-separated viewpoint ids")
+    ap.add_argument("--thermal-only", action="store_true", help="redo the thermal frames from the existing rgb renders")
     a = ap.parse_args(argv)
+    if a.thermal_only:
+        return rethermal()
     from playwright.sync_api import sync_playwright
 
     scene = json.loads((SPLATS / "scene.json").read_text())

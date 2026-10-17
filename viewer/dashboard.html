@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GridTwin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css">
+<script type="importmap">
+{ "imports": { "three": "/vendor/three.module.min.js", "three/addons/controls/OrbitControls.js": "/vendor/OrbitControls.js",
+               "@sparkjsdev/spark": "/vendor/spark.module.min.js" } }
+</script>
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.8l7.2 4.1v8.2L10 18.2l-7.2-4.1V5.9z"/><path d="M2.8 5.9L10 10l7.2-4.1M10 10v8.2"/></svg>GridTwin</div>
+  <div id="goal" class="goal"></div>
+  <div class="bar-r">
+    <span id="state" class="pill"></span>
+    <span id="clock" class="mono dim"></span>
+    <select id="runPick" aria-label="Run"></select>
+  </div>
+</header>
+
+<main class="grid">
+  <section class="twin">
+    <div id="view" class="view"></div>
+    <div class="twin-tl">
+      <div class="label">Site</div>
+      <div id="pass" class="pass"></div>
+      <div id="drones" class="drones"></div>
+    </div>
+    <div class="twin-bl seg">
+      <button id="mRgb" class="on">RGB</button><button id="mThermal">Thermal</button><button id="mFly">Fly-through</button>
+    </div>
+    <div id="pins" class="pins"></div>
+    <div id="scale" class="scale" hidden><b>42,0 °C</b><i></i><b>20,0 °C</b></div>
+    <figure id="cam" class="cam" hidden><img alt=""><figcaption></figcaption></figure>
+  </section>
+
+  <aside class="side">
+    <section class="card">
+      <div class="head"><span class="label">Assets</span><span id="health" class="mono dim"></span></div>
+      <div id="assets" class="assets"></div>
+    </section>
+
+    <section id="incident" class="card incident" hidden>
+      <div class="head"><span class="label">Action</span><span id="incState" class="pill"></span></div>
+      <div class="inc-main"><b id="incAsset" class="mono"></b><span id="incText"></span></div>
+      <ol id="steps" class="steps"></ol>
+      <div id="reqs" class="reqs"></div>
+    </section>
+
+    <section class="card agents">
+      <div class="head"><span class="label">Agents</span><span id="tokens" class="mono dim"></span></div>
+      <div id="lanes"></div>
+    </section>
+  </aside>
+</main>
+<script type="module" src="dashboard.js"></script>
+</body>
+</html>
