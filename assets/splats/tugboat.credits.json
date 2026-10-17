@@ -1,0 +1,9 @@
+{
+  "title": "Tugboat Bat engine room, Trieste",
+  "author": "tosolini",
+  "license": "CC BY 4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "url": "https://superspl.at/scene/1a14e1e7",
+  "attribution": "Scan: \"Tugboat Bat engine room, Trieste\" by tosolini (XGRIDS PortalCam), CC BY 4.0, via SuperSplat. Thinned to 1M splats.",
+  "changes": "thinned from 7.94M to 1M Gaussians by scripts/thin_splat.py; GridTwin asset pins and stations added"
+}
