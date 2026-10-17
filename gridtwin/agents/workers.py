@@ -13,7 +13,7 @@ from pathlib import Path
 
 from gridtwin import llm
 from gridtwin.agents.board import BOARD_TOOLS, Board
-from gridtwin.agents.common import ActorToolbox, allow_c2_types, clip, extract_json, last_t_sim, read_events
+from gridtwin.agents.common import ActorToolbox, allow_c2_types, clip, extract_json, last_t_sim, minutes_between, read_events
 from gridtwin.agents.research import SEARCH_WEB_SCHEMA, ResearchToolbox
 
 LOG = logging.getLogger("gridtwin.workers")
@@ -79,7 +79,7 @@ Team board:
 {feedback}
 Decide the team's status now. You may make at most a few tool calls first, only to finish work already under way (for example close a breaker after completed work, confirm with one fresh reading, or page a human). Then reply with only this JSON:
 {{"status": "DONE" | "ESCALATED" | "NO_ACTION" | "CONTINUE", "summary": "..."}}
-DONE = the problem is fixed and the plant is healthy now. ESCALATED = a human has been paged because no safe fix exists; the problem is not resolved. NO_ACTION = nothing is wrong and nothing was changed. CONTINUE = more work is needed (the planner will assign it); say in the summary what is missing."""
+DONE = the problem is fixed and the plant is healthy now. ESCALATED = a human has been paged because no available command or work order can safely fix the confirmed cause; the problem is not resolved. A cause that an available work order or command fixes is not an escalation: CONTINUE so it gets fixed. NO_ACTION = nothing is wrong and nothing was changed. CONTINUE = more work is needed (the planner will assign it); say in the summary what is missing."""
 
 
 class WorkerKilled(RuntimeError):
@@ -109,36 +109,93 @@ def _vision_describe(image_path: str, question: str) -> str:
 READ_ONLY = {"list_assets", "list_alarms", "read_telemetry"}
 
 
+def annotate(result):
+    """Add data_age_min (now - last_update_ts) to a telemetry result: arithmetic on two observed fields,
+    so a frozen-but-plausible reading is as visible to a worker as it is to the verifier."""
+    if isinstance(result, dict) and result.get("last_update_ts") and result.get("now"):
+        age = minutes_between(result["last_update_ts"], result["now"])
+        if age is not None:
+            result = dict(result, data_age_min=round(age, 1))
+    return result
+
+
 class ReadCache:
-    """Identical read-only calls at the same sim time are answered from the earlier result and cost no budget."""
+    """Team-wide read cache. Within one sim minute, telemetry for an asset is read once (all points, 60-min
+    window) and every later read of that asset is answered from it; identical alarm/registry reads are too.
+    Cache hits cost no tool budget. Nothing is cached across sim time."""
 
     def __init__(self, log, registry: dict | None = None):
         self.log, self.registry, self.hits = log, registry, 0
         self.seen: dict[str, tuple] = {}
+        self.snaps: dict[str, dict] = {}
 
     @staticmethod
-    def key(name: str, args: dict) -> str:
+    def _points(args) -> list | None:
+        p = args.get("points")
+        if isinstance(p, str):
+            p = [x.strip() for x in p.split(",") if x.strip()]
+        return sorted(p) if p else None
+
+    @staticmethod
+    def _window(args) -> int:
+        try:
+            return max(1, min(240, int(args.get("window_min") or 60)))
+        except (TypeError, ValueError):
+            return 60
+
+    def key(self, name: str, args: dict) -> str:
         a = dict(args)
-        if isinstance(a.get("points"), str):
-            a["points"] = [p.strip() for p in a["points"].split(",") if p.strip()]
-        if isinstance(a.get("points"), list):
-            a["points"] = sorted(a["points"])
-        return name + json.dumps(a, sort_keys=True)
+        if name == "list_alarms":
+            a = {} if a.get("active_only", True) in (True, "true", None) else {"active_only": False}
+        return name + json.dumps(a, sort_keys=True, default=str)
+
+    def fetch_args(self, name: str, args: dict) -> dict:
+        if name == "read_telemetry" and args.get("asset"):
+            return {"asset": args["asset"], "window_min": max(60, self._window(args))}
+        return args
+
+    def view(self, result: dict, args: dict) -> dict:
+        """What the worker asked for, cut from a full read."""
+        if not isinstance(result, dict) or not isinstance(result.get("points"), dict):
+            return result
+        want, win, now = self._points(args), self._window(args), result.get("now")
+        pts = {}
+        for p, series in result["points"].items():
+            if want and p not in want:
+                continue
+            if isinstance(series, list):
+                series = [x for x in series if not (isinstance(x, list) and x and (minutes_between(x[0], now) or 0) > win)]
+            pts[p] = series
+        for p in want or []:
+            pts.setdefault(p, {"error": "unknown point"})
+        return dict(result, points=pts)
 
     def get(self, name: str, args: dict):
+        now = last_t_sim(self.log)
         if name == "list_assets" and self.registry:
             self.hits += 1
-            return {"seq": None, "result": {"note": "registry is in your briefing; no tool call spent"}}
-        if name not in READ_ONLY:
+            return {"seq": None, "result": {"note": "the registry is in your briefing; no tool call spent"}}
+        if name == "read_telemetry":
+            snap = self.snaps.get(str(args.get("asset")))
+            if snap and snap["t"] == now and self._window(args) <= snap["window"]:
+                self.hits += 1
+                return {"seq": snap["seq"], "result": annotate(self.view(snap["result"], args)),
+                        "note": f"from the team's read of this asset at seq {snap['seq']} (same sim minute); no tool call spent"}
             return None
-        hit = self.seen.get(self.key(name, args))
-        if hit and hit[0] == last_t_sim(self.log):
-            self.hits += 1
-            return {"seq": hit[1], "result": hit[2], "note": f"duplicate of seq {hit[1]} at the same sim time; no tool call spent"}
+        if name in READ_ONLY:
+            hit = self.seen.get(self.key(name, args))
+            if hit and hit[0] == now:
+                self.hits += 1
+                return {"seq": hit[1], "result": hit[2], "note": f"same as seq {hit[1]} (same sim minute); no tool call spent"}
         return None
 
     def put(self, name: str, args: dict, seq, result):
-        if name in READ_ONLY and isinstance(result, dict) and "error" not in result:
+        if not (isinstance(result, dict) and "error" not in result):
+            return
+        if name == "read_telemetry" and args.get("asset"):
+            self.snaps[str(args["asset"])] = {"t": last_t_sim(self.log), "seq": seq, "result": result,
+                                              "window": self._window(args)}
+        elif name in READ_ONLY:
             self.seen[self.key(name, args)] = (last_t_sim(self.log), seq, result)
 
 
@@ -203,15 +260,18 @@ class Worker:
             return {"error": f"tool-call cap for this task ({self.task_cap}) reached; post your findings and report now"}
         self.task_calls += 1
         self.tool_calls += 1
-        result = self.tb.call(name, args)
+        fetch = self.cache.fetch_args(name, args)
+        result = self.tb.call(name, fetch)
         seq = None
         evs = read_events(self.log)
         for e in reversed(evs[-4:]):
             if e.get("type") == "tool_result":
                 seq = e.get("seq")
                 break
-        self.cache.put(name, args, seq, result)
-        return {"seq": seq, "result": result}
+        self.cache.put(name, fetch, seq, result)
+        if fetch is not args:
+            result = self.cache.view(result, args)
+        return {"seq": seq, "result": annotate(result)}
 
     # ----- loop -----
     def step(self) -> str | None:
@@ -234,7 +294,7 @@ class Worker:
             except json.JSONDecodeError:
                 args = {}
             result = self._dispatch(c.function.name, args)
-            new.append({"role": "tool", "tool_call_id": c.id, "content": clip(result)})
+            new.append({"role": "tool", "tool_call_id": c.id, "content": clip(result, 2600)})
         self.messages.extend(new)
         self.save()
         if not calls:
@@ -322,7 +382,7 @@ class Team:
                 resume = True
         return ""
 
-    def claim(self, goal: str, feedback: str = "", max_steps: int = 3, max_calls: int = 3) -> dict:
+    def claim(self, goal: str, feedback: str = "", max_steps: int = 3, max_calls: int = 2) -> dict:
         posts = self.board.read()
         board = "\n".join(f"- [{p['worker']}] {p['text']} (seqs {p.get('evidence')})" for p in posts) or "(no posts)"
         text = self.run_task("operator", CLAIM_INSTRUCTION.format(goal=goal, board=board, feedback=feedback), max_steps=max_steps,

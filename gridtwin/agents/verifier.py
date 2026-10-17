@@ -38,7 +38,7 @@ Plant registry:
 Checks:
 {checks}
 
-Do these checks prove the outcome for this goal (fresh data, independent sources, the business metric, safety)? Add at most 3 checks only where coverage is missing, using asset ids, points and viewpoints from the registry. Reply with only JSON: {{"add": [...], "reason": "..."}}"""
+Do these checks prove the outcome for this goal (fresh data, independent sources, the business metric, safety)? Add at most 2 checks, and only where an essential part is missing; adding nothing is the normal answer. Each added check must be one a correct outcome would pass, using asset ids, points and viewpoints from the registry. Reply with only JSON: {{"add": [...], "reason": "..."}}"""
 
 VISUAL_REQUEST = """EVIDENCE: VISUAL
 Claim to verify: {claim}

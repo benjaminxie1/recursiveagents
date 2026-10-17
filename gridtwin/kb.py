@@ -180,6 +180,7 @@ def _split_sections(md: str) -> list[tuple[str, str]]:
 
 def _lesson_text(lesson: dict) -> str:
     parts = [
+        str(lesson.get("goal") or ""),
         " ".join(str(s) for s in _as_list(lesson.get("symptoms"))),
         str(lesson.get("fix") or ""),
         " ".join(str(s) for s in _as_list(lesson.get("steps"))),

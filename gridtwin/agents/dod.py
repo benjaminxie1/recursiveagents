@@ -880,9 +880,11 @@ def _sev_ok(sev, min_sev) -> bool:
     if min_sev is None:
         return True
     s, m = str(sev or "").lower(), str(min_sev).lower()
+    num_rank = {"0": "info", "1": "info", "2": "warning", "3": "high", "4": "critical", "5": "critical"}
+    m = num_rank.get(m, m)
     if m not in SEVERITY_RANK:
-        return s == m
-    return SEVERITY_RANK.get(s, -1) >= SEVERITY_RANK[m]
+        return True  # an unknown severity scale is not grounds to fail a real page
+    return SEVERITY_RANK.get(s, SEVERITY_RANK[m]) >= SEVERITY_RANK[m]
 
 
 def _rule_page_sent(events, params):
@@ -992,7 +994,14 @@ class _Evaluator:
     def expand(self, spec, point=None):
         """(asset ids, from_glob)."""
         if isinstance(spec, list):
-            return [str(x) for x in spec], False
+            if not any(_is_glob(x) for x in spec):
+                return [str(x) for x in spec], False
+            out = []
+            for x in spec:  # a list may mix ids and globs: expand each glob
+                for a in (self.expand(x, point)[0] if _is_glob(x) else [str(x)]):
+                    if a not in out:
+                        out.append(a)
+            return out, True
         if _is_glob(spec):
             reg = self.registry()
             ids = [a for a in reg if glob_match(spec, a)]

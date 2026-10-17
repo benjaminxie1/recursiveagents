@@ -283,7 +283,7 @@ def glob_match(pattern, asset_id: str) -> bool:
     import fnmatch
 
     if isinstance(pattern, (list, tuple)):
-        return asset_id in pattern
+        return any(fnmatch.fnmatchcase(asset_id, str(p)) for p in pattern)
     return fnmatch.fnmatchcase(asset_id, pattern)
 
 

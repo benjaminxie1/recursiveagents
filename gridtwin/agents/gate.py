@@ -19,12 +19,18 @@ from gridtwin.agents.common import extract_json
 ROUTES = ("proceed", "confirm", "reject")
 
 POLICY = (
-    "Plant safety policy. Never energize, re-close or close onto equipment with a suspected fault, an "
-    "active insulation or ground alarm, or an unexplained protection trip on that feeder or circuit. "
-    "Restarts and alarm resets on equipment showing active protection alarms need a diagnostic first. "
-    "Curtailment and plant-limit reductions are always safe. Dispatching a technician is safe unless the "
-    "work order requires working on energized gear without isolation. When information is missing, "
-    "prefer confirm."
+    "Plant safety policy. "
+    "1. De-energizing is safe: opening a breaker, isolating a combiner, curtailment and plant-limit reductions "
+    "only remove energy or stress, so proceed with them. "
+    "2. Lockout before work: a technician dispatch whose work requires de-energized equipment (the state shows "
+    "work_requires_deenergized true) must not proceed while that asset is energized or its feeding breaker is "
+    "closed; reject it and say the feeding breaker must be opened first. Work that does not require "
+    "de-energizing may proceed. "
+    "3. Never energize, re-close or close onto equipment with a suspected fault, an active insulation or ground "
+    "alarm, or an unexplained protection trip on that feeder or circuit. Closing a breaker after completed work "
+    "is safe when no such alarm or low insulation reading is shown for that feeder. "
+    "4. Restarts and alarm resets on equipment showing active protection alarms need a diagnostic first. "
+    "5. When information that matters for the decision is missing, prefer confirm."
 )
 
 ROUTE_INSTRUCTIONS = "Which path applies to the proposed action given the current state and the policy?"
@@ -201,7 +207,7 @@ class LocalDecision(DecisionClient):
     def decide(self, proposed: dict, state: dict) -> dict:
         try:
             resp = llm.chat("gate", self.messages(proposed, state), max_tokens=1024, thinking=False,
-                            log=self.log, actor="gate")
+                            log=self.log, actor="gate", max_tries=3)
             content = resp if isinstance(resp, str) else llm.text(resp)
             parsed = extract_json(content)
             if not isinstance(parsed, dict):

@@ -23,6 +23,7 @@ Principles:
   DONE: the problem is fixed and the plant is healthy: fresh telemetry, output consistent across sources and peers, no active alarms, and safety invariants held.
   ESCALATED: when no safe fix exists, done means the plant is curtailed to a safe limit, a human was paged, and the outcome is reported as not resolved. Use page_sent, an action_taken check for the curtailment, and safety invariants.
   NO_ACTION: "nothing wrong" is a valid outcome with its own checks: the same health checks as DONE plus no_dispatch and no_state_change.
+- Keep each branch to 4 to 8 checks. Prefer the cross-checking ops (fresh, balance, peer, no_alarms) over per-asset thresholds, and never compare a state string unless you know its exact value from the registry. Every check must pass on a healthy plant; a check a correct outcome could fail is a bug.
 - Prefer checks that a lazy or mistaken fix would fail. Put hold_min on the key output checks so a fix that only works for a few minutes fails.
 - Use only asset ids, points and viewpoints from the plant registry you are given. Only add a citation check for a URL and quote that appear verbatim in the references you are given.
 - Lessons from verified past incidents are strong hints, not proof: have the team confirm the symptoms first, then apply what worked.
@@ -38,6 +39,9 @@ PLAN_REQUEST = """GOAL: {goal}
 
 PLANT REGISTRY (from list_assets):
 {registry}
+
+TOOLS THE WORKERS HAVE:
+{tools}
 
 KNOWLEDGE BASE (retrieved for this goal):
 {kb}
@@ -61,6 +65,20 @@ Write the next tasks (2 to 3, precise; if the cause is confirmed, the operator's
 
 def system_prompt() -> str:
     return SYSTEM.format(schema=D.schema_text())
+
+
+def tool_summary() -> str:
+    """One line per worker tool, with its enum values: the tool surface, as the workers see it."""
+    from gridtwin.agents.workers import TOOL_SCHEMAS
+
+    lines = []
+    for t in TOOL_SCHEMAS:
+        f = t["function"]
+        params = []
+        for k, v in (f.get("parameters") or {}).get("properties", {}).items():
+            params.append(f"{k}={'|'.join(map(str, v['enum']))}" if v.get("enum") else k)
+        lines.append(f"- {f['name']}({', '.join(params)}): {f.get('description', '')[:140]}")
+    return "\n".join(lines)
 
 
 def compact_registry(registry: dict) -> str:
@@ -128,6 +146,19 @@ DEFAULT_TASKS = [
 ]
 
 
+MAX_BRANCH_CHECKS = 10
+
+
+def _plan_errors(dod) -> list[str]:
+    if not isinstance(dod, dict):
+        return ["reply was not a JSON object with a 'dod' key"]
+    errors = D.validate(dod)
+    for b, checks in (dod.get("branches") or {}).items():
+        if isinstance(checks, list) and len(checks) > MAX_BRANCH_CHECKS:
+            errors.append(f"branch {b} has {len(checks)} checks; keep it to at most {MAX_BRANCH_CHECKS}")
+    return errors
+
+
 def _clean_tasks(tasks) -> list[dict]:
     out = []
     for t in tasks or []:
@@ -153,6 +184,9 @@ def _repair_dod(dod: dict, registry: dict) -> tuple[dict, list[str]]:
                 continue
             seen.add(c["id"])
             keep.append(c)
+        if len(keep) > MAX_BRANCH_CHECKS:
+            notes.append(f"branch {b}: kept the first {MAX_BRANCH_CHECKS} of {len(keep)} checks")
+            keep = keep[:MAX_BRANCH_CHECKS]
         if not keep:
             notes.append(f"branch {b} empty: used the default checks")
             keep = [c for c in fallback["branches"][b] if c["id"] not in seen]
@@ -174,17 +208,18 @@ class Planner:
         return out
 
     def plan(self, goal: str, registry: dict, kb_text: str) -> dict:
-        reply = self._ask(PLAN_REQUEST.format(goal=goal, registry=compact_registry(registry), kb=kb_text or "(empty)"))
+        reply = self._ask(PLAN_REQUEST.format(goal=goal, registry=compact_registry(registry), tools=tool_summary(), kb=kb_text or "(empty)"),
+                          max_tokens=12288)
         d = extract_json(reply)
         dod = d.get("dod") if isinstance(d, dict) else None
-        errors = D.validate(dod) if isinstance(dod, dict) else ["reply was not a JSON object with a 'dod' key"]
+        errors = _plan_errors(dod)
         if errors:  # re-ask once with the validation errors
             reply = self._ask("The DoD failed validation:\n- " + "\n- ".join(errors[:25]) +
                               "\nFix every error and reply with the complete corrected JSON (dod and tasks).")
             d2 = extract_json(reply)
             if isinstance(d2, dict) and isinstance(d2.get("dod"), dict):
                 d, dod = d2, d2["dod"]
-                errors = D.validate(dod)
+                errors = _plan_errors(dod)
         notes = []
         if errors:
             dod, notes = _repair_dod(dod if isinstance(dod, dict) else {}, registry)
@@ -197,7 +232,7 @@ class Planner:
         btxt = "\n".join(f"- [{p['worker']}] {p['text'][:300]}" for p in board_posts[-15:]) or "(no posts)"
         ids = {b: [c["id"] for c in dod["branches"][b]] for b in D.OUTCOMES}
         reply = self._ask(REPLAN_REQUEST.format(round=round_no, reason=reason, verdicts=vtxt, board=btxt, ids=json.dumps(ids)),
-                          max_tokens=6144)
+                          max_tokens=12288)
         d = extract_json(reply)
         d = d if isinstance(d, dict) else {}
         added = {}
