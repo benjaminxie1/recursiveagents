@@ -39,6 +39,10 @@ Read it at the start of a session, after `docs/HACKATHON.md`.
 - 10:30 Jonathan: all three workstreams work on `claude/sweet-faraday-yssuo9` with `git pull --rebase` before every push (supersedes the 10:25 per-person-branch note).
 - 11:29 Jonathan (ws3): viewer is in. `python -m gridtwin.serve` serves `viewer/`, `assets/` and `runs/` on localhost:8000 (stdlib only; refuses `truth.jsonl` and anything outside those three folders); `/api/runs` lists runs. Open `/?run=<id under runs/>` for live (polls every 1 s) or add `&replay=1` to step through at an adjustable speed. Bench runs nest, e.g. `?run=bench-<ts>-scripted_correct/s06_stale_scada-r0`. No splat yet, so the plant is the 2D one-line fallback with pins on INV-1..4, BESS-1, XFMR-1 and POI-1 (B*, CB-*, 52-* roll up to them). No hand-written sample: `bench --agent scripted_correct` logs are the fixture. Checked on them: pins, photos on pin click (s03, s10), page banner (s05), final banner, replay, live append. The DoD, verdict, board, memory and usage panels follow C2 but no real log has those events yet, so they're unverified.
 - 11:34 Jonathan (ws3): photo bank v1 is 17 Wikimedia Commons photos (CC0, CC BY, CC BY-SA) for the INV-1 and XFMR-1 states, scaled to 1024 px on the long edge, each with a row in `assets/photos/LICENSES.csv`. Commons has no clear photo of a transformer leaking oil, so `XFMR-1/oil_leak` uses pole transformers with dark stain streaks down the tank; calibration should confirm vision reads them as a leak.
+- 11:30 Jonathan (ws2): the DoD is `{"version": 1, "branches": {"DONE": [...], "ESCALATED": [...], "NO_ACTION": [...]}}` of typed checks (telemetry threshold/balance/peer/fresh/no_alarms with mandatory `max_age_min`, visual, citation, safety rules over the event log); the verifier runs the branch matching the claimed status. Spec: `gridtwin/agents/INTERFACES.md`.
+- 11:30 Jonathan (ws2): `gate` role = `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B` (no other role uses it, so it has its own rate-limit bucket); the supervisor's drift judge runs on the planner model.
+- 11:30 Jonathan (ws2): `full.run` and `baseline.run` install `make_gate()` on the Toolbox when the caller built it with `gate=None` (the bench does), so every benchmark operate/dispatch is gated; `GRIDTWIN_NO_GATE=1` turns that off.
+- 11:30 Jonathan (ws2): event order per claim is `claim` (actor `worker:operator`), then one `verdict` per check (actor `verifier`); a DONE is final only after all checks pass, a 30 sim-minute `wait`, and a second full pass. `final` is emitted by `supervisor` (full) or `worker:operator` (baseline).
 
 ## Open questions
 
@@ -53,6 +57,11 @@ Read it at the start of a session, after `docs/HACKATHON.md`.
   - `b3_array`, `b4_array` (B3 / B4, rgb): `array_normal`, `array_soiled`, `array_overgrown`
   - `brk_52i4` (52-I4, rgb): `handle_closed`, `handle_open`, `handle_tripped` (follows the live breaker state)
 - 11:34 Jonathan (ws3): the photo bank still needs phone photos for `INV-2` and `INV-3` `healthy` (display on) and `display_off`, 3 each (12 total), plus a third `INV-1/thermal_normal`; the camera serves placeholders for those until then. `XFMR-1/normal` photos are pad-mounted and `oil_leak` ones are pole-mounted, so swap whichever set calibration flags.
+- 11:30 Jonathan (ws2) → Benjamin (ws1): `gridtwin/sim/events.py` `TYPES` lacks `finding` (C2/C7 team-board posts), so `emit` raises on board posts. ws2 adds it at runtime (`common.allow_c2_types`) until you add it to `TYPES`.
+- 11:30 Jonathan (ws2) → Benjamin (ws1): the Toolbox logs every `tool_call`/`tool_result` as actor `sim`. Could `call(name, args, actor="sim")` take an optional actor? ws2's `ActorToolbox` passes `actor=` automatically once the kwarg exists, so the viewer can attribute calls to `worker:<name>` and `verifier`.
+- 11:30 Jonathan (ws2) → Benjamin (ws1): `budget.tool_calls: 60` is tight once the verifier re-runs the DoD after the 30-minute hold (about 8 calls per pass); proposal: 120 for the MVP scenarios.
+- 11:30 Jonathan (ws2): contracts C1–C5 are on `claude/sweet-faraday-yssuo9`, not on `main` yet; ws2 merged that branch into `jonathan/agents` to develop against the real sim.
+- 11:30 Jonathan (ws2): there is no `YDC_API_KEY` in `.env`, so `search_web` runs from the `kb/refs/` cache only and the DoD has no citation checks until someone with a You.com key runs the researcher once.
 
 ## Lessons
 

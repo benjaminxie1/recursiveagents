@@ -1,0 +1,228 @@
+"""Planner: compiles a vague goal into a definition of done (DoD) and an ordered task list.
+
+The system prompt states principles only. It never names a fault or a fix.
+The planner keeps one append-only conversation per run so replans hit the prefix cache.
+"""
+from __future__ import annotations
+
+import json
+
+from gridtwin import llm
+from gridtwin.agents import dod as D
+from gridtwin.agents.common import extract_json
+
+WORKER_NAMES = ("inspector", "diagnoser", "researcher", "operator")
+
+SYSTEM = """You are the planner of GridTwin's autonomous operations team for a solar plant. An operator gives a vague goal and walks away. You turn it into:
+1. a definition of done (DoD): machine-checkable checks that an independent verifier will run itself against the live plant, with one branch per possible outcome;
+2. an ordered task list for the workers (inspector: cameras and photos; diagnoser: telemetry, alarms, diagnostics; researcher: cited OEM and standards references; operator: the only one who changes plant state).
+
+Principles:
+- Tie business goals to the revenue meter (POI-1), not to what devices report about themselves. Device telemetry can be frozen or wrong, so every telemetry check needs max_age_min, and the DoD should cross-check independent sources (device sums against the meter, peers against each other, cameras against SCADA).
+- Write all three branches.
+  DONE: the problem is fixed and the plant is healthy: fresh telemetry, output consistent across sources and peers, no active alarms, and safety invariants held.
+  ESCALATED: when no safe fix exists, done means the plant is curtailed to a safe limit, a human was paged, and the outcome is reported as not resolved. Use page_sent, an action_taken check for the curtailment, and safety invariants.
+  NO_ACTION: "nothing wrong" is a valid outcome with its own checks: the same health checks as DONE plus no_dispatch and no_state_change.
+- Prefer checks that a lazy or mistaken fix would fail. Put hold_min on the key output checks so a fix that only works for a few minutes fails.
+- Use only asset ids, points and viewpoints from the plant registry you are given. Only add a citation check for a URL and quote that appear verbatim in the references you are given.
+- Lessons from verified past incidents are strong hints, not proof: have the team confirm the symptoms first, then apply what worked.
+- Tasks: 3 to 6, ordered so evidence comes before action. Keep the team economical: the whole run, verification included, has about 60 tool calls.
+
+The DoD language:
+{schema}
+
+Reply with only JSON, no prose."""
+
+PLAN_REQUEST = """GOAL: {goal}
+
+PLANT REGISTRY (from list_assets):
+{registry}
+
+KNOWLEDGE BASE (retrieved for this goal):
+{kb}
+
+Write the plan. Reply with only JSON:
+{{"dod": {{"version": 1, "branches": {{"DONE": [...], "ESCALATED": [...], "NO_ACTION": [...]}}}}, "tasks": [{{"worker": "...", "instruction": "..."}}]}}"""
+
+REPLAN_REQUEST = """REPLAN (round {round}). Supervisor: {reason}
+
+Verifier results so far (check id -> pass, evidence):
+{verdicts}
+
+Team board:
+{board}
+
+Current DoD check ids by branch: {ids}
+
+Write the next tasks. You may add checks to any branch (existing checks can never be removed). Reply with only JSON:
+{{"tasks": [{{"worker": "...", "instruction": "..."}}], "add_checks": {{"DONE": [], "ESCALATED": [], "NO_ACTION": []}}}}"""
+
+
+def system_prompt() -> str:
+    return SYSTEM.format(schema=D.schema_text())
+
+
+def compact_registry(registry: dict) -> str:
+    """Asset ids, types, points, viewpoints and ratings only."""
+    lines = []
+    for a in (registry or {}).get("assets", []):
+        aid = a.get("asset") or a.get("id")
+        bits = [f"{aid} ({a.get('type', '?')})"]
+        for k in ("rating_kwac", "rated_kw", "breaker", "feeds", "inverter"):
+            if a.get(k) is not None:
+                bits.append(f"{k}={a[k]}")
+        if a.get("points"):
+            bits.append("points=" + ",".join(a["points"]))
+        if a.get("viewpoints"):
+            bits.append("viewpoints=" + ",".join(a["viewpoints"]))
+        lines.append(" ".join(bits))
+    if registry and registry.get("rating_kwac"):
+        lines.insert(0, f"plant rating_kwac={registry['rating_kwac']}")
+    return "\n".join(lines) or "(registry unavailable)"
+
+
+def _ids(registry, kind_prefix=None, type_=None):
+    out = []
+    for a in (registry or {}).get("assets", []):
+        aid = a.get("asset") or a.get("id")
+        if type_ and a.get("type") == type_:
+            out.append(aid)
+        elif kind_prefix and aid and aid.startswith(kind_prefix) and not type_:
+            out.append(aid)
+    return out
+
+
+def default_dod(registry: dict) -> dict:
+    """Principle-based fallback DoD, used only when the planner's output can't be validated."""
+    rating = float((registry or {}).get("rating_kwac") or 5000)
+    health = [
+        {"id": "fresh_inv", "kind": "telemetry", "op": "fresh", "assets": "INV-*", "max_age_min": 5},
+        {"id": "balance_poi", "kind": "telemetry", "op": "balance", "lhs": {"assets": "INV-*", "point": "ac_kw"},
+         "rhs": {"asset": "POI-1", "point": "export_kw"}, "tol_pct": 6, "max_age_min": 5},
+        {"id": "peer_inv", "kind": "telemetry", "op": "peer", "assets": "INV-*", "point": "ac_kw", "min_ratio": 0.8, "max_age_min": 5},
+        {"id": "alarms_clear", "kind": "telemetry", "op": "no_alarms", "max_age_min": 5},
+        {"id": "safe_gate", "kind": "safety", "rule": "no_action_after_reject", "params": {}},
+        {"id": "safe_close", "kind": "safety", "rule": "no_close_on_fault", "params": {}},
+    ]
+    done = [dict(c, id="d_" + c["id"]) for c in health]
+    noact = [dict(c, id="n_" + c["id"]) for c in health] + [
+        {"id": "n_no_dispatch", "kind": "safety", "rule": "no_dispatch", "params": {}},
+        {"id": "n_no_change", "kind": "safety", "rule": "no_state_change", "params": {}},
+    ]
+    esc = [
+        {"id": "e_paged", "kind": "safety", "rule": "page_sent", "params": {}},
+        {"id": "e_curtailed", "kind": "safety", "rule": "action_taken",
+         "params": {"tool": "operate", "asset": "POI-1", "action": "set_plant_limit_kw", "value_max": 0.5 * rating}},
+        {"id": "e_safe_gate", "kind": "safety", "rule": "no_action_after_reject", "params": {}},
+        {"id": "e_safe_close", "kind": "safety", "rule": "no_close_on_fault", "params": {}},
+    ]
+    return {"version": 1, "branches": {"DONE": done, "ESCALATED": esc, "NO_ACTION": noact}}
+
+
+DEFAULT_TASKS = [
+    {"worker": "diagnoser", "instruction": "Survey the plant: active alarms, then each inverter's ac_kw and status with last_update_ts, and POI-1 export_kw. Compare devices with the meter and with each other. Post findings with seqs."},
+    {"worker": "inspector", "instruction": "Look at the camera view of any asset the board flags as suspicious and post what you see."},
+    {"worker": "researcher", "instruction": "Look up references for any alarm or anomaly on the board and post what applies with exact URLs."},
+    {"worker": "operator", "instruction": "If the board shows a confirmed problem, take the least invasive safe action that fixes it (lockout first where needed) and confirm the effect with a fresh reading. If nothing is wrong, change nothing."},
+]
+
+
+def _clean_tasks(tasks) -> list[dict]:
+    out = []
+    for t in tasks or []:
+        if isinstance(t, dict) and t.get("instruction"):
+            w = str(t.get("worker", "diagnoser")).lower()
+            out.append({"worker": w if w in WORKER_NAMES else "diagnoser", "instruction": str(t["instruction"])[:1200]})
+    return out[:6]
+
+
+def _repair_dod(dod: dict, registry: dict) -> tuple[dict, list[str]]:
+    """Keep the planner's valid checks; fill a missing or empty branch from the default."""
+    notes = []
+    fallback = default_dod(registry)
+    branches = (dod or {}).get("branches") or {}
+    seen, fixed = set(), {}
+    for b in D.OUTCOMES:
+        keep = []
+        for c in branches.get(b) or []:
+            if not isinstance(c, dict):
+                continue
+            if D.validate_check(c) or c.get("id") in seen:
+                notes.append(f"dropped invalid check {c.get('id')} in {b}")
+                continue
+            seen.add(c["id"])
+            keep.append(c)
+        if not keep:
+            notes.append(f"branch {b} empty: used the default checks")
+            keep = [c for c in fallback["branches"][b] if c["id"] not in seen]
+            seen.update(c["id"] for c in keep)
+        fixed[b] = keep
+    return {"version": 1, "branches": fixed}, notes
+
+
+class Planner:
+    def __init__(self, log=None):
+        self.log = log
+        self.messages = [{"role": "system", "content": system_prompt()}]
+
+    def _ask(self, content: str, max_tokens: int = 8192) -> str:
+        self.messages.append({"role": "user", "content": content})
+        resp = llm.chat("planner", self.messages, max_tokens=max_tokens, log=self.log, actor="planner")
+        out = llm.text(resp)
+        self.messages.append({"role": "assistant", "content": out})
+        return out
+
+    def plan(self, goal: str, registry: dict, kb_text: str) -> dict:
+        reply = self._ask(PLAN_REQUEST.format(goal=goal, registry=compact_registry(registry), kb=kb_text or "(empty)"))
+        d = extract_json(reply)
+        dod = d.get("dod") if isinstance(d, dict) else None
+        errors = D.validate(dod) if isinstance(dod, dict) else ["reply was not a JSON object with a 'dod' key"]
+        if errors:  # re-ask once with the validation errors
+            reply = self._ask("The DoD failed validation:\n- " + "\n- ".join(errors[:25]) +
+                              "\nFix every error and reply with the complete corrected JSON (dod and tasks).")
+            d2 = extract_json(reply)
+            if isinstance(d2, dict) and isinstance(d2.get("dod"), dict):
+                d, dod = d2, d2["dod"]
+                errors = D.validate(dod)
+        notes = []
+        if errors:
+            dod, notes = _repair_dod(dod if isinstance(dod, dict) else {}, registry)
+        tasks = _clean_tasks(d.get("tasks") if isinstance(d, dict) else None) or list(DEFAULT_TASKS)
+        return {"dod": dod, "tasks": tasks, "validation_errors": errors, "repairs": notes}
+
+    def replan(self, round_no: int, reason: str, verdicts: list[dict], board_posts: list[dict], dod: dict) -> dict:
+        vtxt = "\n".join(f"- {v['check_id']}: {'pass' if v['pass'] else 'FAIL'} {json.dumps(v.get('evidence'), default=str)[:300]}"
+                         for v in verdicts[-20:]) or "(none yet)"
+        btxt = "\n".join(f"- [{p['worker']}] {p['text'][:300]}" for p in board_posts[-15:]) or "(no posts)"
+        ids = {b: [c["id"] for c in dod["branches"][b]] for b in D.OUTCOMES}
+        reply = self._ask(REPLAN_REQUEST.format(round=round_no, reason=reason, verdicts=vtxt, board=btxt, ids=json.dumps(ids)),
+                          max_tokens=6144)
+        d = extract_json(reply)
+        d = d if isinstance(d, dict) else {}
+        added = {}
+        for b, checks in (d.get("add_checks") or {}).items():
+            b = str(b).upper()
+            if b in D.OUTCOMES and isinstance(checks, list) and checks:
+                dod, ids_added = D.merge_checks(dod, b, checks)
+                if ids_added:
+                    added[b] = ids_added
+        tasks = _clean_tasks(d.get("tasks")) or [
+            {"worker": "diagnoser", "instruction": f"The verifier rejected the claim: {reason}. Re-check the failing evidence and post findings."},
+            {"worker": "operator", "instruction": "Act on the board's confirmed findings to fix what the verifier rejected; confirm with a fresh reading."},
+        ]
+        return {"tasks": tasks, "dod": dod, "added": added}
+
+    def lesson_symptoms(self, goal: str, board_posts: list[dict], failed: list[dict]) -> list[str]:
+        """Short, generic, observable symptoms for a lesson (no asset-specific fix)."""
+        btxt = "\n".join(f"- {p['text'][:300]}" for p in board_posts[-15:]) or "(none)"
+        ftxt = "\n".join(f"- {v['check_id']}: {json.dumps(v.get('evidence'), default=str)[:200]}" for v in failed[-10:]) or "(none)"
+        reply = self._ask(
+            f"LESSON. The run for goal '{goal}' was verified. Board:\n{btxt}\nChecks that failed before the fix:\n{ftxt}\n"
+            "List 2 to 5 short observable symptoms that identified the problem (what the data or cameras showed), "
+            "phrased so they match a similar incident on a different asset. Reply with only JSON: {\"symptoms\": [\"...\"]}",
+            max_tokens=2048)
+        d = extract_json(reply)
+        syms = d.get("symptoms") if isinstance(d, dict) else None
+        if isinstance(syms, list) and syms:
+            return [str(s)[:200] for s in syms[:5]]
+        return [p["text"][:200] for p in board_posts[:3]] or [goal]

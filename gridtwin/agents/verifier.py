@@ -1,0 +1,153 @@
+"""Verifier: proves or refutes a claimed outcome by re-running the DoD itself.
+
+Isolation is enforced here, in code: a Verifier is built from the raw Toolbox, the event log
+(read only by the deterministic safety rules, never put in a prompt), the KB refs and the plant
+registry. `verify()` takes the goal, the outcome name and the DoD checks, nothing else. Checks
+pass through `dod.sanitize_check` first, so free text written by anyone else never reaches the
+verifier model. It runs on a different model family (gpt-oss-120b) from the workers.
+"""
+from __future__ import annotations
+
+import json
+
+from gridtwin import llm
+from gridtwin.agents import dod as D
+from gridtwin.agents.common import ActorToolbox, extract_json
+
+SYSTEM = """Reasoning: medium
+You are GridTwin's independent verifier for an autonomous solar-plant operations team. You never see what the team said or wrote. You see only the operator's goal, the definition of done (DoD) for the outcome being verified, and raw plant data you gather yourself.
+
+Your jobs:
+1. Audit: decide whether the DoD's checks actually prove the outcome for this goal. If an important part of the goal is not covered, add checks in the DoD language. You may add checks; you may never remove or weaken one.
+2. Judge evidence: when asked whether raw evidence (a vision model's reading of a fresh photo, or a cached reference text) establishes a specific claim, answer strictly. Absent, vague or contradictory evidence is a fail.
+
+The DoD language:
+{schema}
+
+Always reply with only JSON."""
+
+AUDIT_REQUEST = """AUDIT
+Goal: {goal}
+Outcome being verified: {outcome}
+Plant registry:
+{registry}
+Checks:
+{checks}
+
+Do these checks prove the outcome for this goal (fresh data, independent sources, the business metric, safety)? Add at most 3 checks only where coverage is missing, using asset ids, points and viewpoints from the registry. Reply with only JSON: {{"add": [...], "reason": "..."}}"""
+
+VISUAL_REQUEST = """EVIDENCE: VISUAL
+Claim to verify: {claim}
+A vision model looked at a photo taken just now from viewpoint {viewpoint} ({mode}) and returned:
+pass={vpass} confidence={conf}
+evidence: {evidence}
+Does this evidence establish the claim? Reply with only JSON: {{"pass": true|false, "reason": "..."}}"""
+
+CITATION_REQUEST = """EVIDENCE: CITATION
+Action: {action}
+Source URL: {url}
+Quoted text (found verbatim in the cached source): {quote}
+Cached source text: {text}
+Does this source support taking this action? Reply with only JSON: {{"pass": true|false, "reason": "..."}}"""
+
+
+def system_prompt() -> str:
+    return SYSTEM.format(schema=D.schema_text())
+
+
+class Verifier:
+    def __init__(self, toolbox, log, kb_dir=None, registry: dict | None = None):
+        self.tb = ActorToolbox(toolbox, "verifier")
+        self.log = log
+        self.kb_dir = kb_dir
+        self.registry = registry
+        self.messages = [{"role": "system", "content": system_prompt()}]
+        self.audited: set[str] = set()
+
+    # ----- model -----
+    def _ask(self, content: str, max_tokens: int = 4096) -> dict:
+        self.messages.append({"role": "user", "content": content})
+        try:
+            resp = llm.chat("verifier", self.messages, max_tokens=max_tokens, log=self.log, actor="verifier")
+            out = llm.text(resp)
+        except Exception as e:  # the verifier fails closed
+            out = json.dumps({"pass": False, "reason": f"verifier model unavailable: {type(e).__name__}"})
+        self.messages.append({"role": "assistant", "content": out})
+        d = extract_json(out)
+        return d if isinstance(d, dict) else {}
+
+    def _registry_text(self) -> str:
+        from gridtwin.agents.planner import compact_registry
+
+        if self.registry is None:
+            r = self.tb.call("list_assets", {})
+            self.registry = r if isinstance(r, dict) and "error" not in r else {}
+        return compact_registry(self.registry)
+
+    # ----- evidence judges (wrap the deterministic checks in dod.py) -----
+    def _visual(self, image_path: str, claim: str, viewpoint: str = "", mode: str = "") -> dict:
+        res = D.default_visual_fn()(image_path, claim) if hasattr(D, "default_visual_fn") else _vision_check(image_path, claim)
+        vpass, conf = bool(res.get("pass")), float(res.get("confidence") or 0.0)
+        out = {"pass": vpass, "confidence": conf, "evidence": res.get("evidence", "")}
+        if not vpass or conf < 0.7:
+            return out
+        j = self._ask(VISUAL_REQUEST.format(claim=claim, viewpoint=viewpoint, mode=mode, vpass=vpass, conf=round(conf, 2),
+                                            evidence=str(res.get("evidence", ""))[:800]), max_tokens=2048)
+        out["verifier"] = j.get("reason", "")
+        out["pass"] = bool(j.get("pass"))
+        return out
+
+    def _citation(self, check: dict, kb_dir) -> dict:
+        base = D.default_citation_fn(check, kb_dir) if hasattr(D, "default_citation_fn") else {"pass": False, "evidence": "no citation backend"}
+        if not base.get("pass"):
+            return base
+        text = ""
+        ev = base.get("evidence")
+        if isinstance(ev, dict):
+            text = str(ev.get("text") or ev.get("snippet") or "")
+        j = self._ask(CITATION_REQUEST.format(action=check.get("action", ""), url=check.get("url", ""), quote=check.get("quote", ""),
+                                              text=text[:1500]), max_tokens=2048)
+        return {"pass": bool(j.get("pass")), "evidence": {"cache": ev, "verifier": j.get("reason", "")}}
+
+    # ----- main entry -----
+    def audit(self, goal: str, outcome: str, checks: list[dict]) -> list[dict]:
+        clean = [D.sanitize_check(c) for c in checks]
+        j = self._ask(AUDIT_REQUEST.format(goal=goal, outcome=outcome, registry=self._registry_text(),
+                                           checks=json.dumps(clean, sort_keys=True, indent=1)))
+        added = []
+        for i, c in enumerate(j.get("add") or []):
+            if not isinstance(c, dict):
+                continue
+            c = dict(c, id=f"v_{outcome.lower()}_{len(clean) + i + 1}")
+            if not D.validate_check(c):
+                added.append(D.sanitize_check(c))
+            if len(added) >= 3:
+                break
+        return added
+
+    def verify(self, goal: str, outcome: str, checks: list[dict], audit: bool = True) -> dict:
+        """Returns {"pass", "verdicts", "added", "checks", "fraction"}."""
+        clean = [D.sanitize_check(c) for c in checks]
+        added = []
+        if audit and outcome not in self.audited:
+            self.audited.add(outcome)
+            added = self.audit(goal, outcome, clean)
+            clean = clean + added
+        viewpoint_of = {c.get("claim"): (c.get("viewpoint", ""), c.get("mode", "rgb")) for c in clean if c.get("kind") == "visual"}
+
+        def visual_fn(image_path, claim):
+            return self._visual(image_path, claim, *viewpoint_of.get(claim, ("", "")))
+
+        verdicts = D.evaluate(clean, self.tb, self.log, kb_dir=self.kb_dir, visual_fn=visual_fn,
+                              citation_fn=self._citation, actor="verifier")
+        n_pass = sum(1 for v in verdicts if v["pass"])
+        return {"pass": bool(verdicts) and n_pass == len(verdicts), "verdicts": verdicts, "added": added,
+                "checks": clean, "fraction": n_pass / max(1, len(verdicts))}
+
+
+def _vision_check(image_path: str, claim: str) -> dict:
+    try:
+        from gridtwin.vision import check  # workstream 3
+    except ImportError:
+        from gridtwin.agents.vision_fallback import check
+    return check(image_path, claim)

@@ -1,0 +1,5 @@
+- `plant/profile.md`: the plant's assets, ratings, telemetry points, controls and topology (no faults or fixes); regenerate with `python -m gridtwin.kb profile`.
+- `refs/`: cached web results, one JSON file per search query, so repeated or offline runs can cite the same URLs.
+- `lessons/`: one JSON file per lesson; lessons are written only from runs whose outcome the verifier checked, and a verified lesson supersedes older ones with the same symptoms and a different fix.
+- `snapshots/<name>/`: frozen copies of `plant/`, `refs/` and `lessons/` made with `python -m gridtwin.kb snapshot <name>`.
+- Benchmark runs read a frozen snapshot, never the live folders, so before/after numbers stay comparable.

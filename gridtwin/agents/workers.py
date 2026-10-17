@@ -1,0 +1,292 @@
+"""Workers: inspector, diagnoser, researcher, operator.
+
+Each worker is a tool-calling loop on the worker role. Its system prompt and tool list are module
+constants (byte-identical on every turn, so Crusoe's prefix cache hits), and its history is
+append-only for the whole run. History is saved after every completed step so a crashed worker
+can be restarted from where it was (`Team.run_task`).
+"""
+from __future__ import annotations
+
+import json
+import logging
+from pathlib import Path
+
+from gridtwin import llm
+from gridtwin.agents.board import BOARD_TOOLS, Board
+from gridtwin.agents.common import ActorToolbox, allow_c2_types, clip, extract_json, read_events
+from gridtwin.agents.research import SEARCH_WEB_SCHEMA, ResearchToolbox
+
+LOG = logging.getLogger("gridtwin.workers")
+
+try:  # the real tool surface (workstream 1); the stub is only for development
+    from gridtwin.sim.tools import TOOL_SCHEMAS
+except ImportError:  # pragma: no cover
+    from tests.agents.stubs import TOOL_SCHEMAS
+
+WORKERS = ("inspector", "diagnoser", "researcher", "operator")
+STATE_CHANGING = {"operate", "dispatch_tech", "page_human"}
+
+INSPECT_IMAGE_SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "inspect_image",
+        "description": "Ask the vision model a question about a photo returned by get_camera_view. Pass its image_path exactly.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string"},
+                "question": {"type": "string", "description": "What to look for, e.g. 'Is the display lit? Any warning LEDs?'"},
+            },
+            "required": ["image_path", "question"],
+            "additionalProperties": False,
+        },
+    },
+}
+
+COMMON = """You are the {role} on GridTwin's autonomous operations team for a 5 MWac solar plant: inverters INV-1..INV-4 (1250 kWac each) feed breakers 52-I1..52-I4, a 34.5 kV collector bus, main breaker 52-M and step-up transformer XFMR-1, then the POI-1 revenue meter. There is also a battery (BESS-1), a met station (MET-1), PV blocks B1..B4 and combiner boxes CB-<block>.<n>.
+
+You work through tools on the live plant (SCADA telemetry, alarms, fixed cameras, field diagnostics, control commands, technician dispatch) and share what you learn on the team board. A separate verifier will later check the team's claims against the plant itself, so only evidence counts.
+
+How to work:
+- Evidence over assumptions. Device telemetry can be frozen or wrong: compare each reading's last_update_ts with "now", and cross-check what devices report about themselves against independent sources (the POI-1 revenue meter, peers, cameras, diagnostics). A reading you cannot date is not evidence.
+- Call read_board before starting a new line of investigation and do not repeat work already posted. Post every finding with post_finding, citing the event seq numbers (the "seq" field of tool results) that back it.
+- Tool calls are limited for the whole team (about 60, verification included). Read several points in one read_telemetry call, use short windows, never repeat a call whose answer you already have, and use wait only when something needs time to take effect.
+- Safety: every operate and dispatch_tech passes a safety gate. If it refuses, change course; if it asks for confirmation, gather the missing evidence first. Work that requires de-energized equipment needs its feeding breaker opened first (lockout) and closed again once the work is complete. Never close, restart or reset onto a suspected fault.
+- When your task is done, reply with a short plain-text report (what you checked, what you found, the seq numbers) and no tool call.
+
+Your role:
+{duty}"""
+
+DUTIES = {
+    "inspector": "You inspect equipment with the fixed cameras (get_camera_view, rgb or thermal) and read the photos with inspect_image. Describe what you see factually: displays, indicator LEDs, leaks, staining, damage, heat. You do not change plant state.",
+    "diagnoser": "You find root causes from SCADA telemetry, alarms and field diagnostics. Compare inverters with each other and with the POI-1 meter, check data freshness, and run a diagnostic when the data alone cannot settle a question. You do not change plant state.",
+    "researcher": "You look up OEM manuals, alarm codes and standards with search_web and post what applies, with exact URLs and short exact quotes. Never invent a URL or a quote; if a search finds nothing useful, say so. You do not change plant state.",
+    "operator": "You are the only worker allowed to change plant state (operate, dispatch_tech, page_human). Act on the evidence on the board and in your task, choose the least invasive safe action, follow lockout, wait for technician tickets to complete, and confirm the effect with a fresh reading. Curtail to a safe limit when equipment is at risk, and page a human when no safe fix exists, with a brief that says what is wrong, what was done and what is needed.",
+}
+
+SYSTEM = {name: COMMON.format(role=name, duty=DUTIES[name]) for name in WORKERS}
+TOOLS = {
+    "inspector": TOOL_SCHEMAS + BOARD_TOOLS + [INSPECT_IMAGE_SCHEMA],
+    "diagnoser": TOOL_SCHEMAS + BOARD_TOOLS,
+    "researcher": TOOL_SCHEMAS + BOARD_TOOLS + [SEARCH_WEB_SCHEMA],
+    "operator": TOOL_SCHEMAS + BOARD_TOOLS,
+}
+
+CLAIM_INSTRUCTION = """ROUND REVIEW for the goal: {goal}
+
+Team board:
+{board}
+{feedback}
+Decide the team's status. If you still need to act (for example close a breaker after completed work, or page a human), make those tool calls first. Then reply with only this JSON:
+{{"status": "DONE" | "ESCALATED" | "NO_ACTION" | "CONTINUE", "summary": "...", "next_tasks": [{{"worker": "inspector|diagnoser|researcher|operator", "instruction": "..."}}]}}
+DONE = the problem is fixed and the plant is healthy now. ESCALATED = a human has been paged because no safe fix exists; the problem is not resolved. NO_ACTION = nothing is wrong and nothing was changed. CONTINUE = more work is needed (give next_tasks)."""
+
+
+class WorkerKilled(RuntimeError):
+    """Raised by --chaos to simulate a worker process dying mid-task."""
+
+
+class Chaos:
+    """Kill one worker once, at a given step of its N-th task."""
+
+    def __init__(self, worker: str = "diagnoser", at_step: int = 1):
+        self.worker, self.at_step, self.fired = worker, at_step, False
+
+    def maybe_kill(self, worker: str, step: int):
+        if not self.fired and worker == self.worker and step >= self.at_step:
+            self.fired = True
+            raise WorkerKilled(f"chaos: worker {worker} killed at step {step}")
+
+
+def _vision_describe(image_path: str, question: str) -> str:
+    try:
+        from gridtwin.vision import describe  # workstream 3
+    except ImportError:
+        from gridtwin.agents.vision_fallback import describe
+    return describe(image_path, question)
+
+
+class Worker:
+    def __init__(self, name: str, toolbox, log, board: Board, kb_dir, run_dir: Path, chaos: Chaos | None = None):
+        assert name in WORKERS, name
+        self.name, self.actor = name, f"worker:{name}"
+        self.log, self.board, self.chaos = log, board, chaos
+        self.tools = TOOLS[name]
+        self.messages = [{"role": "system", "content": SYSTEM[name]}]
+        if name == "researcher":
+            self.tb = ResearchToolbox(toolbox, log, kb_dir, self.actor)
+        else:
+            self.tb = ActorToolbox(toolbox, self.actor)
+        self.path = Path(run_dir) / "workers" / f"{name}.json"
+        self.actions: list[tuple[str, str]] = []  # (tool, canonical args) for loop detection
+        self.tool_calls = 0
+
+    # ----- persistence -----
+    def save(self):
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = self.path.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"messages": self.messages, "actions": self.actions, "tool_calls": self.tool_calls}, default=str))
+        tmp.replace(self.path)
+
+    def load(self) -> bool:
+        if not self.path.is_file():
+            return False
+        d = json.loads(self.path.read_text())
+        self.messages, self.tool_calls = d["messages"], d.get("tool_calls", 0)
+        self.actions = [tuple(a) for a in d.get("actions", [])]
+        return True
+
+    def brief(self, text: str):
+        """One-time context (goal, plant registry, lessons) appended right after the system prompt."""
+        self.messages.append({"role": "user", "content": text})
+        self.save()
+
+    # ----- tools -----
+    def _dispatch(self, name: str, args: dict) -> dict:
+        board_result = self.board.handle(self.name, name, args)
+        if board_result is not None:
+            return board_result
+        if name == "inspect_image":
+            if self.name != "inspector":
+                return {"error": "inspect_image is the inspector's tool"}
+            try:
+                return {"answer": _vision_describe(args.get("image_path", ""), args.get("question", "Describe the equipment state."))}
+            except Exception as e:
+                return {"error": f"vision failed: {e}"}
+        if name in STATE_CHANGING and self.name != "operator":
+            return {"error": f"only the operator changes plant state; post a finding recommending '{name}' instead"}
+        self.actions.append((name, json.dumps(args, sort_keys=True)))
+        self.tool_calls += 1
+        result = self.tb.call(name, args)
+        seq = None
+        evs = read_events(self.log)
+        for e in reversed(evs[-4:]):
+            if e.get("type") == "tool_result":
+                seq = e.get("seq")
+                break
+        return {"seq": seq, "result": result}
+
+    # ----- loop -----
+    def step(self) -> str | None:
+        """One model turn. Returns the final text when the model stops calling tools, else None."""
+        resp = llm.chat("worker", self.messages, max_tokens=4096, tools=self.tools, log=self.log, actor=self.actor)
+        msg = resp.choices[0].message
+        calls = list(msg.tool_calls or [])
+        assistant = {"role": "assistant", "content": msg.content or ""}
+        if calls:
+            assistant["tool_calls"] = [
+                {"id": c.id, "type": "function", "function": {"name": c.function.name, "arguments": c.function.arguments or "{}"}}
+                for c in calls
+            ]
+        new = [assistant]
+        for c in calls:
+            try:
+                args = json.loads(c.function.arguments or "{}")
+                if not isinstance(args, dict):
+                    args = {}
+            except json.JSONDecodeError:
+                args = {}
+            result = self._dispatch(c.function.name, args)
+            new.append({"role": "tool", "tool_call_id": c.id, "content": clip(result)})
+        self.messages.extend(new)
+        self.save()
+        if not calls:
+            return msg.content or ""
+        return None
+
+    def run_task(self, instruction: str, max_steps: int = 8, resume: bool = False) -> str:
+        if not resume:
+            self.messages.append({"role": "user", "content": f"TASK: {instruction}"})
+            self.save()
+            start = 0
+        else:  # count steps already taken for this task
+            start = 0
+            for m in reversed(self.messages):
+                if m["role"] == "user":
+                    break
+                if m["role"] == "assistant":
+                    start += 1
+        for i in range(start, max_steps):
+            if self.chaos:
+                self.chaos.maybe_kill(self.name, i)
+            out = self.step()
+            if out is not None:
+                return out
+        # step cap: ask for a report without executing anything else
+        self.messages.append({"role": "user", "content": "Step limit for this task reached. Reply now with your report; do not call tools."})
+        resp = llm.chat("worker", self.messages, max_tokens=2048, tools=self.tools, log=self.log, actor=self.actor)
+        msg = resp.choices[0].message
+        calls = list(msg.tool_calls or [])
+        assistant = {"role": "assistant", "content": msg.content or ""}
+        if calls:
+            assistant["tool_calls"] = [
+                {"id": c.id, "type": "function", "function": {"name": c.function.name, "arguments": c.function.arguments or "{}"}}
+                for c in calls
+            ]
+        self.messages.append(assistant)
+        for c in calls:
+            self.messages.append({"role": "tool", "tool_call_id": c.id, "content": json.dumps({"error": "step limit reached; not executed"})})
+        self.save()
+        return msg.content or "(step limit reached without a report)"
+
+
+class Team:
+    """The four workers for one run, with restart-from-history recovery."""
+
+    def __init__(self, toolbox, log, kb_dir, run_dir: Path, briefing: str, chaos: Chaos | None = None, max_restarts: int = 2):
+        self.toolbox, self.log, self.kb_dir, self.run_dir = toolbox, log, kb_dir, Path(run_dir)
+        allow_c2_types(log)
+        self.board = Board(log)
+        self.briefing, self.chaos, self.max_restarts = briefing, chaos, max_restarts
+        self.workers: dict[str, Worker] = {}
+        self.restarts = 0
+
+    def worker(self, name: str) -> Worker:
+        if name not in self.workers:
+            w = Worker(name, self.toolbox, self.log, self.board, self.kb_dir, self.run_dir, self.chaos)
+            w.brief(self.briefing)
+            self.workers[name] = w
+        return self.workers[name]
+
+    def run_task(self, worker: str, instruction: str, max_steps: int = 8) -> str:
+        worker = worker if worker in WORKERS else "diagnoser"
+        w = self.worker(worker)
+        resume = False
+        for attempt in range(self.max_restarts + 1):
+            try:
+                return w.run_task(instruction, max_steps=max_steps, resume=resume)
+            except Exception as e:  # crash, timeout, 429 storm: restart from saved history
+                if attempt >= self.max_restarts:
+                    self.log.emit("supervisor", "supervisor", {"decision": "worker_failed", "reason": f"{worker}: {type(e).__name__}: {e}"})
+                    return f"(worker {worker} failed: {type(e).__name__})"
+                self.restarts += 1
+                self.log.emit("supervisor", "supervisor", {
+                    "decision": "restart", "reason": f"worker {worker} crashed ({type(e).__name__}: {e}); restarting from saved history",
+                })
+                fresh = Worker(worker, self.toolbox, self.log, self.board, self.kb_dir, self.run_dir, self.chaos)
+                fresh.load()
+                self.workers[worker] = w = fresh
+                resume = True
+        return ""
+
+    def claim(self, goal: str, feedback: str = "", max_steps: int = 4) -> dict:
+        posts = self.board.read()
+        board = "\n".join(f"- [{p['worker']}] {p['text']} (seqs {p.get('evidence')})" for p in posts) or "(no posts)"
+        text = self.run_task("operator", CLAIM_INSTRUCTION.format(goal=goal, board=board, feedback=feedback), max_steps=max_steps)
+        d = extract_json(text) if text else None
+        if not isinstance(d, dict):
+            d = {"status": "CONTINUE", "summary": (text or "")[:500], "next_tasks": []}
+        status = str(d.get("status", "CONTINUE")).upper().replace(" ", "_")
+        if status not in ("DONE", "ESCALATED", "NO_ACTION", "CONTINUE"):
+            status = "CONTINUE"
+        tasks = [t for t in d.get("next_tasks") or [] if isinstance(t, dict) and t.get("instruction")]
+        return {"status": status, "summary": str(d.get("summary", ""))[:1500], "next_tasks": tasks}
+
+    def actions(self) -> list[tuple[str, str]]:
+        out = []
+        for w in self.workers.values():
+            out.extend(w.actions)
+        return out
+
+    def tool_calls(self) -> int:
+        return sum(w.tool_calls for w in self.workers.values())
