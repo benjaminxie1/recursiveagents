@@ -14,13 +14,18 @@ from gridtwin.agents.common import extract_json, num
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MAX_EDGE_PX = 1024
 
+# Same text as gridtwin.vision.CHECK_PROMPT (C6). Copied, not imported: this module only runs when gridtwin.vision
+# cannot be imported. Evidence comes before the verdict: asked for the verdict first, Omni confirmed "no X visible"
+# claims without looking (it passed "no oil" on a photo it described as oil-stained when asked directly).
 CHECK_PROMPT = (
     "You are inspecting one photo taken at a solar power plant (panels, cabinets, breakers, "
     "transformers or similar equipment). Decide whether the photo supports the claim below. "
-    "Judge only what is visible. If the photo is unclear or does not show the subject of the claim, "
+    "Judge only what is visible. Look over the whole photo first, including small details such as stains, "
+    "streaks, discoloration, readings and labels. If the claim says something is absent or normal, it fails "
+    "when you can see any sign of that thing. If the photo is unclear or does not show the subject of the claim, "
     "answer pass false with low confidence.\n"
-    'Reply with JSON only: {"pass": true or false, "confidence": number from 0 to 1, '
-    '"evidence": "one or two sentences on what you see that decides it"}\n'
+    'Reply with JSON only, writing the evidence before the verdict: {"evidence": "one or two sentences on what '
+    'you see that decides it", "pass": true or false, "confidence": number from 0 to 1}\n'
     "Claim: "
 )
 DESCRIBE_PROMPT = (

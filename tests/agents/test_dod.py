@@ -779,7 +779,7 @@ def test_vision_fallback_check(monkeypatch, tmp_path):
 
     def fake_chat(role, messages, max_tokens=2048, **kw):
         captured.update(role=role, messages=messages, max_tokens=max_tokens)
-        return _Resp('Sure. ```json\n{"pass": true, "confidence": 0.82, "evidence": "green"}\n```')
+        return _Resp('Sure. ```json\n{"evidence": "green", "pass": true, "confidence": 0.82}\n```')
 
     monkeypatch.setattr(llm, "chat", fake_chat)
     out = vision_fallback.check(str(img), "the panel is green")
@@ -790,7 +790,15 @@ def test_vision_fallback_check(monkeypatch, tmp_path):
     assert url.startswith("data:image/jpeg;base64,")
     with Image.open(io.BytesIO(base64.b64decode(url.split(",", 1)[1]))) as im:
         assert max(im.size) <= 1024 and im.format == "JPEG"
-    assert "the panel is green" in next(p for p in parts if p["type"] == "text")["text"]
+    text = next(p for p in parts if p["type"] == "text")["text"]
+    assert "the panel is green" in text
+    assert text.index('"evidence"') < text.index('"pass"')  # evidence before the verdict, as in gridtwin.vision
+
+    # a reply in the old verdict-first order still parses
+    old_order = '{"pass": false, "confidence": 0.9, "evidence": "oil stain"}'
+    monkeypatch.setattr(llm, "chat", lambda *a, **k: _Resp(old_order))
+    assert vision_fallback.check(str(img), "no oil visible") == {"pass": False, "confidence": 0.9,
+                                                                 "evidence": "oil stain"}
 
     monkeypatch.setattr(llm, "chat", lambda *a, **k: _Resp("no idea"))
     assert vision_fallback.check(str(img), "x") == {"pass": False, "confidence": 0.0,
