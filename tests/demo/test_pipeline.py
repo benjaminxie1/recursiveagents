@@ -224,3 +224,9 @@ def test_the_diagnoser_opens_the_stale_suspect_in_the_twin_before_diagnosing(two
     assert twin[0]["seq"] < dx["seq"] and twin[0]["data"]["twin_url"].startswith("twin.html?scene=")
     # (runs in a temp folder have absolute image paths, which the validator flags separately)
     assert not [p for p in validate_run(runs / "r1") if "demo.twin" in p or "unknown demo event" in p]
+
+
+def test_the_twin_shows_case_data_only_for_the_scenario_it_was_made_for():
+    from gridtwin.demo.pipeline import twin_url
+    assert twin_url("s06_stale_scada", "r1").endswith("&run=r1&case=assets/demo/s06_case")
+    assert twin_url("s06b_stale_scada_inv2", "r2").endswith("&run=r2&case=")  # empty: no s06 data under INV-2
