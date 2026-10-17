@@ -224,10 +224,13 @@ class Demo:
             self.emit("diagnoser", "demo.sensor", s)
         suspects = [s["asset"] for s in sensors if s["stale"]] or [INVERTERS[0]]
         diags = {a: self.tb.call("run_diagnostic", {"asset": a, "test": "comms_ping"}) for a in suspects}
-        healthy = next((s["asset"] for s in sensors if not s["stale"]), None)
         shots = [self.photo(self.vps_for(a)[0], "diagnoser", 0, asset=a) for a in suspects if self.vps_for(a)]
-        if healthy and self.vps_for(healthy):
-            shots.append(self.photo(self.vps_for(healthy)[0], "diagnoser", 0, asset=healthy))
+        # one healthy peer for contrast, preferably seen through a display camera (the question is "is the display lit?")
+        healthy = [s["asset"] for s in sensors if not s["stale"]]
+        peer = (next(((a, vp) for a in healthy for vp in self.vps_for(a) if "display" in vp), None)
+                or next(((a, self.vps_for(a)[0]) for a in healthy if self.vps_for(a)), None))
+        if peer:
+            shots.append(self.photo(peer[1], "diagnoser", 0, asset=peer[0]))
         q = "Is the inverter's display or touchscreen lit and showing readings? Describe what you see."
         with ThreadPoolExecutor(max_workers=max(1, len(shots))) as ex:
             descs = list(ex.map(lambda s: self.eyes.describe(s["image"], s["asset"], q) if s["image"] else s["error"], shots))
