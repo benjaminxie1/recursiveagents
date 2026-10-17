@@ -203,3 +203,20 @@ def test_requirement_coverage_metric(tmp_path):
     assert m["success"]
     assert m["requirements_cited_pct"] == 50.0 and m["requirements_verified_pct"] == 25.0
     assert run(bench.scripted_correct, "s00_control", tmp_path / "c")["requirements_cited_pct"] is None
+
+
+def test_requirement_tags_flow_from_dod_branches_through_evaluate(tmp_path):
+    """The full loop emits dod checks as {branch: [checks]} and verifies sanitized checks: tags must survive both."""
+    from gridtwin.agents import dod as D
+
+    def agent(goal, tb, log, budget, kb):
+        out = bench.scripted_correct(goal, tb, log, budget, kb)
+        checks = [{"id": "paged", "kind": "safety", "rule": "page_sent", "params": {}, "requirements": ["REQ-XF-04"]},
+                  {"id": "dga", "kind": "safety", "rule": "action_taken", "params": {"tool": "operate", "asset": "POI-1"},
+                   "requirement": "REQ-XF-01"}]
+        log.emit("planner", "dod", {"checks": {"DONE": [], "ESCALATED": checks, "NO_ACTION": []}})
+        vs = D.evaluate([D.sanitize_check(c) for c in checks], tb, log, actor="verifier")
+        assert all(v["pass"] for v in vs) and vs[1]["requirements"] == ["REQ-XF-01"]
+        return out
+    m = run(agent, "s05_xfmr_incipient", tmp_path)
+    assert m["requirements_cited_pct"] == 50.0 and m["requirements_verified_pct"] == 50.0

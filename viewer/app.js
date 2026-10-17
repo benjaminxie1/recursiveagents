@@ -9,6 +9,13 @@ const short = (v, n = 140) => {
   return s && s.length > n ? s.slice(0, n - 1) + '…' : s ?? '';
 };
 const seqLink = (seq) => `<a class="seq" href="#ev-${seq}" data-seq="${seq}">#${seq}</a>`;
+// The planner's dod groups checks by outcome ({DONE: [...], ESCALATED: [...], NO_ACTION: [...]});
+// older scripted logs carry one flat list, read here as a single branch.
+const dodBranches = (dod) => {
+  const c = dod?.data?.checks;
+  return !c ? null : Array.isArray(c) ? { checks: c } : c;
+};
+const dodChecks = (dod) => Object.values(dodBranches(dod) || {}).flat();
 
 const params = new URLSearchParams(location.search);
 const replay = params.get('replay') === '1';
@@ -43,7 +50,7 @@ function assetsIn(obj) {
 
 // ---------- fold the event log into what each panel shows ----------
 function derive(evs) {
-  const S = { goal: null, dod: null, verdicts: {}, nVerdicts: 0, pages: [], final: null, judge: null,
+  const S = { goal: null, dod: null, claim: null, verdicts: {}, nVerdicts: 0, pages: [], final: null, judge: null,
     findings: [], lessons: [], usage: { prompt: 0, cached: 0, completion: 0, usd: 0, n: 0 }, assets: {}, photos: [] };
   const touch = (raw, e, status, note) => {
     const id = rollup(raw);
@@ -55,12 +62,13 @@ function derive(evs) {
     if (note) a.note = note;
     return a;
   };
-  const checkById = (id) => (S.dod?.data?.checks || []).find((c) => (c.id ?? c.check_id) === id);
+  const checkById = (id) => dodChecks(S.dod).find((c) => (c.id ?? c.check_id) === id);
   for (const e of evs) {
     const d = e.data || {};
     switch (e.type) {
       case 'goal': S.goal = e; break;
       case 'dod': S.dod = e; break;
+      case 'claim': S.claim = e; break;
       case 'tool_call':
         assetsIn(d.args).forEach((a) => touch(a, e, 'inspected', `${d.name} ${a}`));
         break;
@@ -181,7 +189,11 @@ function describe(e) {
   const d = e.data || {};
   switch (e.type) {
     case 'goal': return `Goal: “${esc(d.text)}”`;
-    case 'dod': return `Definition of done: ${(d.checks || []).length} checks (${[...new Set((d.checks || []).map((c) => c.kind))].map(esc).join(', ')})`;
+    case 'dod': {
+      const br = dodBranches(e) || {};
+      const kinds = [...new Set(dodChecks(e).map((c) => c.kind))].map(esc).join(', ');
+      return `Definition of done: ${Object.entries(br).map(([b, cs]) => `${esc(b)} ${cs.length}`).join(' · ')} checks (${kinds})`;
+    }
     case 'tool_call': return `${esc(d.name)}(${esc(short(d.args, 90))})`;
     case 'tool_result': {
       const r = d.result || {};
@@ -223,11 +235,20 @@ function renderTimeline() {
 }
 
 function renderDod(S) {
-  const checks = S.dod?.data?.checks;
-  if (!checks) {
+  const branches = dodBranches(S.dod);
+  if (!branches) {
     $('#dod').innerHTML = '<p class="empty">No definition of done in this log. In a full-loop run the planner emits it as a <code>dod</code> event before any worker acts, and the verifier fills in each check here.</p>';
     return;
   }
+  // Show the branch the team is being held to: the final status, else the latest claim, else DONE.
+  const names = Object.keys(branches);
+  const want = S.final?.data?.status ?? S.claim?.data?.status;
+  const branch = names.includes(want) ? want : names.includes('DONE') ? 'DONE' : names[0];
+  const why = S.final && branch === want ? 'final status' : S.claim && branch === want ? 'claimed' : 'no claim yet';
+  const checks = branches[branch] || [];
+  const others = names.filter((b) => b !== branch).map((b) => `${esc(b)} ${branches[b].length}`).join(' · ');
+  const head = Array.isArray(S.dod.data.checks) ? ''
+    : `<div class="muted">Branch <b>${esc(branch)}</b> (${why})${others ? ` · also planned: ${others}` : ''}</div>`;
   let pass = 0;
   const rows = checks.map((c) => {
     const id = c.id ?? c.check_id;
@@ -239,7 +260,7 @@ function renderDod(S) {
     return `<li class="${st}"><span class="mark">${st === 'pass' ? '✓' : st === 'fail' ? '✗' : '·'}</span><div><span class="kind">${esc(c.kind)}</span><b>${esc(id)}</b> ${esc(text)}${ev}</div></li>`;
   });
   const pct = checks.length ? Math.round((100 * pass) / checks.length) : 0;
-  $('#dod').innerHTML = `<div class="muted">Requirements verified: ${pass}/${checks.length} (${pct}%) · ${seqLink(S.dod.seq)}</div>
+  $('#dod').innerHTML = `${head}<div class="muted">Requirements verified: ${pass}/${checks.length} (${pct}%) · ${seqLink(S.dod.seq)}</div>
     <div class="bar"><i style="width:${pct}%"></i></div><ul class="checks">${rows.join('')}</ul>`;
 }
 

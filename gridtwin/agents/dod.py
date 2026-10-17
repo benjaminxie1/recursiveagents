@@ -72,6 +72,9 @@ _KIND_KEYS = {
     "citation": ("action", "url", "quote"),
     "safety": ("rule", "params"),
 }
+# Requirement ids from the plant's catalog (list_requirements). Only ids matching this survive sanitize, so the
+# tag never carries free text to the verifier model.
+REQ_ID_RE = re.compile(r"^REQ-[A-Z]+-\d+$")
 _SAFETY_PARAMS = {
     "page_sent": ("min_severity",),
     "action_taken": ("tool", "asset", "action", "work_order", "value_max", "value_min"),
@@ -106,6 +109,8 @@ DOD_SCHEMA = {
                 "id": {"type": "string", "description": "unique across the whole DoD"},
                 "kind": {"enum": list(KINDS)},
                 "desc": {"type": "string", "description": "free text; ignored by the verifier"},
+                "requirements": {"type": "array", "items": {"type": "string", "pattern": REQ_ID_RE.pattern},
+                                 "description": "catalog requirement ids this check gives evidence for"},
             },
             "oneOf": [
                 {"$ref": "#/$defs/threshold"}, {"$ref": "#/$defs/balance"}, {"$ref": "#/$defs/peer"},
@@ -186,7 +191,7 @@ _SCHEMA_TEXT = """\
 Definition of done (DoD) format. Reply with JSON only:
 {"version":1,"branches":{"DONE":[checks],"ESCALATED":[checks],"NO_ACTION":[checks]}}
 All three branches are required lists; DONE and NO_ACTION need at least one check. The verifier runs the branch that matches the claimed outcome, and every check in it must pass.
-Each check: "id" (unique across the whole DoD), "kind", optional "desc" (ignored by the verifier). Asset fields take an id, a glob like "INV-*", or a list of ids.
+Each check: "id" (unique across the whole DoD), "kind", optional "desc" (ignored by the verifier), optional "requirements" (list of requirement ids from the catalog, like ["REQ-INV-01"], that this check gives evidence for). Asset fields take an id, a glob like "INV-*", or a list of ids.
 
 kind "telemetry": field "op", and "max_age_min" (number, 0 < x <= 120) is REQUIRED on every op. A reading whose last_update_ts is older than max_age_min, or cannot be dated, fails.
 - op "threshold": asset, point, cmp (>= <= > < == !=), value = number | {"rated": asset-or-glob, "factor": f} (sum of rated_kw times f) | {"point": {"asset": a, "point": p}, "factor": f} (another live reading times f) | string (only with == or !=). Optional "hold_min" (0..30): the condition must hold for every sample over that many sim-minutes (the verifier waits).
@@ -447,6 +452,9 @@ def sanitize_check(check) -> dict:
     if not isinstance(check, dict):
         return {}
     out = {k: check[k] for k in ("id", "kind") if k in check}
+    reqs = requirement_ids(check)
+    if reqs:
+        out["requirements"] = reqs
     kind = check.get("kind")
     if kind == "telemetry":
         if "op" in check:
@@ -466,6 +474,20 @@ def sanitize_check(check) -> dict:
     return out
 
 
+def requirement_ids(check) -> list[str]:
+    """Catalog ids from `requirements` (list) or `requirement` (string or list), deduped, in order."""
+    raw = []
+    for k in ("requirements", "requirement"):
+        v = check.get(k) if isinstance(check, dict) else None
+        raw += v if isinstance(v, list) else [v]
+    out = []
+    for r in raw:
+        r = r.strip().upper() if isinstance(r, str) else None
+        if r and REQ_ID_RE.match(r) and r not in out:
+            out.append(r)
+    return out
+
+
 def _all_ids(dod) -> set:
     ids = set()
     for lst in (dod.get("branches") or {}).values():
@@ -477,6 +499,7 @@ def _all_ids(dod) -> set:
 def _structure(check) -> str:
     s = sanitize_check(check)
     s.pop("id", None)
+    s.pop("requirements", None)
     return json.dumps(s, sort_keys=True, default=str)
 
 
@@ -1424,6 +1447,9 @@ def evaluate(checks, toolbox, log, kb_dir=None, visual_fn=None, citation_fn=None
             "pass": bool(passed),
             "evidence": evidence,
         }
+        reqs = requirement_ids(c)
+        if reqs:
+            v["requirements"] = reqs
         verdicts.append(v)
         if emit and log is not None and callable(getattr(log, "emit", None)):
             try:

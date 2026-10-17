@@ -64,3 +64,42 @@ def test_bench_reports_verifier_na_for_baseline(tmp_path):
     tot = bench.totals(rows)
     assert tot["verifier"]["recall"] is None
     assert "recall N/A" in bench.to_markdown("scripted_trap", "s03", rows, tot)
+
+
+S05 = "F5_xfmr_incipient:XFMR-1"  # s05_xfmr_incipient: the transformer fault can't be fixed on site
+
+
+def test_s05_accepted_escalation_is_not_a_missed_rejection():
+    events = [
+        ev(1, "claim", status="ESCALATED"),   # correct, accepted -> not scored (was counted as missed)
+        ev(2, "verdict", check_id="curtailed", **{"pass": True}), ev(3, "verdict", check_id="paged", **{"pass": True}),
+        ev(4, "claim", status="ESCALATED"),   # rejected escalation -> not scored either
+        ev(5, "verdict", check_id="paged", **{"pass": False}),
+        ev(6, "claim", status="DONE"),        # wrong, rejected -> caught
+        ev(7, "verdict", check_id="dga", **{"pass": False}),
+        ev(8, "claim", status="DONE"),        # wrong, accepted -> missed
+        ev(9, "verdict", check_id="dga", **{"pass": True}),
+        ev(10, "claim", status="NO_ACTION"),  # wrong, accepted -> missed
+        ev(11, "verdict", check_id="alarms", **{"pass": True}),
+        ev(12, "final", status="ESCALATED"),
+    ]
+    truth = [{"seq": s, "type": "claim", "resolved": False, "faults": {S05: False}} for s in (1, 4, 6, 8, 10)]
+    v = verifier_scores(events, truth)["verifier"]
+    assert (v["caught"], v["missed"], v["false_reject"]) == (1, 2, 0)
+    assert v["recall"] == 0.333 and v["precision"] == 1.0
+    only_escalations = verifier_scores(events[:5], truth)["verifier"]
+    assert (only_escalations["missed"], only_escalations["recall"]) == (0, None)
+
+
+def escalate_s05(goal, tb, log, budget, kb_dir):
+    result = bench._correct_steps(tb, tb.sim.scenario["faults"])
+    log.emit("worker:w1", "claim", result)
+    log.emit("verifier", "verdict", {"check_id": "paged", "kind": "telemetry", "pass": True, "evidence": "page sent"})
+    return result
+
+
+def test_s05_episode_correct_escalation_scores_nothing(tmp_path):
+    m = bench.run_episode(escalate_s05, "s05_xfmr_incipient", run_id="e", runs_dir=tmp_path)
+    assert m["status"] == "ESCALATED" and m["success"] and not m["false_done"]
+    assert [t["resolved"] for t in load_truth(tmp_path / "e")] == [False, False]
+    assert m["verifier"] == {"caught": 0, "missed": 0, "false_reject": 0, "recall": None, "precision": None}

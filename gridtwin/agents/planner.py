@@ -26,6 +26,7 @@ Principles:
 - Ratings live on the inverters: for plant-relative values use {{"rated": "INV-*", "factor": f}}.
 - Keep each branch to 4 to 8 checks. Prefer the cross-checking ops (fresh, balance, peer, no_alarms) over per-asset thresholds, and never compare a state string unless you know its exact value from the registry. Every check must pass on a healthy plant; a check a correct outcome could fail is a bug.
 - Prefer checks that a lazy or mistaken fix would fail. Put hold_min on the key output checks so a fix that only works for a few minutes fails.
+- Tag every check with "requirements": the ids from the requirements catalog it gives evidence for (a check on "INV-*" evidences the INV requirements for whichever inverter is at fault). Tag generously; across the DoD, try to cover every requirement on the assets the goal could involve.
 - Use only asset ids, points and viewpoints from the plant registry you are given. Only add a citation check for a URL and quote that appear verbatim in the references you are given: copy the url exactly as written, including any #fragment, and copy the quote word for word from that reference's text.
 - Lessons from verified past incidents are strong hints, not proof: have the team confirm the symptoms first, then apply what worked.
 - Tasks: 2 to 4, ordered so evidence comes before action. The whole run, verification included, has about 60 tool calls, so be economical. The first round establishes facts: one diagnoser survey (active alarms, then the meter and each inverter in a single read each, checking freshness) and camera looks only at assets that the data or alarms point to; never photograph everything. Give the operator a task only for an action you can already justify; you will see the team's findings and assign the fix next.
@@ -40,6 +41,9 @@ PLAN_REQUEST = """GOAL: {goal}
 
 PLANT REGISTRY (from list_assets):
 {registry}
+
+REQUIREMENTS CATALOG (from list_requirements; codes and standards x components, each must be proven with evidence):
+{requirements}
 
 TOOLS THE WORKERS HAVE:
 {tools}
@@ -107,6 +111,20 @@ def compact_registry(registry: dict) -> str:
     return "\n".join(lines) or "(registry unavailable)"
 
 
+def compact_requirements(result: dict) -> str:
+    """One line per requirement: id (asset prefix): title [standards; how it is verified]."""
+    lines = []
+    for r in (result or {}).get("requirements") or []:
+        if not isinstance(r, dict) or not r.get("id"):
+            continue
+        targets = r.get("applies_to")
+        scope = ",".join(targets) if isinstance(targets, list) else str(targets or "")
+        vb = r.get("verify_by") or {}
+        lines.append(f"{r['id']} ({scope}): {r.get('title', '')} [{','.join(r.get('standards') or [])}; "
+                     f"{vb.get('kind', '?')}: {vb.get('how', '')}]")
+    return "\n".join(lines) or "(catalog unavailable)"
+
+
 def _ids(registry, kind_prefix=None, type_=None):
     out = []
     for a in (registry or {}).get("assets", []):
@@ -122,13 +140,14 @@ def default_dod(registry: dict) -> dict:
     """Principle-based fallback DoD, used only when the planner's output can't be validated."""
     rating = float((registry or {}).get("rating_kwac") or 5000)
     health = [
-        {"id": "fresh_inv", "kind": "telemetry", "op": "fresh", "assets": "INV-*", "max_age_min": 5},
+        {"id": "fresh_inv", "kind": "telemetry", "op": "fresh", "assets": "INV-*", "max_age_min": 5, "requirements": ["REQ-INV-04"]},
         {"id": "balance_poi", "kind": "telemetry", "op": "balance", "lhs": {"assets": "INV-*", "point": "ac_kw"},
-         "rhs": {"asset": "POI-1", "point": "export_kw"}, "tol_pct": 6, "max_age_min": 5},
-        {"id": "peer_inv", "kind": "telemetry", "op": "peer", "assets": "INV-*", "point": "ac_kw", "min_ratio": 0.8, "max_age_min": 5},
-        {"id": "alarms_clear", "kind": "telemetry", "op": "no_alarms", "max_age_min": 5},
+         "rhs": {"asset": "POI-1", "point": "export_kw"}, "tol_pct": 6, "max_age_min": 5, "requirements": ["REQ-INV-04"]},
+        {"id": "peer_inv", "kind": "telemetry", "op": "peer", "assets": "INV-*", "point": "ac_kw", "min_ratio": 0.8, "max_age_min": 5,
+         "requirements": ["REQ-INV-01"]},
+        {"id": "alarms_clear", "kind": "telemetry", "op": "no_alarms", "max_age_min": 5, "requirements": ["REQ-SW-01"]},
         {"id": "safe_gate", "kind": "safety", "rule": "no_action_after_reject", "params": {}},
-        {"id": "safe_close", "kind": "safety", "rule": "no_close_on_fault", "params": {}},
+        {"id": "safe_close", "kind": "safety", "rule": "no_close_on_fault", "params": {}, "requirements": ["REQ-SW-01", "REQ-INV-05"]},
     ]
     done = [dict(c, id="d_" + c["id"]) for c in health]
     noact = [dict(c, id="n_" + c["id"]) for c in health] + [
@@ -224,8 +243,9 @@ class Planner:
         self.messages.append({"role": "assistant", "content": out})
         return out
 
-    def plan(self, goal: str, registry: dict, kb_text: str) -> dict:
-        reply = self._ask(PLAN_REQUEST.format(goal=goal, registry=compact_registry(registry), tools=tool_summary(), kb=kb_text or "(empty)"),
+    def plan(self, goal: str, registry: dict, kb_text: str, requirements: dict | None = None) -> dict:
+        reply = self._ask(PLAN_REQUEST.format(goal=goal, registry=compact_registry(registry), requirements=compact_requirements(requirements),
+                                              tools=tool_summary(), kb=kb_text or "(empty)"),
                           max_tokens=12288)
         d = extract_json(reply)
         dod = d.get("dod") if isinstance(d, dict) else None

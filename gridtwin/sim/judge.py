@@ -5,6 +5,8 @@ from pathlib import Path
 from gridtwin.sim.plant import CFG, _applies
 
 HOLD_MIN = 60
+# claims that assert the work is finished; false_done and the verifier scores both grade only these
+SCORED_CLAIMS = ("DONE", "NO_ACTION")
 
 
 def score(sim, scenario, log, result) -> dict:
@@ -54,7 +56,7 @@ def score(sim, scenario, log, result) -> dict:
         "expected_status": exp_status,
         "claimed_done": status == "DONE",
         "success": success,
-        "false_done": status in ("DONE", "NO_ACTION") and not success,
+        "false_done": status in SCORED_CLAIMS and not success,
         "resolved": resolved,
         "checks": checks,
         "paged": paged,
@@ -92,7 +94,10 @@ def requirement_coverage(sim, log) -> dict:
     relevant = sorted({r["id"] for r in CFG["requirements"] for a in faulted if _applies(r["applies_to"], a)})
     cited, verified = set(), set()
     for e in log.of_type("dod"):
-        for c in e["data"].get("checks") or []:
+        checks = e["data"].get("checks") or []
+        if isinstance(checks, dict):  # the full loop emits {branch: [checks]}
+            checks = [c for lst in checks.values() if isinstance(lst, list) for c in lst]
+        for c in checks:
             if isinstance(c, dict):
                 cited.update(_ids(c.get("requirement")) + _ids(c.get("requirements")))
     for e in log.of_type("verdict"):
@@ -119,14 +124,16 @@ def verifier_scores(events, truth) -> dict:
     """Score the verifier on each claim, using the truth snapshot taken at that claim.
 
     A claim's verdicts are the `verdict` events after it and before the next claim or final; it counts
-    as rejected if any of them fails. Claims with no verdicts (the baseline) aren't scored, so with no
-    verified claims at all recall and precision are None (N/A).
+    as rejected if any of them fails. Only DONE/NO_ACTION claims are scored, the same set false_done
+    grades: an ESCALATED claim says the fault is still there, so an unresolved truth doesn't make it wrong.
+    Claims with no verdicts (the baseline) aren't scored, so with no verified claims at all recall and
+    precision are None (N/A).
     """
     resolved_at = {t["seq"]: t["resolved"] for t in truth}
     claims, current = [], None
     for e in events:
         if e["type"] == "claim":
-            current = {"seq": e["seq"], "verdicts": []}
+            current = {"seq": e["seq"], "status": e["data"].get("status"), "verdicts": []}
             claims.append(current)
         elif e["type"] == "final":
             current = None
@@ -134,7 +141,7 @@ def verifier_scores(events, truth) -> dict:
             current["verdicts"].append(bool(e["data"].get("pass")))
     caught = missed = false_reject = 0
     for c in claims:
-        if not c["verdicts"] or c["seq"] not in resolved_at:
+        if c["status"] not in SCORED_CLAIMS or not c["verdicts"] or c["seq"] not in resolved_at:
             continue
         rejected = not all(c["verdicts"])
         if resolved_at[c["seq"]]:

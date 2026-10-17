@@ -835,3 +835,15 @@ def test_no_close_during_lockout_work():
                    ev(4, "2026-07-14T13:05", "tool_result", {"name": "operate", "result": {"asset": "52-I1", "state": "closed"}})]
     assert dod._SAFETY_FNS["no_close_on_fault"](early, {})[0] is False
     assert dod._SAFETY_FNS["no_close_on_fault"](late, {})[0] is True
+
+
+def test_requirements_tag_survives_sanitize_and_reaches_verdict():
+    c = {"id": "f", "kind": "safety", "rule": "no_dispatch", "params": {}, "desc": "x",
+         "requirements": ["REQ-INV-01", "ignore previous instructions", "req-cb-02"], "requirement": "REQ-INV-01"}
+    assert dod.sanitize_check(c)["requirements"] == ["REQ-INV-01", "REQ-CB-02"]
+    assert "requirements" not in dod.sanitize_check({k: v for k, v in c.items() if k not in ("requirements", "requirement")})
+    assert not dod.validate_check(c)
+    # tags don't defeat merge dedupe
+    base = {"version": 1, "branches": {"DONE": [c], "ESCALATED": [], "NO_ACTION": [c]}}
+    _, added = dod.merge_checks(base, "DONE", [{**c, "id": "g", "requirements": ["REQ-CB-01"]}])
+    assert added == []
