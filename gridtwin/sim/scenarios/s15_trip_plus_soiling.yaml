@@ -1,0 +1,14 @@
+id: s15_trip_plus_soiling
+goal: "Revenue is down this morning. Get the plant back to full output."
+split: dev
+seed: 15
+start: "2026-07-14T10:30"
+preroll_min: 180
+weather: {clouds: clear}
+faults:
+  - {type: F4_breaker_trip, asset: 52-I4, onset_min: -55}
+  - {type: F2_soiling, asset: B3, onset_min: -180, loss: 0.13}
+expected:
+  final_status: DONE
+  human_page: not_needed
+budget: {sim_minutes: 480, tool_calls: 60}

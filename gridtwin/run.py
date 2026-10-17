@@ -125,7 +125,7 @@ def warm():
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--scenario")
-    ap.add_argument("--agent", choices=["full", "baseline"], default="full")
+    ap.add_argument("--agent", choices=["full", "recursive", "baseline"], default="full")
     ap.add_argument("--kb", default="kb")
     ap.add_argument("--kb-copy", action="store_true", help="run on a temp copy of --kb so lessons are not kept")
     ap.add_argument("--live", action="store_true", help="real ntfy.sh push on page_human")
@@ -142,7 +142,7 @@ def main(argv=None):
     if not a.scenario:
         return 0
 
-    from gridtwin.agents import baseline, full
+    from gridtwin.agents import baseline, full, recursive
     from gridtwin.agents.gate import make_gate
     from gridtwin.agents.workers import Chaos
     from gridtwin.notify import make_notifier
@@ -175,6 +175,8 @@ def main(argv=None):
     if a.agent == "full":
         chaos = Chaos(worker=a.chaos_worker, at_step=1) if a.chaos else None
         result = full.run(goal, tb, log, sc.get("budget", {}), kb_dir, chaos=chaos)
+    elif a.agent == "recursive":
+        result = recursive.run(goal, tb, log, sc.get("budget", {}), kb_dir)
     else:
         result = baseline.run(goal, tb, log, sc.get("budget", {}), kb_dir)
     metrics = ep.finish(sim, log, result)
