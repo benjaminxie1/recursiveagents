@@ -453,12 +453,12 @@ function renderLedger(S) {
 async function initDrones() {
   let list = [];
   try { list = await (await fetch('/assets/splats/drones/drones.json')).json(); } catch { /* not rendered yet */ }
-  if (!list.length) list = [1, 2, 3, 4].map((k) => ({ id: `drone${k}`, row: `B${k}` }));
+  list = [1, 2, 3, 4].map((k) => list.find((d) => d.id === `drone${k}`) || { id: `drone${k}`, row: `B${k}` });  // always four tiles
   $('#feeds').innerHTML = list.slice(0, 4).map((d, k) => `<figure class="feed-tile">
     ${d.file ? `<video src="/${esc(d.file)}" autoplay muted loop playsinline></video>` : '<div class="nofeed">No signal</div>'}
     <figcaption><span class="rec"></span>CAM ${String(k + 1).padStart(2, '0')} · DRONE ${k + 1} · ${esc(d.row || '')}</figcaption>
     <span class="hud">ALT ${d.altitude_m || 20} m · RGB</span><span class="ts mono"></span></figure>`).join('');
-  $('#droneNote').textContent = `${list.length} live`;
+  $('#droneNote').textContent = `${list.filter((d) => d.file).length} of 4 live`;
   setInterval(() => {
     const t = (S0?.last?.t_sim || '').replace('T', ' ');
     const s = String(Math.floor(performance.now() / 1000) % 60).padStart(2, '0');
