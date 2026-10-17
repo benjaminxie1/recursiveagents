@@ -17,7 +17,7 @@ const ASSET_RE = /\b(INV-\d|XFMR-1|BESS-1|POI-1|52-(?:I\d|M|B1)|CB-\d\.\d+|B\d)\
 const mentioned = (o) => [...new Set([...(typeof o === 'string' ? o : JSON.stringify(o ?? '')).matchAll(ASSET_RE)].map((m) => m[1]))];
 const TILES = ['INV-1', 'INV-2', 'INV-3', 'INV-4', 'B1', 'B2', 'B3', 'B4', '52-I1', '52-I2', '52-I3', '52-I4', 'XFMR-1', '52-M', 'BESS-1', 'POI-1'];
 const tileOf = (a) => (TILES.includes(a) ? a : (a.match(/^CB-(\d)/) ? `B${a[3]}` : null));
-const laneOf = (actor) => (actor.startsWith('worker:') ? actor.slice(7) : actor);
+const laneOf = (actor) => actor.replace(/^(worker|subagent):/, '');
 const STEPS = ['Diagnose', 'Plan', 'Act', 'Verify', 'Close'];
 const dodChecks = (d) => { const c = d?.data?.checks; return !c ? [] : Array.isArray(c) ? c : Object.values(c).flat(); };
 
@@ -36,7 +36,8 @@ const codeChip = (id) => {
 function derive(evs) {
   const S = { goal: null, dod: null, final: null, assets: {}, lanes: {}, verdicts: {}, findings: [], acts: [], usage: 0, last: null,
     shots: {}, lastActor: null, roles: {}, gates: [], replans: [], hold: null, lessons: [], pages: [], failed: [], sources: {}, dods: 0,
-    usd: 0, cached: 0, first: evs[0], at: [], minds: {}, reprompts: [], lastMind: null, calls: {} };
+    usd: 0, cached: 0, first: evs[0], at: [], minds: {}, reprompts: [], lastMind: null, calls: {}, dagents: {}, rounds: 0 };
+  const STAGE = { diagnose: 0, plan: 1, dispatch: 2, contractor: 2, redispatch: 2, verify: 3 };
   const mark = (k, i, e) => { if (S.at[k] == null) S.at[k] = { i, t: e.t_sim }; };
   const set = (a, cls, st) => { const t = a && tileOf(a); if (t) S.assets[t] = { cls, st: a === t ? st : `${a} ${st}`, raw: a }; };
   let actor = 'planner';
@@ -104,9 +105,18 @@ function derive(evs) {
         break;
       }
       case 'final': S.final = d; mark(4, i, e); break;
+      // the end-to-end demo pipeline (gridtwin/demo): recursive agent teams, plant checks, memory flywheel
+      case 'demo.stage': if (d.status === 'start' && STAGE[d.stage] != null) mark(STAGE[d.stage], i, e); S.stage = d.stage; S.rounds = Math.max(S.rounds, d.round || 0); break;
+      case 'demo.agent': S.dagents[d.id] = { ...d, t: e.t_sim, i }; S.lastAgent = d.id; break;
+      case 'demo.diagnosis': S.dfocus = d.asset; S.findings.push({ data: { text: d.summary || `${d.asset} ${d.fault}` } }); set(d.asset, 'bad', String(d.fault || 'fault').replace(/_/g, ' ')); break;
+      case 'demo.workorder': S.acts.push({ data: { name: 'dispatch_tech', args: { asset: d.asset, work_order: d.wo_id } } }); set(d.asset, 'work', d.wo_id); break;
+      case 'demo.check': S.verdicts[d.name] = { check_id: d.name, pass: d.pass, t: e.t_sim, detail: d.detail, kind: d.kind, evidence: d.evidence }; if (!d.pass && !S.failed.includes(d.name)) S.failed.push(d.name); break;
+      case 'demo.verdict': if (!d.pass) S.replans.push(e); else set(S.dfocus, 'verified', 'verified'); break;
+      case 'demo.memory': S.lessons.push({ data: { op: d.op === 'recall' ? 'read' : 'write', text: d.lessons?.[0]?.text || d.effect, effect: d.effect } }); break;
+      case 'demo.final': S.final = { status: d.status === 'VERIFIED' ? 'DONE' : d.status, summary: d.summary }; S.usd = d.usd ?? S.usd; mark(4, i, e); break;
     }
   });
-  S.focus = focusAsset(S);
+  S.focus = S.dfocus || focusAsset(S);
   if (S.focus && tileOf(S.focus) && !S.assets[tileOf(S.focus)]) set(S.focus, S.final ? 'verified' : 'warn', 'investigating');
   return S;
 }
@@ -132,6 +142,16 @@ function describe(e) {
     case 'page': return `Paged · ${d.brief}`;
     case 'final': return d.summary;
     case 'lesson': return `Lesson ${d.op}`;
+    case 'demo.agent': return `${d.status === 'done' ? 'Done' : 'Spawned'} · ${d.task || d.role}`;
+    case 'demo.stage': return `${d.stage} ${d.status}${d.round ? ` · round ${d.round}` : ''}`;
+    case 'demo.check': return `${d.pass ? 'Pass' : 'Fail'} · ${d.name}`;
+    case 'demo.verdict': return d.pass ? 'Verified' : `Not verified · ${(d.failed || []).join(', ')}`;
+    case 'demo.email': return `${d.direction === 'in' ? 'Email in' : 'Email out'} · ${d.subject}`;
+    case 'demo.contractor': return d.note;
+    case 'demo.memory': return d.effect;
+    case 'demo.workorder': return `${d.wo_id} · ${d.work_order}`;
+    case 'demo.diagnosis': return d.summary;
+    case 'demo.final': return d.summary;
     default: return null;
   }
 }
@@ -139,7 +159,10 @@ function describe(e) {
 // ---------- hero, phases, checks ----------
 const hhmm = (t) => String(t || '').replace(' ', 'T').slice(11, 16);
 const actLine = (e) => { const a = e.data.args || {}; const w = (a.work_order || a.action || e.data.name).replace(/_/g, ' '); return `${w[0].toUpperCase()}${w.slice(1)} ${a.asset || ''}`.trim(); };
-const doneChecks = (S) => { const c = S.dod?.data?.checks; return c && !Array.isArray(c) && c.DONE ? c.DONE : dodChecks(S.dod); };
+const doneChecks = (S) => {
+  if (!S.dod && Object.keys(S.dagents).length) return Object.values(S.verdicts).map((v) => ({ id: v.check_id, kind: v.kind, title: v.detail }));
+  const c = S.dod?.data?.checks; return c && !Array.isArray(c) && c.DONE ? c.DONE : dodChecks(S.dod);
+};
 const STATUS = { DONE: 'Resolved', ESCALATED: 'Escalated', NO_ACTION: 'No action', NOT_DONE: 'Not resolved' };
 let signed = false;
 
@@ -207,7 +230,7 @@ function renderIncident(S) {
     const id = c.id ?? c.check_id;
     const v = S.verdicts[id];
     const reqs = [c.requirement, ...(c.requirements || [])].filter(Boolean);
-    const title = REQS[reqs[0]]?.title || String(c.rule || c.op || c.kind || id).replace(/_/g, ' ');
+    const title = REQS[reqs[0]]?.title || c.title || String(c.rule || c.op || c.kind || id).replace(/_/g, ' ');
     const stds = new Map(reqs.flatMap((r) => REQS[r]?.standards || []).map((sid) => [codeChip(sid), sid]));
     const chips = [...stds].map(([x, sid]) => `<a class="chip ${/^(NEC|NFPA|CA Fire)/.test(x) ? 'code' : ''}" href="codes.html?q=${encodeURIComponent(sid)}" target="_blank">${esc(x)}</a>`).join('');
     return `<li class="ck ${v ? (v.pass ? 'pass' : 'fail') : 'pending'}"><span class="mk">${v ? (v.pass ? '✓' : '✕') : DOTS}</span>
@@ -237,6 +260,7 @@ function activeSet(S) {
 // ---------- the swarm: planner -> sub-agents -> safety gate -> verifier -> outcome, with the replan loop back ----------
 let selLane = null;
 function renderFlow(S) {
+  if (Object.keys(S.dagents).length) return renderTeams(S);
   const act = activeSet(S);
   const node = (key, title, model, body, cls = '') =>
     `<div class="node ${cls} ${act.has(key) ? 'active' : ''} ${selLane === key ? 'sel' : ''}" data-lane="${key}"><div class="t">${title}${model ? `<span class="chip m">${esc(shortModel(model))}</span>` : ''}</div>${body}</div>`;
@@ -293,6 +317,7 @@ function renderFlow(S) {
   requestAnimationFrame(() => drawWires(S, act, workers, depth));
 }
 
+const pulse = (d, dur, phase) => `<circle class="pulse" r="3.5" style="offset-path:path('${d}');animation-duration:${dur}s;animation-delay:${-phase * dur}s"/>`;
 // wires between the columns; live ones carry pulses, the replan wire loops back over the top to the planner
 function drawWires(S, act, workers, depth) {
   const svg = $('#wires'), box = $('#flow').getBoundingClientRect();
@@ -307,7 +332,7 @@ function drawWires(S, act, workers, depth) {
     if (!a || !b) return '';
     const mx = (a[0] + b[0]) / 2;
     const d = `M${a[0]},${a[1]} C${mx},${a[1]} ${mx},${b[1]} ${b[0]},${b[1]}`;
-    return `<path class="w ${live ? 'live' : ''} ${cls}" d="${d}"/>` + (live ? [0, 0.5].map((k) => `<circle class="pulse" r="3.5"><animateMotion dur="1.2s" begin="${k * 1.2}s" repeatCount="indefinite" path="${d}"/></circle>`).join('') : '');
+    return `<path class="w ${live ? 'live' : ''} ${cls}" d="${d}"/>` + (live ? [0, 0.5].map((k) => pulse(d, 1.2, k)).join('') : '');
   };
   let g = '';
   const pl = at('[data-lane="planner"]', 'r');
@@ -325,16 +350,73 @@ function drawWires(S, act, workers, depth) {
       const y = 6, d = `M${(v[2].left + v[2].right) / 2 - box.left},${v[2].top - box.top} C${(v[2].left + v[2].right) / 2 - box.left},${y} ${(p[2].left + p[2].right) / 2 - box.left},${y} ${(p[2].left + p[2].right) / 2 - box.left},${p[2].top - box.top}`;
       const live = act.has('supervisor') || act.has('planner');
       g += `<path class="w replan ${live ? 'live' : ''}" d="${d}"/><text class="wl" x="${((v[2].left + p[2].right) / 2) - box.left}" y="${y + 14}" text-anchor="middle">↺ replan · depth ${depth}</text>`
-        + (live ? `<circle class="pulse" r="3.5"><animateMotion dur="1.6s" repeatCount="indefinite" path="${d}"/></circle>` : '');
+        + (live ? pulse(d, 1.6, 0) : '');
     }
   }
   svg.innerHTML = g;
 }
 
+// demo runs: one column per team (diagnose -> plan -> verify), each lead with the sub-agents it spawned; a failed
+// verification sends the work back round by round
+function renderTeams(S) {
+  const all = Object.values(S.dagents);
+  const teams = [...new Set(all.map((a) => a.team))];
+  const latest = (team) => { const leads = all.filter((a) => a.team === team && a.depth === 0); return leads[leads.length - 1]; };
+  const node = (a) => `<div class="node ${a.status === 'done' ? (a.output?.pass === false ? 'fail' : 'done') : 'active'} ${a.depth ? 'kid' : ''} ${selLane === a.id ? 'sel' : ''}" data-lane="${esc(a.id)}">
+    <div class="t">${esc(String(a.role).replace(/_/g, ' '))}${a.model ? `<span class="chip m">${esc(shortModel(a.model))}</span>` : ''}</div>
+    <div class="d">${esc(clip(a.task, 70))}${a.status !== 'done' ? DOTS : ''}</div></div>`;
+  const cols = [`<div class="col" data-col="op"><div class="node op" data-lane="human"><div class="t">Operator</div><div class="d">${esc(clip(S.reprompts[S.reprompts.length - 1]?.data.text || S.goal || '', 70))}</div></div>
+    ${S.lessons.length ? `<div class="node ${S.lessons.some((l) => l.data.op === 'write') ? 'done' : ''}" data-lane="memory"><div class="t">Verified memory</div><div class="chip-row"><span class="chip strong">verified only</span><span class="chip">poisoning-resistant</span></div><div class="d">${esc(clip(S.lessons[S.lessons.length - 1].data.effect || '', 70))}</div></div>` : ''}</div>`];
+  teams.forEach((team) => {
+    const lead = latest(team);
+    const kids = all.filter((a) => a.parent === lead?.id);
+    cols.push(`<div class="col" data-col="${esc(team)}"><div class="col-lbl">${esc(team)}${lead?.round ? ` · round ${lead.round}` : ''}</div>${lead ? node(lead) : ''}${kids.map(node).join('')}</div>`);
+  });
+  const fin = S.final ? `<div class="node ${S.final.status === 'DONE' ? 'done' : 'esc'}"><div class="t">${S.final.status === 'DONE' ? 'Verified' : esc(S.final.status)}</div><div class="d">${esc(clip(S.final.summary, 70))}</div></div>`
+    : `<div class="node ghost"><div class="t">Outcome</div><div class="d">Open${DOTS}</div></div>`;
+  cols.push(`<div class="col" data-col="out">${fin}</div>`);
+  $('#flow').style.gridTemplateColumns = `0.9fr ${teams.map(() => '1.2fr').join(' ')} .8fr`;
+  $('#flow').innerHTML = cols.join('');
+  requestAnimationFrame(() => {
+    const svg = $('#wires'), box = $('#flow').getBoundingClientRect();
+    svg.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+    const pt = (el, side) => { const r = el.getBoundingClientRect(); return [side === 'r' ? r.right - box.left : side === 'l' ? r.left - box.left : r.left - box.left + 14, side === 'b' ? r.bottom - box.top : side === 't' ? r.top - box.top : r.top - box.top + Math.min(r.height / 2, 24), r]; };
+    const wire = (a, b, live) => {
+      const mx = (a[0] + b[0]) / 2, d = `M${a[0]},${a[1]} C${mx},${a[1]} ${mx},${b[1]} ${b[0]},${b[1]}`;
+      return `<path class="w ${live ? 'live' : ''}" d="${d}"/>` + (live ? pulse(d, 1.2, 0) + pulse(d, 1.2, 0.5) : '');
+    };
+    let g = '';
+    const heads = [...$('#flow').querySelectorAll('.col')].map((c) => c.querySelector('.node'));
+    heads.forEach((h, k) => { const nx = heads[k + 1]; if (h && nx) g += wire(pt(h, 'r'), pt(nx, 'l'), nx.classList.contains('active')); });
+    teams.forEach((team) => {
+      const col = $('#flow').querySelector(`[data-col="${CSS.escape(team)}"]`);
+      const [lead, ...kids] = col.querySelectorAll('.node');
+      kids.forEach((k) => { const a = pt(lead, 'x'), b = pt(k, 'x'); const d = `M${a[0]},${a[2].bottom - box.top} L${a[0]},${b[1]} L${b[2].left - box.left},${b[1]}`; g += `<path class="w ${k.classList.contains('active') ? 'live' : ''}" d="${d}"/>` + (k.classList.contains('active') ? pulse(d, 1, 0) : ''); });
+    });
+    if (S.replans.length && teams.includes('verify') && teams.includes('plan')) {  // recursion: failed verification goes back to planning
+      const v = pt($('#flow').querySelector('[data-col="verify"] .node'), 't'), p = pt($('#flow').querySelector('[data-col="plan"] .node'), 't');
+      const y = -26, d = `M${v[0] + 40},${v[1]} C${v[0] + 40},${y} ${p[0] + 40},${y} ${p[0] + 40},${p[1]}`;
+      g += `<path class="w replan ${S.final ? '' : 'live'}" d="${d}"/><text class="wl" x="${(v[0] + p[0]) / 2 + 40}" y="${y + 6}" text-anchor="middle">↺ redo · round ${S.rounds}</text>`;
+    }
+    svg.innerHTML = g;
+  });
+}
+
 // ---------- the selected (or most recent) agent's mind: context, thinking, live feed ----------
 function renderMind(S) {
+  const da = S.dagents[selLane] || (!S.dagents[selLane] && Object.keys(S.dagents).length && !S.minds[selLane] ? S.dagents[S.lastAgent] : null);
+  if (da) {
+    $('#mindWho').innerHTML = `${esc(String(da.role).replace(/_/g, ' '))}${da.status !== 'done' ? DOTS : ''}`;
+    $('#mindModel').textContent = shortModel(da.model);
+    const kids = Object.values(S.dagents).filter((a) => a.parent === da.id);
+    $('#ctxNum').textContent = `depth ${da.depth} · ${kids.length} sub-agent${kids.length === 1 ? '' : 's'}${da.round ? ` · round ${da.round}` : ''}`;
+    $('#ctxBar').style.width = `${Math.min(100, 30 + 20 * kids.length)}%`; $('#ctxCached').style.width = '0';
+    const out = da.output == null ? '' : typeof da.output === 'string' ? da.output : JSON.stringify(da.output);
+    $('#thinking').innerHTML = `${esc(clip(da.task, 160))}${out ? `<br><br>→ ${esc(clip(out, 260))}` : '<span class="caret"></span>'}`;
+  }
   const lane = selLane && (S.minds[selLane] || S.lanes[selLane]) ? selLane : S.lastMind || [...activeSet(S)][0] || 'planner';
   const m = S.minds[lane];
+  if (!da) {
   $('#mindWho').innerHTML = `${esc(lane)}${activeSet(S).has(lane) ? DOTS : ''}`;
   $('#mindModel').textContent = shortModel(m?.model || modelOf(S, roleOfLane(lane)) || '');
   const maxPrompt = Math.max(1, ...Object.values(S.minds).map((x) => x.prompt || 0));
@@ -343,10 +425,11 @@ function renderMind(S) {
   $('#ctxCached').style.width = `${(100 * (m?.cached || 0)) / maxPrompt}%`;
   const think = m?.thinking || m?.said || S.lanes[lane]?.what || '';
   $('#thinking').innerHTML = think ? `${esc(clip(think, 420))}${activeSet(S).has(lane) ? '<span class="caret"></span>' : ''}` : '<span class="muted">No thoughts logged yet.</span>';
+  }
   const feed = [];
   for (let i = cursor - 1; i >= 0 && feed.length < 7; i--) {
     const e = events[i];
-    if (['usage', 'tool_result', 'judge'].includes(e.type)) continue;
+    if (['usage', 'tool_result', 'judge', 'demo.sensor', 'demo.jev', 'demo.camera', 'demo.diffusion'].includes(e.type)) continue;
     const who = e.actor === 'sim' ? e.data?.by || 'sim' : e.actor;
     const txt = describe(e) || (e.type === 'goal' ? e.data.text : e.type);
     feed.push(`<li class="${i === cursor - 1 && !S.final ? 'new' : ''}"><span class="tm">${hhmm(e.t_sim)}</span><b>${esc(laneOf(who))}</b><span>${esc(clip(txt, 80))}</span></li>`);

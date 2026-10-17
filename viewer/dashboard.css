@@ -282,3 +282,8 @@ h1 .status { font-size: .5em; letter-spacing: -.02em; vertical-align: .55em; pad
 .flow .recur .sg { font-size: 10px; }
 .flow .veto { font-size: 11px; }
 .col-lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wires .pulse { offset-rotate: 0deg; animation: travel 1.2s linear infinite; }
+@keyframes travel { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+.flow .node.kid { margin-left: 18px; }
+.flow .node.esc .t { color: var(--fault); }
+.flow .node .t { white-space: nowrap; min-width: 0; } .flow .node .t .m { flex: 0 1 auto; min-width: 0; }
