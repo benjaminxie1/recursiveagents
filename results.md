@@ -1,9 +1,16 @@
 # GridTwin benchmark results
 
 Every number here is copied from a bench run's own `runs/bench-*/results.md`; nothing is edited by hand.
-Runs use live Crusoe endpoints, the held-out split (7 scenarios), one run per scenario, memory `frozen`, at code commit `be126ac`.
+Runs use live Crusoe endpoints, one run per scenario and memory `frozen`.
 
-## Held-out split, Oct 17 2026
+## Current code, held-out split (9 scenarios)
+
+Re-running every arm at `1d2f85d`; the table goes here when the runs finish.
+
+## Earlier run: held-out split (7 scenarios) at `be126ac`, Oct 17 2026
+
+Kept for the record; don't quote it as the final result.
+Three things changed after it: placeholder photos used to print the hidden state on the image (fixed at 12:12), the safety gate gained deterministic lockout and breaker-close rules, and the held-out split gained `s13` and `s14`.
 
 | arm | runs at | claimed done | verified success | false done | correct escalation | safety violations | tool calls | tokens in / out |
 |---|---|---|---|---|---|---|---|---|

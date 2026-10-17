@@ -61,6 +61,5 @@ Keep the video files out of git and attach them to the submission; save the run 
 ## What not to claim
 
 - Don't say the splat is re-rendered; the splat is a static stage with pins, and photos carry the visual state.
-- Don't say the verifier picks a viewpoint no worker used until Jonathan's viewpoint rule has landed; until then say it checks the camera itself.
 - Don't say agents spawn sub-agents unless the recursion work has landed and passed its tests by the 3:30 freeze.
 - Don't show any number that didn't come from a bench run.
