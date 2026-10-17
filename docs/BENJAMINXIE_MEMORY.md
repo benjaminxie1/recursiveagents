@@ -29,3 +29,4 @@ Same rules as `docs/MEMORY.md`: append `HH:MM name: text` lines (Pacific time), 
 - 10:18 Benjamin: make the repo public before 5:00 PM.
 - 10:18 Benjamin: choose the splat source (`docs/SIMULATOR.md` §4). The visual state comes from a bank of real-world photos.
 - 10:18 Benjamin: feature work starts at 10:45. Build order is in `docs/SIMULATOR.md` §6.
+- 10:25 Benjamin: my working branch is `claude/sweet-faraday-yssuo9`; `main` is shared. Commit signing is off in this repo (`commit.gpgsign false`) so commits stay under my name.

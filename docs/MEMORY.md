@@ -25,6 +25,7 @@ Read it at the start of a session, after `docs/HACKATHON.md`.
 - 09:47 Benjamin: all LLM calls go through `gridtwin/llm.py`.
 - 10:05 Will: team memory lives in this file plus `docs/HACKATHON.md`, mirrored to Alike; `AGENTS.md` links to `CLAUDE.md` so Codex and Claude read the same notes.
 - 10:18 Benjamin: Benjamin's own context and research notes live in `docs/BENJAMINXIE_MEMORY.md`, standing in for Alike until his cloud sessions can sign in to it.
+- 10:25 Benjamin: branches: `main` is the shared, demo-ready branch (created at e6c8dd5). Everyone works on their own branch cut from `main` (`will/...`, `jonathan/...`; Benjamin's sessions use `claude/sweet-faraday-yssuo9`) and merges into `main` about hourly. Stop pushing straight to `claude/sweet-faraday-yssuo9`.
 
 ## Open questions
 
