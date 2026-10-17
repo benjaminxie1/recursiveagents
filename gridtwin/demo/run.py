@@ -39,11 +39,12 @@ def main(argv=None) -> int:
     ap.add_argument("--stub", action="store_true", help="no model calls: deterministic stand-ins (offline rehearsal)")
     ap.add_argument("--run-id")
     ap.add_argument("--max-rounds", type=int, default=MAX_ROUNDS)
+    ap.add_argument("--runs-dir", default=None, help="where run folders go (default runs/)")
     a = ap.parse_args(argv)
     if a.fresh_memory:
         d = M.Memory(a.memory).dir
         shutil.rmtree(d / "lessons", ignore_errors=True)
-    demo = Demo(a.scenario, a.memory, a.stub, a.run_id, a.max_rounds)
+    demo = Demo(a.scenario, a.memory, a.stub, a.run_id, a.max_rounds, a.runs_dir)
     trace(demo.log._log)
     print(f"run_id {demo.run_id}  scenario {a.scenario}  stub={a.stub}  page: demo.html?run={demo.run_id}", flush=True)
     out = demo.run()
