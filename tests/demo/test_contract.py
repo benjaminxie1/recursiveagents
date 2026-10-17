@@ -1,10 +1,13 @@
 """The demo contract validator (tests/demo/contract.py) on synthetic runs, the frontend fixture and real runs.
 
 Synthetic runs follow CONTRACT.md; each mutation test breaks one rule and expects the validator to name it.
+Local run folders are checked only on request (GRIDTWIN_VALIDATE_RUNS=1), so the suite does not depend on them;
+one run: `python -m tests.demo.contract runs/<id>`.
 """
 from __future__ import annotations
 
 import json
+import os
 import time
 from contextlib import contextmanager
 from email.message import EmailMessage
@@ -389,7 +392,9 @@ def test_the_frontend_fixture_honours_the_contract():
     assert validate_run(FIXTURE) == []
 
 
-REAL_RUNS = sorted(p.parent for p in (REPO_ROOT / "runs").glob("*/events.jsonl") if has_demo_events(p))
+VALIDATE_RUNS = os.environ.get("GRIDTWIN_VALIDATE_RUNS") == "1"
+REAL_RUNS = sorted(p.parent for p in (REPO_ROOT / "runs").glob("*/events.jsonl") if has_demo_events(p)) \
+    if VALIDATE_RUNS else []
 IN_PROGRESS_S = 300  # a run without demo.final whose log changed this recently is still being written
 
 
@@ -400,6 +405,8 @@ def in_progress(run_dir) -> bool:
 
 @pytest.mark.parametrize("run_dir", REAL_RUNS or [None], ids=lambda p: p.name if p else "none")
 def test_real_demo_runs_honour_the_contract(run_dir):
+    if not VALIDATE_RUNS:
+        pytest.skip("set GRIDTWIN_VALIDATE_RUNS=1 to check the local runs/ folders")
     if run_dir is None:
         pytest.skip("no runs/*/events.jsonl with demo.* events yet")
     if in_progress(run_dir):
