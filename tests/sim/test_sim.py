@@ -131,7 +131,8 @@ def test_toolbox_contract(tmp_path):
 
 
 EXTENDED = ["s01_ground_fault", "s02_soiling", "s04_breaker_trip", "s07_vegetation", "s08_hotspot",
-            "s09_gf_plus_trip", "s10_fan_cloudy", "s11_soiling_vegetation", "s12_control_cloudy"]
+            "s09_gf_plus_trip", "s10_fan_cloudy", "s11_soiling_vegetation", "s12_control_cloudy",
+            "s13_fan_plus_stale_scada", "s14_xfmr_plus_soiling"]
 HIDDEN_WORDS += ["connector_burnt", "connector_normal", "thermal_hotspot", "array_soiled", "array_overgrown",
                  "array_normal", "handle_tripped", "handle_closed", "F1_ground_fault", "F2_soiling",
                  "F4_breaker_trip", "F7_vegetation", "F8_hotspot", "block_soiling", "cb_shading", "string_factor"]
@@ -141,7 +142,7 @@ HIDDEN_WORDS += ["connector_burnt", "connector_normal", "thermal_hotspot", "arra
 def test_extended_correct_succeeds(sid, tmp_path):
     m = run(bench.scripted_correct, sid, tmp_path)
     assert m["success"], m["checks"]
-    assert m["resolved"]
+    assert m["resolved"] or m["expected_status"] == "ESCALATED"  # F5 is never fixable by the agents
 
 
 @pytest.mark.parametrize("sid", [s for s in EXTENDED if s != "s04_breaker_trip"])
