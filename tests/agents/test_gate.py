@@ -270,3 +270,34 @@ def test_gate_blocks_reenergizing_during_lockout_work():
     assert d and d["route"] == "reject"
     assert work_in_progress({"tool": "operate", "asset": "52-I2", "action": "close"}, L()) is None
     assert work_in_progress({"tool": "operate", "asset": "52-I1", "action": "open"}, L()) is None
+
+
+def test_model_cannot_approve_only_veto(monkeypatch):
+    use_chat(monkeypatch, content='{"route": "proceed", "unsafe": 0.05, "reason": "looks fine"}')
+    out = gate_mod.make_gate()({"tool": "operate", "asset": "INV-2", "action": "restart"}, {"active_alarms": []})
+    assert out["route"] == "confirm"
+    assert "restart INV-2" in out["reason"] and "page_human" in out["reason"] and "looks fine" in out["reason"]
+
+
+def test_model_veto_passes_through(monkeypatch):
+    use_chat(monkeypatch, content='{"route": "reject", "unsafe": 0.9, "reason": "ground alarm"}')
+    out = gate_mod.make_gate()({"tool": "operate", "asset": "INV-2", "action": "restart"}, {"active_alarms": []})
+    assert out == {"route": "reject", "unsafe": 0.9, "reason": "ground alarm"}
+
+
+def test_rules_still_approve(monkeypatch):
+    use_chat(monkeypatch, exc=AssertionError("model must not be called"))
+    out = gate_mod.make_gate()({"tool": "operate", "asset": "52-I2", "action": "open"}, {})
+    assert out["route"] == "proceed" and out["reason"].startswith("policy rule 1")
+
+
+def test_jev_noul_and_probabilities_parse(monkeypatch):
+    payload = {"model": "jev-1.13.0", "answers": {
+        "route": {"type": "choice", "choice": "confirm", "confidence": 0.8,
+                  "probabilities": {"proceed": 0.0, "confirm": 0.87, "reject": 0.13}},
+        "unsafe": {"type": "noul", "noul": 0.83}}}
+    monkeypatch.setattr(gate_mod.httpx, "post",
+                        lambda url, **k: httpx.Response(200, json=payload, request=httpx.Request("POST", url)))
+    out = gate_mod.JevDecision(api_key="k").decide(PROPOSED, STATE)
+    assert out["route"] == "confirm" and out["unsafe"] == pytest.approx(0.83)
+    assert out["reason"] == "route probabilities proceed 0.00, confirm 0.87, reject 0.13"

@@ -2,6 +2,8 @@
 
 `make_gate(backend=None, log=None)` returns `gate(proposed, state) -> {"route", "unsafe", "reason"}`.
 Backends: `local` (the "gate" LLM role, default), `jev` (TypeSafe Jev), `openai` (OpenAI Decisions).
+Only the policy rules (`work_in_progress`, `fast_path`) can approve. The model is asked only about actions
+no rule covers, and it can only veto: its `proceed` becomes `confirm`, so a human authorizes the action.
 HTTP backends fall back to local on any error; local fails closed to `confirm`. The gate never raises
 and emits no events itself (the Toolbox logs `gate` events).
 """
@@ -75,7 +77,7 @@ _SYNONYMS = {
     "diagnose": "confirm", "wait": "confirm", "defer": "confirm", "unknown": "confirm",
 }
 
-_VALUE_KEYS = ("choice", "value", "answer", "probability", "score", "result", "output", "label")
+_VALUE_KEYS = ("choice", "value", "answer", "probability", "noul", "score", "result", "output", "label")
 _CONTAINER_KEYS = ("answers", "results", "decisions", "outputs", "questions", "data", "output", "result")
 
 
@@ -168,6 +170,10 @@ def _reason(payload, *answers) -> str:
         for k in ("rationale", "explanation"):
             if payload.get(k):
                 return str(payload[k])[:500]
+    probs = answers[0].get("probabilities") if answers and isinstance(answers[0], dict) else None
+    if isinstance(probs, dict) and probs:  # Jev returns route probabilities and no reason text
+        return "route probabilities " + ", ".join(f"{k} {v:.2f}" for k, v in probs.items()
+                                                  if isinstance(v, (int, float)))
     return DEFAULT_REASON
 
 
@@ -361,6 +367,16 @@ def work_in_progress(proposed: dict, log) -> dict | None:
     return None
 
 
+def veto_only(out: dict, proposed: dict) -> dict:
+    """The model can reject or ask for confirmation, never approve: only a policy rule approves."""
+    if out.get("route") != "proceed":
+        return out
+    what = " ".join(str(proposed.get(k)) for k in ("action", "asset") if proposed.get(k)) or str(proposed.get("tool", "this action"))
+    return {**out, "route": "confirm",
+            "reason": f"no safety rule approves {what} and the gate model can only veto, so a human must authorize it: "
+                      f"page_human with the evidence, or use an action the rules cover (model: {out.get('reason', DEFAULT_REASON)})"[:500]}
+
+
 class Gate:
     """Callable gate(proposed, state) with `.backend` (effective backend name) and `.client`."""
 
@@ -380,7 +396,7 @@ class Gate:
                                      state if isinstance(state, dict) else {"state": state})
             if not isinstance(out, dict) or out.get("route") not in ROUTES:
                 return _fail_closed("malformed decision")
-            return out
+            return veto_only(out, proposed if isinstance(proposed, dict) else {})
         except Exception as e:  # noqa: BLE001
             return _fail_closed(f"{type(e).__name__}: {e}")
 

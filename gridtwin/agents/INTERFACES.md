@@ -73,6 +73,6 @@ Lesson:
 
 ## Gate (`gridtwin/agents/gate.py`), board (`board.py`), notify (`gridtwin/notify.py`)
 
-- `make_gate(backend=None, log=None) -> gate(proposed, state) -> {"route": "proceed|confirm|reject", "unsafe": float, "reason": str}`; backends `local` (gate role), `jev`, `openai`; falls back to `local` when the key is missing; never raises (errors → `confirm`).
+- `make_gate(backend=None, log=None) -> gate(proposed, state) -> {"route": "proceed|confirm|reject", "unsafe": float, "reason": str}`; backends `local` (gate role), `jev`, `openai`; falls back to `local` when the key is missing; never raises (errors → `confirm`). Only policy rules approve; the model can only veto (its `proceed` becomes `confirm`).
 - `BOARD_TOOLS` (two function tools), `Board(log)`: `.post(worker, text, evidence) -> post`, `.read() -> [post]`, `.handle(worker, name, args) -> dict | None`.
 - `make_notifier() -> notifier(severity, brief) | None` (None unless `NTFY_TOPIC` is set).
