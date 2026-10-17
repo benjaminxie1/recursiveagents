@@ -1,0 +1,118 @@
+{
+ "splat": "assets/splats/tugboat.splat",
+ "up": [
+  0,
+  -1,
+  0
+ ],
+ "origin": [
+  0,
+  0.2,
+  -1
+ ],
+ "metres_per_unit": 1.35,
+ "source": "hand-placed on the Tugboat Bat engine room scan (no board in it); shown 1.35x life size so the room reads roomier; floor and ceiling added by scripts/room_shell.py; demo labels only, the machines are not really these assets",
+ "start": {
+  "position": [
+   0.05,
+   -0.91,
+   -3.35
+  ],
+  "target": [
+   -0.39,
+   -0.82,
+   1.63
+  ]
+ },
+ "stations": {
+  "inv3_cabinet": {
+   "eye": [
+    0.1,
+    -0.95,
+    -3.0
+   ],
+   "target": [
+    -0.39,
+    -1.26,
+    -2.33
+   ]
+  },
+  "inv2_cabinet": {
+   "eye": [
+    0.0,
+    -0.95,
+    -2.9
+   ],
+   "target": [
+    0.66,
+    -1.31,
+    -2.12
+   ]
+  },
+  "inv1_cabinet": {
+   "eye": [
+    -1.3,
+    -0.95,
+    -4.0
+   ],
+   "target": [
+    -3.01,
+    -0.57,
+    -3.97
+   ]
+  },
+  "xfmr1_yard": {
+   "eye": [
+    1.0,
+    -0.95,
+    -4.6
+   ],
+   "target": [
+    0.08,
+    -0.86,
+    -4.32
+   ]
+  },
+  "cb15_box": {
+   "eye": [
+    0.05,
+    -0.95,
+    1.2
+   ],
+   "target": [
+    0.13,
+    -0.45,
+    2.76
+   ]
+  },
+  "inv3_display": {
+   "eye": [
+    0.2,
+    -1.2,
+    -2.45
+   ],
+   "target": [
+    -0.39,
+    -1.26,
+    -2.33
+   ],
+   "asset": "INV-3"
+  },
+  "inv4_cabinet": {
+   "asset": "INV-4",
+   "eye": [
+    -0.1,
+    -1.0,
+    -3.2
+   ],
+   "target": [
+    0.56,
+    -1.2,
+    -2.96
+   ]
+  }
+ },
+ "viewer": {
+  "case": "assets/demo/s06_case"
+ }
+}

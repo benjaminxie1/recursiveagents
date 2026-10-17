@@ -35,7 +35,8 @@ renderer.setClearColor(0x000000, 0);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(65, 1, 0.02, 2000);
 camera.rotation.order = 'YXZ';
-scene.add(new SparkRenderer({ renderer }));
+const spark = new SparkRenderer({ renderer });
+scene.add(spark);
 const splatFrame = new THREE.Group();
 splatFrame.matrixAutoUpdate = false;
 scene.add(splatFrame);
@@ -518,7 +519,7 @@ gizmo.addEventListener('click', (e) => {
 });
 
 // ---------- stations and pins ----------
-const KIND = [[/^INV-/, 'inverter cabinet'], [/^CB-/, 'combiner box'], [/^B\d$/, 'PV array'], [/^52-/, 'breaker'],
+const KIND = [[/^INV-/, 'central inverter'], [/^CB-/, 'combiner box'], [/^B\d$/, 'PV array'], [/^52-/, 'breaker'],
   [/^XFMR-/, 'transformer yard'], [/^BESS-/, 'battery enclosure'], [/^POI-/, 'revenue meter']];
 const kindOf = (asset) => (KIND.find(([re]) => re.test(asset)) || [null, 'equipment'])[1];
 let stations = [];  // /api/viewpoints, each with .view when the registration has its camera
@@ -526,6 +527,11 @@ let pins = [];      // one per asset with at least one registered station
 
 function setStations(vps) {
   stations = (vps || []).map((v) => ({ ...v, label: v.label || `${v.asset} ${kindOf(v.asset)}`, view: reg?.views?.[v.id] ?? null }));
+  // registered stations the sim has no viewpoint for (a scene's extra equipment) name their asset in the registration
+  const known = new Set(stations.map((s) => s.id));
+  for (const [id, view] of Object.entries(reg?.views || {})) {
+    if (!known.has(id) && view.asset) stations.push({ id, asset: view.asset, modes: ['rgb'], label: `${view.asset} ${kindOf(view.asset)}`, view });
+  }
 }
 
 const splatPoint = (p) => new V3(...p).applyMatrix4(splatFrame.matrixWorld);
@@ -666,14 +672,18 @@ function viewFrom(st) {
 
 // the start view: standing behind the registered stations, looking over the equipment they watch, like walking in
 function startPose() {
-  const reg = stations.filter((s) => s.eye);
-  if (!reg.length) return { eye: focus.clone().add(new V3(0, 0.35 * extent, 0.8 * extent)), at: focus.clone() };
-  const at = reg.reduce((a, s) => a.add(s.target), new V3()).divideScalar(reg.length);
-  const back = reg.reduce((a, s) => a.add(s.eye.clone().sub(s.target).setY(0).normalize()), new V3()).setY(0);
+  // a scene can name its own start (registration "start": {position, target} in splat coordinates), e.g. standing
+  // in the aisle of a scan so a full turn shows the room
+  const st = reg?.start;
+  if (st?.position && st?.target) { splatFrame.updateMatrixWorld(true); return { eye: splatPoint(st.position), at: splatPoint(st.target) }; }
+  const placed = stations.filter((s) => s.eye);
+  if (!placed.length) return { eye: focus.clone().add(new V3(0, 0.35 * extent, 0.8 * extent)), at: focus.clone() };
+  const at = placed.reduce((a, s) => a.add(s.target), new V3()).divideScalar(placed.length);
+  const back = placed.reduce((a, s) => a.add(s.eye.clone().sub(s.target).setY(0).normalize()), new V3()).setY(0);
   if (back.lengthSq() < 0.04) back.set(0, 0, 1);
   back.normalize();
-  const spread = Math.max(...reg.map((s) => Math.hypot(s.target.x - at.x, s.target.z - at.z)), 2 * M);
-  const heights = reg.map((s) => s.eye.y).sort((a, b) => a - b);
+  const spread = Math.max(...placed.map((s) => Math.hypot(s.target.x - at.x, s.target.z - at.z)), 2 * M);
+  const heights = placed.map((s) => s.eye.y).sort((a, b) => a - b);
   // back far enough for the spread to fill the width (a portrait phone counts as 1.2:1), near enough for the tags
   const hTan = Math.tan((camera.fov * Math.PI) / 360) * Math.max(camera.aspect, 1.2);
   const eye = at.clone().addScaledVector(back, (spread / hTan) * 1.25 + M).setY(heights[heights.length >> 1] + 0.4 * M);
@@ -753,7 +763,11 @@ function derive(evs) {
         hit(set).forEach((st) => { st.page = e; });
         break;
       }
-      case 'final': S.final = e; break;
+      case 'final': case 'demo.final': S.final = e; break;
+      // the end-to-end demo names the failed object in its diagnosis; it stays marked until a verified fix
+      case 'demo.diagnosis': if (d.asset) S.failed = { asset: d.asset, text: d.summary || d.fault || '' }; break;
+      case 'demo.verdict': if (d.pass && S.failed) S.failed = { ...S.failed, fixed: true }; break;
+      case 'demo.stage': if (d.status === 'start') S.stage = d; break;
     }
   }
   return S;
@@ -793,7 +807,13 @@ function tickerLine(e) {
     case 'verdict': return `<b>Verifier</b> ${esc(d.check_id)} ${d.pass ? 'passed' : 'failed'}`;
     case 'supervisor': return `<b>Supervisor</b> ${esc(short(d.action ?? d.reason ?? d, 100))}`;
     case 'page': return `<b>Paged a human</b> (${esc(d.severity ?? '')}) ${esc(short(d.brief, 90))}`;
-    case 'final': return `<b>${esc(d.status)}</b> ${esc(short(d.summary, 110))}`;
+    case 'final': case 'demo.final': return `<b>${esc(d.status)}</b> ${esc(short(d.summary, 110))}`;
+    case 'demo.stage': return d.status === 'start' ? `<b>${esc(d.stage)}</b>${d.round > 1 ? ` round ${esc(d.round)}` : ''}` : null;
+    case 'demo.diagnosis': return `<b>Diagnosis</b> ${esc(d.asset)}: ${esc(short(d.summary ?? d.fault, 100))}`;
+    case 'demo.twin': return `${who} opens <b>${esc(d.asset)}</b> in the twin`;
+    case 'demo.sensor': return d.stale ? `${who} <b>${esc(d.asset)}</b> data is ${esc(d.data_age_min)} min old` : null;
+    case 'demo.camera': return `${who} <b>looks through ${esc(d.viewpoint)}</b> (${esc(d.mode || 'rgb')})`;
+    case 'demo.verdict': return `<b>Verifier</b> ${d.pass ? 'verified the fix' : `not verified: ${esc((d.failed || []).join(', '))}`}`;
     default: return null;
   }
 }
@@ -805,9 +825,10 @@ const texLoader = new THREE.TextureLoader();
 function render() {
   const S = derive(events.slice(0, cursor));
   lastState = S;
+  const F = failedNow(S);
   for (const p of pins) {
-    const [cls, label, why] = assetStatus(p.asset, S);
-    p.el.className = `pin st-${cls}${['sel', 'flash'].map((c) => (p.el.classList.contains(c) ? ` ${c}` : '')).join('')}`;
+    const [cls, label, why] = F?.asset === p.asset ? failedStatus(F) : assetStatus(p.asset, S);
+    p.el.className = `pin st-${cls}${F?.asset === p.asset && !F.fixed ? ' failed' : ''}${['sel', 'flash'].map((c) => (p.el.classList.contains(c) ? ` ${c}` : '')).join('')}`;
     p.el.querySelector('.state').textContent = label;
     p.el.title = why || label;
     p.el.setAttribute('aria-label', `${p.asset} ${kindOf(p.asset)}: ${label}`);
@@ -838,6 +859,8 @@ function render() {
   // following. A page load of a long log is not news, so only a few new events at a time count.
   const fresh = cursor - shown < 8;
   for (const e of events.slice(shown, cursor)) {
+    // the demo's agent opening an object in the twin (or naming it in its diagnosis): fly there and show its data
+    if ((e.type === 'demo.twin' || e.type === 'demo.diagnosis') && e.data?.asset) { if (fresh) openObject(e.data.asset); continue; }
     if (e.data?.name !== 'get_camera_view') continue;
     if (e.type === 'tool_result') { if (fresh) flashStation(stations.find((s) => s.id === (e.data.result?.viewpoint ?? S.lastCamera))); continue; }
     if (e.type !== 'tool_call') continue;
@@ -867,7 +890,8 @@ function renderChrome(S) {
   const ok = checks.filter((c) => latest.get(c.id ?? c.check_id) === true).length;
   const seen = stations.filter((s) => S.st[s.id].shots.length).length;
   $('#runChecks').innerHTML = checks.length ? `<b>${ok}</b> of ${checks.length} checks`
-    : S.goal ? `<b>${seen}</b> of ${stations.length} cameras` : 'waiting for a goal';
+    : S.goal ? `<b>${seen}</b> of ${stations.length} cameras`
+    : S.stage ? `<b>${esc(S.stage.stage)}</b> stage${S.stage.round > 1 ? `, round ${esc(S.stage.round)}` : ''}` : 'waiting for a goal';
   const fin = S.final?.data;
   chip.classList.toggle('final', !!fin);
   $('#runStatus').hidden = !fin;
@@ -909,7 +933,9 @@ function openDrawer(asset, refresh = false) {
   pins.forEach((p) => p.el.classList.toggle('sel', p.asset === asset));
   d.dataset.asset = asset;
   const info = S.assets?.assets?.find((a) => a.asset === asset);
-  const [cls, label, why] = assetStatus(asset, S);
+  const F = failedNow(S);
+  const [cls, label, why] = F?.asset === asset ? failedStatus(F) : assetStatus(asset, S);
+  const obj = caseData?.objects?.[asset];
   const sts = stations.filter((s) => s.asset === asset);
   const shots = sts.flatMap((s) => S.st[s.id].shots.map((x) => ({ ...x, vid: s.id }))).sort((a, b) => b.seq - a.seq);
   const verdicts = S.verdicts.filter(({ set }) => set.has(asset) || sts.some((s) => set.has(s.id))).map(({ e }) => e).reverse();
@@ -919,11 +945,12 @@ function openDrawer(asset, refresh = false) {
   const shot = shots[0];
   d.innerHTML = `<button class="x" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></button>
     <h2>${esc(asset)}</h2><div class="kind">${esc(info?.type || kindOf(asset))}</div>
-    ${path ? `<div class="path">${path}</div>` : ''}
-    <span class="status st-${cls}"><i class="dot st-${cls}"></i>${esc(label)}</span>${why ? ` <span class="muted">${esc(why)}</span>` : ''}
-    <h3>Latest photo</h3>${shot ? `<a href="/${esc(shot.image_path)}" target="_blank"><img src="/${esc(shot.image_path)}" alt="${esc(shot.vid)} ${esc(shot.mode)}"></a>
-      <div class="cap">${esc(shot.vid)} · ${esc(shot.mode)} · ${esc(shot.captured_at || '')}</div>` : '<div class="muted">No photo taken yet in this run.</div>'}
-    <h3>Verifier</h3>${verdicts.length ? `<ul>${verdicts.map((v) => `<li><span class="${v.data.pass ? 'pass' : 'fail'}">${v.data.pass ? 'PASS' : 'FAIL'}</span> ${esc(v.data.check_id)}<div class="muted">${esc(short(v.data.evidence, 180))}</div></li>`).join('')}</ul>` : '<div class="muted">No verdict on this asset yet.</div>'}
+    ${path ? `<div class="path">${path}</div>` : obj ? `<div class="path">${[obj.block && `Block ${obj.block}`, obj.breaker && `breaker ${obj.breaker}`, obj.rating_kw && `${obj.rating_kw} kW`].filter(Boolean).map(esc).join(' · ')}</div>` : ''}
+    ${F?.asset === asset && !F.fixed ? failNote(F) : `<span class="status st-${cls}"><i class="dot st-${cls}"></i>${esc(label)}</span>${why ? ` <span class="muted">${esc(why)}</span>` : ''}`}
+    ${obj ? objectData(asset, obj) : ''}
+    ${shot || !obj ? `<h3>Latest photo</h3>${shot ? `<a href="/${esc(shot.image_path)}" target="_blank"><img src="/${esc(shot.image_path)}" alt="${esc(shot.vid)} ${esc(shot.mode)}"></a>
+      <div class="cap">${esc(shot.vid)} · ${esc(shot.mode)} · ${esc(shot.captured_at || '')}</div>` : '<div class="muted">No photo taken yet in this run.</div>'}` : ''}
+    ${verdicts.length || !obj ? `<h3>Verifier</h3>${verdicts.length ? `<ul>${verdicts.map((v) => `<li><span class="${v.data.pass ? 'pass' : 'fail'}">${v.data.pass ? 'PASS' : 'FAIL'}</span> ${esc(v.data.check_id)}<div class="muted">${esc(short(v.data.evidence, 180))}</div></li>`).join('')}</ul>` : '<div class="muted">No verdict on this asset yet.</div>'}` : ''}
     ${pages.length ? `<h3>Pages</h3><ul>${pages.map((p) => `<li><span class="fail">${esc(p.data.severity || 'page')}</span> ${esc(short(p.data.brief, 180))}</li>`).join('')}</ul>` : ''}
     ${standards ? `<h3>Standards</h3><div class="tags">${standards}</div>` : ''}
     <h3>Camera stations</h3><ul>${sts.map((s) => `<li class="vrow"><span><b>${esc(s.id)}</b> <span class="muted">${esc((s.modes || ['rgb']).join(', '))}</span></span>${s.eye ? `<button data-vp="${esc(s.id)}">View from here</button>` : '<span class="muted">not registered</span>'}</li>`).join('')}</ul>`;
@@ -933,6 +960,68 @@ function openDrawer(asset, refresh = false) {
   if (!refresh) { d.scrollTop = 0; const p = pins.find((x) => x.asset === asset); if (p?.stations[0]) viewFrom(p.stations[0]); }
 }
 function closeDrawer() { $('#drawer').hidden = true; pins.forEach((p) => p.el.classList.remove('sel')); }
+
+// ---------- case data: one scenario's evidence per object (SCADA, camera, infrared) ----------
+// The registration's "viewer": {"case": "assets/demo/s06_case"} (or ?case=) names the pack; its agent/objects.json holds
+// each object's data and no verdict. The failed object comes from the run's diagnosis, else ?failed=<asset>, else the
+// pack's answer key with ?reveal=1. An agent or the demo page opens an object with window.twin.openObject(asset) or
+// postMessage({twin: 'open', asset}), and marks one with postMessage({twin: 'fail', asset, text}).
+let caseRoot = null, caseData = null, failedSet = null;
+async function loadCase() {
+  const root = params.get('case') ?? reg?.viewer?.case;
+  if (!root) return;
+  caseRoot = `/${root.replace(/^\/+|\/+$/g, '')}`;
+  caseData = await getJSON(`${caseRoot}/agent/objects.json`);
+  if (params.get('failed')) failedSet = { asset: params.get('failed'), text: params.get('why') || '' };
+  else if (params.get('reveal') === '1') {
+    const k = await getJSON(`${caseRoot}/answer_key/finding.json`);
+    if (k?.failed_asset) failedSet = { asset: k.failed_asset, text: k.failure || '', shouldBe: k.failed_to_be || '' };
+  }
+}
+const failedNow = (S) => S?.failed ?? failedSet;
+const failedStatus = (F) => (F.fixed ? ['verified', 'Fixed', 'the fix was verified'] : ['failed', 'Failed', F.text]);
+function setFailed(asset, text = '', shouldBe = '') {
+  failedSet = asset ? { asset, text, shouldBe } : null;
+  render();
+}
+function openObject(asset) {
+  if (!pins.some((p) => p.asset === asset)) return false;
+  openDrawer(asset);
+  return true;
+}
+const hhmm = (t) => (typeof t === 'string' && t.length >= 16 ? t.slice(11, 16) : String(t ?? ''));
+function failNote(F) {
+  return `<div class="failnote"><b>Failed</b>${esc(F.text)}${F.shouldBe ? `<div>Should be ${esc(F.shouldBe)}</div>` : ''}</div>`;
+}
+function objectData(asset, o) {
+  const at = (p) => esc(`${caseRoot}/${p}`);
+  const sc = o.scada_latest || {};
+  const fmt = (v, unit) => (typeof v === 'number' ? `${v.toLocaleString('en-US', { maximumFractionDigits: 1 })}${unit ? `&nbsp;${unit}` : ''}` : esc(v));
+  const age = sc.last_update && caseData.as_of ? Math.round((Date.parse(caseData.as_of) - Date.parse(sc.last_update)) / 60000) : 0;
+  const rows = [['AC power', 'ac_kw', 'kW'], ['DC power', 'dc_kw', 'kW'], ['DC voltage', 'dc_v', 'V'], ['Heatsink', 'heatsink_c', '°C'],
+    ['Fan', 'fan_rpm', 'rpm'], ['Status', 'status', '']].filter(([, k]) => sc[k] != null)
+    .map(([name, k, unit]) => `<tr><td>${name}</td><td>${fmt(sc[k], unit)}</td></tr>`);
+  if (sc.last_update) rows.push(`<tr><td>Last update</td><td>${esc(hhmm(sc.last_update))}${age > 2 ? ` <span class="stale">${age} min old</span>` : ''}</td></tr>`);
+  const meter = caseData.meter;
+  const cam = o.camera, ir = o.infrared;
+  const spots = Object.entries(ir?.readings || {}).map(([id, r]) => `<li><span><b>${esc(id)}</b> ${esc(r.label)}</span><span>${r.temp_c != null
+    ? fmt(r.temp_c, '°C') : `max ${fmt(r.max_c, '°C')} · mean ${fmt(r.mean_c, '°C')}`}</span></li>`).join('');
+  const files = [o.sensors?.file && [o.sensors.file, 'SCADA, one row a minute'], ir?.radiometric && [ir.radiometric, 'Infrared, radiometric °C']].filter(Boolean);
+  return `<h3>SCADA at ${esc(hhmm(sc.t || caseData.as_of))}</h3><table class="kv">${rows.join('')}</table>
+    ${meter ? `<div class="cap">Plant revenue meter ${esc(meter.id)}: ${fmt(meter.export_kw, 'kW')}</div>` : ''}
+    ${cam?.file ? `<h3>Camera</h3><a href="${at(cam.file)}" target="_blank"><img src="${at(cam.file)}" alt="${esc(asset)} display camera"></a>
+      <div class="cap">${esc(cam.camera_id || '')} · ${esc(hhmm(cam.captured))}</div>` : ''}
+    ${ir?.file ? `<h3>Infrared</h3><a href="${at(ir.file)}" target="_blank"><img src="${at(ir.file)}" alt="${esc(asset)} infrared"></a>
+      <div class="cap">${esc(ir.camera_id || '')} · ${esc(hhmm(ir.captured))}${ir.span_c ? ` · scale ${esc(ir.span_c[0])} to ${esc(ir.span_c[1])} °C` : ''}</div>
+      ${spots ? `<ul class="spots">${spots}</ul>` : ''}` : ''}
+    ${files.length ? `<h3>Data</h3><div class="files">${files.map(([p, name]) => `<a href="${at(p)}" target="_blank">${esc(name)} <span class="muted">${esc(p.split('/').pop())}</span></a>`).join('')}</div>` : ''}`;
+}
+addEventListener('message', (e) => {
+  if (e.origin !== location.origin && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(e.origin)) return;
+  const m = e.data || {};
+  if (m.twin === 'open' && m.asset) openObject(m.asset);
+  else if (m.twin === 'fail') setFailed(m.asset, m.text, m.should_be);
+});
 
 // ---------- runs: live polling or replay, same conventions as the wall ----------
 const runPath = (id) => id.split('/').map(encodeURIComponent).join('/');
@@ -985,6 +1074,9 @@ async function startRun() {
   $('#optLabels').onchange = (e) => { tagsOn = e.target.checked; $('#pins').classList.toggle('nolabels', !tagsOn); };
   render();
   if (!runId) return;
+  if (runId === 'none') {  // ?run=none: the scan on its own, no run chip or activity
+    $('#runChip').hidden = true; $('#activity').hidden = true; return;
+  }
   if (!replay) { poll(); return; }
   $('#replayCtl').hidden = false;
   try { events = await fetchEvents(); } catch (err) { $('#runChecks').textContent = `can't read run: ${err.message}`; return; }
@@ -1055,7 +1147,12 @@ async function main() {
   }
   placeFrame();
   try {
-    mesh = new SplatMesh({ url: SPLAT_URL, onProgress: (e) => { if (e.lengthComputable && e.total) setPct(Math.min(0.999, e.loaded / e.total)); } });
+    // a full-detail scan renders through Spark's level of detail: a fixed splat budget, fine splats near the camera
+    // and merged ones far away (registration "viewer": {"lod": true, "lod_splats": N}; ?lod=0 or ?lodsplats=N override)
+    const lod = params.has('lod') ? params.get('lod') !== '0' : !!reg?.viewer?.lod;
+    const budget = Number(params.get('lodsplats')) || reg?.viewer?.lod_splats;
+    if (lod && budget) spark.lodSplatCount = budget;
+    mesh = new SplatMesh({ url: SPLAT_URL, lod: lod || undefined, onProgress: (e) => { if (e.lengthComputable && e.total) setPct(Math.min(0.999, e.loaded / e.total)); } });
     splatFrame.add(mesh);
     await mesh.initialized;
   } catch (err) {
@@ -1065,12 +1162,15 @@ async function main() {
   measureScene();
   buildStations();
   buildMarkers();
+  await loadCase();
   home(false);
+  if (params.get('open')) openObject(params.get('open'));
   setPct(1);
   setTimeout(() => { $('#loader').classList.add('done'); revealed(); }, 250);
   setTimeout(() => { $('#loader').hidden = true; }, 1200);  // after the fade, even where transitions are paused
   startRun();
 }
 
-window.twin = { camera, nav, orbit, scene, stations: () => stations, pins: () => pins, setMode, home, viewFrom };
+window.twin = { camera, nav, orbit, scene, stations: () => stations, pins: () => pins, setMode, home, viewFrom, openObject, setFailed,
+  caseData: () => caseData };
 main();
