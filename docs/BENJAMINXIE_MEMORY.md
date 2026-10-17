@@ -31,3 +31,4 @@ Same rules as `docs/MEMORY.md`: append `HH:MM name: text` lines (Pacific time), 
 - 10:18 Benjamin: choose the splat source (`docs/SIMULATOR.md` §4). The visual state comes from a bank of real-world photos.
 - 10:18 Benjamin: feature work starts at 10:45. Build order is in `docs/SIMULATOR.md` §6.
 - 10:25 Benjamin: my working branch is `claude/sweet-faraday-yssuo9`; `main` is shared. Commit signing is off in this repo (`commit.gpgsign false`) so commits stay under my name.
+- 11:29 Claude: commit signing is now on in Benjamin's sessions (supersedes the 10:25 note). The SSH key comes from env `GIT_SIGNING_KEY` (base64) and is written to `~/.ssh/git_signing_key`. The repo-local config sets `gpg.format ssh`, `commit.gpgsign true` and `gpg.ssh.program ssh-keygen`, which overrides the container's `/tmp/code-sign`. Key fingerprint: SHA256:r5+SCC2MC9wmJIlNByrQLOH4tccLZf7qVCaDWOazEgo.
