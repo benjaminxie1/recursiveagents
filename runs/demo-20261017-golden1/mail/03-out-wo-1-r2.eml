@@ -2,64 +2,77 @@ From: GridTwin Ops <ops@gridtwin.example>
 To: Mesa Electrical Field Services <dispatch@mesa-field.example>
 Subject: Re: [WO-1] not verified, please return (scada_fresh_and_running,
  display_lit@inv3_cabinet, jev_fix_verified)
-Date: Sat, 17 Oct 2026 15:49:34 -0700
-Message-ID: <179227737453.21203.14979195235605089467@gridtwin.example>
+Date: Sat, 17 Oct 2026 16:06:56 -0700
+Message-ID: <179227841652.98774.17664449814033582201@gridtwin.example>
 X-GridTwin-Work-Order: WO-1
 X-GridTwin-Round: 2
 X-GridTwin-Simulated: true (never sent)
-In-Reply-To: <179227736441.21203.955899808381328142@gridtwin.example>
-References: <179227736441.21203.955899808381328142@gridtwin.example>
+In-Reply-To: <179227841050.98774.10554749252538168827@gridtwin.example>
+References: <179227841050.98774.10554749252538168827@gridtwin.example>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="===============2153554053727147458=="
+Content-Type: multipart/mixed; boundary="===============0664124143286980355=="
 
---===============2153554053727147458==
+--===============0664124143286980355==
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-Checked SCADA telemetry (data_age_min=E2=80=AF136.0, stale >=E2=80=AF5=E2=80=
-=AFmin, ac_kw=E2=80=AF981.58=E2=80=AFkW); verified cabinet display (dark, con=
-fidence=E2=80=AF0.95); evaluated JEV verdict (not_verified=E2=80=AF100%). All=
- three acceptance criteria failed. Re=E2=80=91run the full reseat procedure, =
-ensure the inverter is truly zero=E2=80=91energy, confirm the module seats au=
-dibly, then power up and wait for SCADA to report data_age_min =E2=89=A4=E2=
-=80=AF5=E2=80=AFmin and AC output =E2=89=88=E2=80=AF1200=E2=80=AFkW. Verify t=
-he cabinet display is illuminated and readable. Once completed, submit a new =
-camera view of the cabinet and a JEV=E2=80=91verified =E2=80=9Cverified=E2=80=
-=9D verdict. I will re=E2=80=91check SCADA freshness, display illumination, a=
-nd the JEV verdict on the next review.
+Checked: SCADA freshness (data_age_min=E2=80=AF=3D=E2=80=AF136=E2=80=AFmin, s=
+tatus=E2=80=AFrunning, ac_kw=E2=80=AF981.58), cabinet display (screen dark, c=
+onfidence=E2=80=AF0.95), JEV verification (not_verified, p=3D0.0). =20
+Failed: SCADA data is stale (136=E2=80=AFmin=E2=80=AF>=E2=80=AF5=E2=80=AFmin)=
+, display remains unlit, and JEV reports the fix as not verified. =20
+
+Required actions: re=E2=80=91perform the reseat, confirm the communication ca=
+rd is seated, power=E2=80=91cycle, then verify SCADA updates within 5=E2=80=
+=AFminutes, ensure the cabinet display is illuminated, and obtain a verified =
+JEV camera capture. =20
+
+Next proof we will check: SCADA data_age_min=E2=80=AF=E2=89=A4=E2=80=AF5=E2=
+=80=AFmin, lit display image, and a JEV =E2=80=9Cverified=E2=80=9D verdict.
 
 Required now:
-  1. Open the AC disconnect breaker for INV-3
-  2. Apply a lockout and tagout device on the AC disconnect
-  3. Open the DC combiner breaker for INV-3
-  4. Apply a lockout and tagout device on the DC combiner
-  5. Power down INV-3 at the DC isolator and AC breaker to ensure zero energy=
- state.
-  6. Remove the inverter access cover and locate the comms/power supply modul=
-e.
-  7. Carefully extract the module, noting orientation and connector positions.
-  8. Inspect the module slot and connectors for debris, oxidation, or damage.
-  9. Reinsert the module firmly until it seats audibly or clicks into place.
-  10. Re-apply power, perform a full reboot cycle, and monitor the display il=
-lumination.
-  11. Verify via SCADA that comms ping replies and telemetry freshness is res=
-tored.
-  12. Confirm AC output has returned to expected ~1200 kW range.
-  13. Close the DC combiner breaker for INV-3
-  14. Close the AC disconnect breaker for INV-3
+  1. Lockout and tagout the dedicated breaker supplying power to INV-3 per el=
+ectrical safety procedures
+  2. Verify zero energy at the inverter cabinet terminals using a calibrated =
+multimeter
+  3. Apply personal protective grounds on the breaker side as required by NFP=
+A 70E
+  4. Ensure trained personnel are standing by at the scene for emergency resp=
+onse
+  5. De-isolate INV-3 from the grid and lock out/tag out the AC and DC discon=
+nects.
+  6. Open the inverter cabinet and visually inspect the communication card fo=
+r any signs of burns, loose harnesses, or corrosion.
+  7. Carefully unplug the fiber and Ethernet cables from the comms card, noti=
+ng their positions.
+  8. Remove the communication card from its slots and reseat it firmly until =
+it clicks into place.
+  9. Reconnect all fiber and Ethernet cables to their original ports on the r=
+eseated card.
+  10. Close the cabinet, restore AC and DC power, and power-cycle INV-3.
+  11. Ping the unit from SCADA to verify comms are restored and the display s=
+hows live data.
+  12. If the display remains dark or ping fails, re-open the cabinet and doub=
+le-check all cable connections.
+  13. Log the repair and update the SCADA asset status to 'online'.
+  14. Remove personal protective grounds only after confirming safe conditions
+  15. Re-energize the system by closing breaker 52-In supplying INV-3
+  16. Restore only the communications task logs after successful verification
+  17. Conduct final lockout release only after supervisory sign-off
 
 Do not:
-  - Do not force the module; if resistance is felt, verify alignment before p=
-roceeding.
-  - Do not skip the power-down step - capacitors retain charge even after iso=
-lator off.
+  - Do not attempt to power-cycle the unit before reseating the card, as this=
+ may mask a loose connection.
+  - Do not force the fiber cables; ensure ends are clean before reinsertion.
+  - Do not ignore a persistently dark display after reseating; further hardwa=
+re replacement may be needed.
   - Do not substitute an inspect-only visit or a power-cycle for the work ord=
 er; it does not restore a failed comms card.
 
 Attached: what the unit must look like when it is fixed, and our failing phot=
 o.
 
---===============2153554053727147458==
+--===============0664124143286980355==
 Content-Type: image/png
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="expected-state.png"
@@ -17070,7 +17083,7 @@ EQPP0VXIpQuFQjabffz4seM4DADsl0ol/OLYRe31ep1Ox3YA6SCJ0LXMpaFDIbEGQTKZlCTpxRdf
 vHv37pMnTwqFAvM2BiR2o94KuVJmBe68LJyclLEN6rruuXMXUkzwBuCrQfD/AzaOgzoqaEN0AAAA
 AElFTkSuQmCC
 
---===============2153554053727147458==
+--===============0664124143286980355==
 Content-Type: image/jpeg
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="verifier-photo.jpg"
@@ -20503,4 +20516,4 @@ p7kR7WmTg7WPVhkcE8j1rkNY8a6h4P1ePQtSKBcbrV7kbhMnThu5HQjr09amTdykkYfiia4t7xdN
 17SJrCa6iLJdhQUbttDj5S3fFN8JXerl49H0zUpb24iQu80rBFVR/E3oO3qa9AOoQa14d+xXcVjN
 azJlrdl+Xn+R9xXnNjaw/Dn+1raK3uVtb+4Ekd3KxlAQDiLf2AOcZ9aTTerBabH/2Q==
 
---===============2153554053727147458==--
+--===============0664124143286980355==--

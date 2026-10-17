@@ -1,8 +1,8 @@
 From: GridTwin Ops <ops@gridtwin.example>
 To: Mesa Electrical Field Services <dispatch@mesa-field.example>
 Subject: [WO-1] INV-2: reseat comms card
-Date: Sat, 17 Oct 2026 15:50:17 -0700
-Message-ID: <179227741754.27154.9780991336329730350@gridtwin.example>
+Date: Sat, 17 Oct 2026 16:07:21 -0700
+Message-ID: <179227844139.325.16369338476227405642@gridtwin.example>
 X-GridTwin-Work-Order: WO-1
 X-GridTwin-Round: 1
 X-GridTwin-Simulated: true (never sent)
@@ -15,39 +15,60 @@ Hello Mesa Electrical Field Services,
 Please carry out work order WO-1 on INV-2 (reseat_comms_card).
 
 Steps, in order:
-  1. Open the AC disconnect breaker for INV-2
-  2. Apply a lockout and tagout device on the AC disconnect for INV-2
-  3. Open the DC combiner breaker for INV-2
-  4. Apply a lockout and tagout device on the DC combiner for INV-2
-  5. Power down INV-2 at the DC isolator and AC breaker to ensure zero energy=
- state
-  6. Open the AC disconnect breaker for INV-2
-  7. Apply a lockout and tagout device on the AC disconnect
-  8. Open the DC combiner breaker for INV-2
-  9. Apply a lockout and tagout device on the DC combiner
-  10. Power down INV-2 at the DC isolator and AC breaker to ensure zero energ=
-y state.
-  11. Remove the inverter access cover and locate the comms/power supply modu=
-le.
-  12. Carefully extract the module, noting orientation and connector position=
-s.
-  13. Inspect the module slot and connectors for debris, oxidation, or damage.
-  14. Reinsert the module firmly until it seats audibly or clicks into place.
-  15. Re-apply power, perform a full reboot cycle, and monitor the display il=
-lumination.
-  16. Verify via SCADA that comms ping replies and telemetry freshness is res=
-tored.
-  17. Confirm AC output has returned to expected ~1200 kW range.
-  18. Close the DC combiner breaker for INV-2
-  19. Close the AC disconnect breaker for INV-2
-  20. Close the DC combiner breaker for INV-2
-  21. Close the AC disconnect breaker for INV-2
+  1. Lockout and tagout breaker 52-In supplying power to INV-2 per NFPA 70E
+  2. Verify zero energy at the inverter cabinet terminals using a calibrated =
+multimeter
+  3. Apply personal protective grounds on the breaker side as required by NFP=
+A 70E
+  4. Ensure trained personnel are standing by at the scene for emergency resp=
+onse
+  5. Lockout and tagout the dedicated breaker supplying power to INV-2 per el=
+ectrical safety procedures
+  6. Verify zero energy at the inverter cabinet terminals using a calibrated =
+multimeter
+  7. Apply personal protective grounds on the breaker side as required by NFP=
+A 70E
+  8. Ensure trained personnel are standing by at the scene for emergency resp=
+onse
+  9. De-isolate INV-2 from the grid and lock out/tag out the AC and DC discon=
+nects
+  10. Open the inverter cabinet and visually inspect the comms card for any s=
+igns of burns, loose harnesses, or corrosion
+  11. Carefully unplug the fiber and Ethernet cables from the comms card, not=
+ing their positions
+  12. Remove the communication card from its slot and reseat it firmly until =
+it clicks into place
+  13. Reconnect all fiber and Ethernet cables to their original ports on the =
+reseated card
+  14. Close the cabinet, restore AC and DC power, and power-cycle INV-2
+  15. Ping the unit from SCADA to verify comms are restored and the display s=
+hows live data
+  16. If the display remains dark or ping fails, re-open the cabinet and doub=
+le-check all cable connections
+  17. Log the repair and update the SCADA asset status to 'online'
+  18. Remove personal protective grounds only after confirming safe conditions
+  19. Re-energize the system by closing the supply breaker and restore the co=
+mmunications task logs after successful verification
+  20. Conduct final lockout release only after supervisory sign-off
+  21. Close the cabinet, restore AC and DC power, and power-cycle INV-2
+  22. Ping the unit from SCADA to verify comms are restored and the display s=
+hows live data
+  23. Remove personal protective grounds only after confirming safe conditions
+  24. Re-energize the system by closing breaker 52-In supplying INV-2
 
 Do not:
-  - Do not force the module; if resistance is felt, verify alignment before p=
-roceeding.
-  - Do not skip the power-down step - capacitors retain charge even after iso=
-lator off.
+  - Do not attempt to power-cycle the unit before reseating the card, as this=
+ may mask a loose connection
+  - Do not force the fiber cables; ensure ends are clean before reinsertion
+  - Do not ignore a persistently dark display after reseating; further hardwa=
+re replacement may be needed
+  - Do not substitute an inspect-only visit or a power-cycle for the work ord=
+er; it does not restore a failed comms card
+  - Do not attempt to power-cycle the unit before reseating the card, as this=
+ may mask a loose connection.
+  - Do not force the fiber cables; ensure ends are clean before reinsertion.
+  - Do not ignore a persistently dark display after reseating; further hardwa=
+re replacement may be needed.
   - Do not substitute an inspect-only visit or a power-cycle for the work ord=
 er; it does not restore a failed comms card.
 
