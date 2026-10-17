@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Splat check</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #050506; color: #d8dde3; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #hud { position: fixed; left: 14px; top: 12px; margin: 0; padding: 10px 12px; max-width: min(620px, calc(100vw - 28px));
+         background: rgba(10, 12, 16, .78); border: 1px solid #2a313a; border-radius: 6px; white-space: pre-wrap; }
+  .pass { color: #6fe39a; } .fail { color: #ff7a7a; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three-0.180.0/three.module.min.js",
+    "three/addons/": "./vendor/three-0.180.0/addons/",
+    "@sparkjsdev/spark": "./vendor/spark-2.3.1/spark.module.js"
+  }
+}
+</script>
+</head>
+<body>
+<canvas id="view" aria-label="Splat check"></canvas>
+<pre id="hud">splat-check: add ?scene=name (loads /assets/splats/name.ply) or ?scene=/path/file.spz
+options: secs=5 warm=2 target=45 r=0.3 lod=1|quality nonlod=1 lodcount=N dpr=1 flip=0</pre>
+<script type="module">
+// Loads one splat scene through the same Spark build as twin.html, orbits slowly inside it and reports load time,
+// splat count and frames per second. The numbers are also on window.__splatCheck for scripted runs.
+import * as THREE from 'three';
+import { SparkRenderer, SplatMesh } from '@sparkjsdev/spark';
+
+const params = new URLSearchParams(location.search);
+const num = (k, d) => (Number.isFinite(Number(params.get(k))) && params.get(k) !== null && params.get(k) !== '' ? Number(params.get(k)) : d);
+const SECS = num('secs', 5), WARM = num('warm', 2), TARGET = num('target', 45), RADIUS = num('r', 0.3);
+const hud = document.getElementById('hud');
+const result = (window.__splatCheck = { status: 'idle' });
+const show = (lines, cls) => { hud.textContent = lines.join('\n'); hud.className = cls || ''; };
+
+// same rule as twin.js: a bare name means /assets/splats/<name>.ply
+const sceneParam = params.get('scene');
+const SPLAT_URL = !sceneParam ? null
+  : /^(https?:)?\/\//.test(sceneParam) || sceneParam.startsWith('/') ? sceneParam
+  : `/assets/splats/${/\.(ply|spz|splat|ksplat|sog|rad)$/i.test(sceneParam) ? sceneParam : `${sceneParam}.ply`}`;
+
+async function main() {
+  if (!SPLAT_URL) return;
+  const lodParam = params.get('lod');
+  const lod = lodParam === 'quality' ? 'quality' : lodParam && lodParam !== '0' ? true : undefined;
+  Object.assign(result, { status: 'loading', scene: sceneParam, url: SPLAT_URL, lod: lod ?? false });
+  show([`loading ${SPLAT_URL}`]);
+
+  const canvas = document.getElementById('view');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(num('dpr', devicePixelRatio), 2));
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x050506);
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.02, 2000);
+  const spark = new SparkRenderer({ renderer, ...(params.get('lodcount') ? { lodSplatCount: num('lodcount', 0) } : {}) });
+  scene.add(spark);
+  const frame = new THREE.Group();            // the usual PLY flip (y down, z forward), as twin.js does without a registration
+  if (num('flip', 1)) frame.rotation.x = Math.PI;
+  scene.add(frame);
+  const resize = () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
+  addEventListener('resize', resize); resize();
+
+  const t0 = performance.now();
+  const mesh = new SplatMesh({ url: SPLAT_URL, lod, ...(params.get('nonlod') ? { nonLod: true } : {}), onProgress: (e) => {
+    if (e.lengthComputable && e.total) show([`loading ${SPLAT_URL}`, `${(100 * e.loaded / e.total).toFixed(0)}%  ${(e.loaded / 1e6).toFixed(0)} of ${(e.total / 1e6).toFixed(0)} MB`]);
+  } });
+  frame.add(mesh);
+  Object.assign(window, { __spark: spark, __mesh: mesh });   // handles for debugging in the console
+  await mesh.initialized;
+  const loadMs = Math.round(performance.now() - t0);
+  const packed = mesh.packedSplats ?? mesh.splats;
+  const splats = mesh.numSplats ?? packed?.numSplats ?? 0;
+  Object.assign(result, { status: 'loaded', loadMs, splats, lodSplats: packed?.lodSplats?.numSplats ?? null });
+
+  // robust centre and size of the scene (2nd to 98th percentile of a sample of centres), in scene coordinates
+  const every = Math.max(1, Math.floor(splats / 40000)), xs = [], ys = [], zs = [], flip = num('flip', 1) ? -1 : 1;
+  packed.forEachSplat((i, c) => { if (i % every === 0) { xs.push(c.x); ys.push(flip * c.y); zs.push(flip * c.z); } });
+  const pct = (a, p) => { a.sort((x, y) => x - y); return a[Math.min(a.length - 1, Math.floor(p * a.length))]; };
+  const lo = [xs, ys, zs].map((a) => pct(a, 0.02)), hi = [xs, ys, zs].map((a) => pct(a, 0.98));
+  const centre = lo.map((l, i) => (l + hi[i]) / 2), size = lo.map((l, i) => hi[i] - l);
+  const radius = RADIUS * Math.max(size[0], size[2], 1e-3);
+  result.extent = { size: size.map((s) => +s.toFixed(2)), centre: centre.map((c) => +c.toFixed(2)), orbitRadius: +radius.toFixed(2) };
+
+  const tLoaded = performance.now();
+  let phase = 'warm', tMeasure = 0, last = 0, verifyLeft = 0, elapsedMeasured = 0, lit = 0;
+  const deltas = [];
+  renderer.setAnimationLoop((now) => {
+    const a = ((now - tLoaded) / 1000) * (2 * Math.PI / 40);       // one slow turn in 40 s
+    camera.position.set(centre[0] + radius * Math.cos(a), centre[1], centre[2] + radius * Math.sin(a));
+    camera.lookAt(centre[0], centre[1], centre[2]);
+    renderer.render(scene, camera);
+    if (phase === 'warm' && now - tLoaded >= WARM * 1000) { phase = 'measure'; tMeasure = now; deltas.length = 0; Object.assign(result, { status: 'measuring' }); }
+    else if (phase === 'measure') {
+      deltas.push(now - last);
+      if (now - tMeasure >= SECS * 1000) { phase = 'verify'; verifyLeft = 8; elapsedMeasured = now - tMeasure; }
+    } else if (phase === 'verify') {
+      lit = Math.max(lit, centreLit());
+      if (--verifyLeft === 0) { phase = 'done'; finish(elapsedMeasured); }
+    }
+    last = now;
+  });
+
+  // share of the centre 256x256 pixels that are not the background, read right after a render. It runs on the frames
+  // after the timed window, so it cannot disturb the fps; a blank canvas is not a pass.
+  function centreLit() {
+    const gl = renderer.getContext(), n = 256, w = Math.min(n, canvas.width), h = Math.min(n, canvas.height);
+    const px = new Uint8Array(w * h * 4);
+    gl.readPixels((canvas.width - w) >> 1, (canvas.height - h) >> 1, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    let lit = 0;
+    for (let i = 0; i < px.length; i += 4) if (Math.max(px[i], px[i + 1], px[i + 2]) > 24) lit++;
+    return lit / (w * h);
+  }
+
+  function finish(elapsed) {
+    const sorted = [...deltas].sort((x, y) => x - y);
+    const fps = deltas.length / (elapsed / 1000);
+    const verdict = lit < 0.05 ? 'BLANK' : fps >= TARGET ? 'PASS' : 'FAIL';
+    Object.assign(result, {
+      status: 'done', drawnSplats: mesh.context?.numSplats?.value ?? mesh.numSplats, litFraction: +lit.toFixed(3), fps: +fps.toFixed(1), frames: deltas.length, seconds: +(elapsed / 1000).toFixed(2),
+      p95FrameMs: +sorted[Math.floor(0.95 * (sorted.length - 1))].toFixed(1), maxFrameMs: +sorted[sorted.length - 1].toFixed(1),
+      slowFrames: deltas.filter((d) => d > 1000 / 30).length, target: TARGET, verdict,
+      canvas: `${canvas.width}x${canvas.height}`, dpr: renderer.getPixelRatio(),
+    });
+    show([
+      `scene   ${SPLAT_URL}${lod ? `  (lod ${lod === true ? 'tiny' : lod})` : ''}`,
+      `splats  ${splats.toLocaleString()}${result.lodSplats ? `  (lod tree ${result.lodSplats.toLocaleString()}, ${Number(result.drawnSplats).toLocaleString()} drawn per frame)` : ''}`,
+      `load    ${(loadMs / 1000).toFixed(2)} s`,
+      `fps     ${result.fps} over ${result.seconds} s, ${result.frames} frames, p95 ${result.p95FrameMs} ms, worst ${result.maxFrameMs} ms, ${result.slowFrames} slower than 30 fps`,
+      `canvas  ${result.canvas} at pixel ratio ${result.dpr}`,
+      `drawn   ${(100 * lit).toFixed(0)}% of the centre of the canvas is not background${verdict === 'BLANK' ? ' - nothing is visible, the fps above means nothing' : ''}`,
+      `${verdict}    target ${TARGET} fps`,
+    ], verdict === 'PASS' ? 'pass' : 'fail');
+  }
+}
+
+main().catch((err) => {
+  Object.assign(result, { status: 'error', error: String(err?.message ?? err) });
+  show([`error: ${result.error}`], 'fail');
+});
+</script>
+</body>
+</html>

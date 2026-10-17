@@ -9,3 +9,5 @@ assets/splats/*.spz
 assets/footage/*.mp4
 node_modules/
 .DS_Store
+assets/splats/_*
+assets/splats/*.assets.json
