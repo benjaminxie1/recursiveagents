@@ -7,6 +7,7 @@
 //   child -> parent  {source: 'gridtwin-twin', type: 'ready', assets: [...]}
 //                    {source: 'gridtwin-twin', type: 'select', asset, status, note}   (asset null when deselected)
 //                    {source: 'gridtwin-twin', type: 'mode', mode}
+//                    {source: 'gridtwin-twin', type: 'cta', action: 'work_order', asset}  (the data panel's Dispatch button)
 //   parent -> child  {type: 'focus', asset}  {type: 'mode', mode: 'orbit'|'walk'}  {type: 'thermal', on}  {type: 'home'}
 //                    {type: 'status', assets: {ID: 'bad'|'hot'|'work'|'iso'|'ok'|'idle'}}  (overrides the run log)
 //                    {type: 'run', run}  {type: 'inside', asset?}  (walk into the equipment room)
@@ -15,6 +16,7 @@
 // posts {source: 'gridtwin-twin', scene: 'interior', type: 'select', asset} the same way.
 import * as THREE from 'three';
 import { PlantView, loadScene } from './splat.js';
+import { loadCase, panelHTML, hasHotSpot } from './twin-panel.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -31,6 +33,9 @@ const send = (msg) => { try { if (parent !== window) parent.postMessage({ source
 
 let view, scene, orbit, selected = null, mode = 'orbit', thermal = params.get('thermal') === '1';
 let fromRun = {}, override = {};
+// frontloaded per-asset evidence (SCADA, camera, infrared), ?case= or Will's s06 case; null until loaded or if missing
+const CASE = params.get('case') || 'assets/demo/s06_case';
+let caseData = null;
 const INSIDE = ['INV-1', 'INV-2', 'INV-3', 'INV-4', 'XFMR-1', 'CB-1.5'];  // labelled in tugboat.registration.json
 function goInside(asset) {
   const here = new URL(location.href);
@@ -42,7 +47,11 @@ function goInside(asset) {
   send({ type: 'scene', scene: 'interior', asset: asset || null });
   location.href = `twin.html?${q}`;
 }
-const statusOf = (id) => ({ ...(fromRun[id] || {}), ...(override[id] ? { cls: override[id], hot: override[id] === 'hot' } : {}) });
+const statusOf = (id) => {
+  const s = { ...(fromRun[id] || {}), ...(override[id] ? { cls: override[id], hot: override[id] === 'hot' } : {}) };
+  if (hasHotSpot(caseData?.packs?.[id]) && s.cls !== 'ok') s.hot = true;  // an infrared hot spot is flagged in 3D whatever the run says
+  return s;
+};
 
 // ---------- fold the run log into per-asset status ----------
 let mentionRe = null;
@@ -92,7 +101,7 @@ function derive(evs) {
 }
 
 const runPath = (id) => id.split('/').map(encodeURIComponent).join('/');
-let nEvents = -1, pollTimer = null;
+let nEvents = -1, pollTimer = null, autoSeq = null;
 async function poll() {
   clearTimeout(pollTimer);
   if (!runId) return;
@@ -101,7 +110,12 @@ async function poll() {
     if (res.ok) {
       const evs = [];
       for (const line of (await res.text()).split('\n')) { if (!line.trim()) continue; try { evs.push(JSON.parse(line)); } catch { break; } }
-      if (evs.length !== nEvents) { nEvents = evs.length; fromRun = derive(evs); refresh(); }
+      if (evs.length !== nEvents) {
+        nEvents = evs.length; fromRun = derive(evs); refresh();
+        // the agent names the broken object (its diagnosis, or opening it in the twin): jump there and open its data
+        const named = evs.filter((e) => (e.type === 'demo.diagnosis' || e.type === 'demo.twin' || e.type === 'finding') && (e.data?.asset && scene.anchors[e.data.asset])).at(-1);
+        if (named && named.seq !== autoSeq) { autoSeq = named.seq; select(named.data.asset, true); }
+      }
       if (evs.some((e) => e.type === 'demo.final' || e.type === 'final')) return;  // closed: stop polling
     }
   } catch { /* run not started yet */ }
@@ -189,9 +203,34 @@ function placePins() {
   }
 }
 
+// the side panel takes the right of the frame: shift the 3D image left by half of it, so the asset stays in view
+function applyOffset() {
+  if (!view) return;
+  const c = view.renderer.domElement, w = c.clientWidth, h = c.clientHeight, card = $('#card');
+  const pw = !card.hidden && card.classList.contains('panel') && w > 560 ? card.offsetWidth + 12 : 0;
+  if (pw) view.camera.setViewOffset(w, h, pw / 2, 0, w, h); else view.camera.clearViewOffset();
+  view.camera.updateProjectionMatrix();
+  view.touch();
+}
+addEventListener('resize', () => setTimeout(applyOffset, 50));
 function showCard(id) {
   const card = $('#card');
-  if (!id) { card.hidden = true; return; }
+  if (!id) { card.hidden = true; card.className = 'card'; applyOffset(); return; }
+  const pack = caseData?.packs?.[id];
+  if (pack) {
+    card.className = 'card panel';
+    card.innerHTML = panelHTML(pack, caseData, { status: statusOf(id), inside: INSIDE.includes(id) });
+    card.querySelector('.x').onclick = () => select(null, true);
+    card.querySelectorAll('[data-cta]').forEach((b) => { b.onclick = () => {
+      if (b.dataset.cta === 'inside') { goInside(id); return; }
+      send({ type: 'cta', action: b.dataset.cta, asset: id });
+      b.textContent = 'Work order sent ✓'; b.disabled = true;
+    }; });
+    card.hidden = false;
+    applyOffset();
+    return;
+  }
+  card.className = 'card';
   const s = statusOf(id), cls = s.hot ? 'hot' : s.cls || 'idle';
   const st = Object.entries(scene.stations || {}).filter(([, v]) => v.asset === id).map(([k]) => k);
   card.innerHTML = `<button class="x" aria-label="Close">×</button><h3>${esc(id)}<small>${esc(kindOf(id))}</small></h3>
@@ -202,6 +241,7 @@ function showCard(id) {
   card.querySelector('.inside')?.addEventListener('click', () => goInside(id));
   card.querySelector('.x').onclick = () => select(null, true);
   card.hidden = false;
+  applyOffset();
 }
 
 function select(id, fromUser) {
@@ -405,6 +445,7 @@ addEventListener('message', (e) => {
 });
 
 async function main() {
+  const casing = loadCase(CASE).catch(() => null);
   scene = await loadScene();
   const ids = Object.keys(scene.anchors).sort((a, b) => b.length - a.length).map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   mentionRe = new RegExp(`(?<![\\w.-])(${ids.join('|')})(?![\\w-]|\\.\\d)`, 'g');
@@ -419,6 +460,7 @@ async function main() {
   let pct = 0;
   const bump = setInterval(() => { pct = Math.min(92, pct + (92 - pct) * 0.08); $('#bar').style.width = `${pct}%`; $('#pct').textContent = `Loading twin ${Math.round(pct)}%`; }, 120);
   await view.load(undefined, scene.sky);
+  caseData = await casing;
   clearInterval(bump);
   $('#bar').style.width = '100%';
   view.camera.position.copy(OVERVIEW.pos);
