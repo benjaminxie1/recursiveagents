@@ -1,8 +1,8 @@
 From: GridTwin Ops <ops@gridtwin.example>
 To: Mesa Electrical Field Services <dispatch@mesa-field.example>
 Subject: [WO-1] INV-2: reseat comms card
-Date: Sat, 17 Oct 2026 15:30:58 -0700
-Message-ID: <179227625816.42513.7231367972235066271@gridtwin.example>
+Date: Sat, 17 Oct 2026 15:38:51 -0700
+Message-ID: <179227673162.48957.10172275464644935250@gridtwin.example>
 X-GridTwin-Work-Order: WO-1
 X-GridTwin-Round: 1
 X-GridTwin-Simulated: true (never sent)
@@ -15,33 +15,60 @@ Hello Mesa Electrical Field Services,
 Please carry out work order WO-1 on INV-2 (reseat_comms_card).
 
 Steps, in order:
-  1. Shut OFF / tagout INV-2 at upstream breaker 52-In labeled 'INV-2' per si=
-ngle-line diagram
-  2. Open the inverter cabinet door and inspect the comms card for looseness =
-or damage
-  3. Remove the communication card from its slot and reseat it (or reseat fib=
-er/connector)
-  4. Ensure the card is fully seated and connectors are clean before reinsert=
-ing
-  5. Close the cabinet door and perform a power cycle if required
-  6. Monitor SCADA for data update within 2 minutes and verify comms ping is =
-reachable
-  7. Open INV-2 cabinet door and verify the display is dark (no readings).
-  8. Carefully remove the communications card from its slot or disconnect and=
- reseat the fiber/connector at INV-2 cabinet.
-  9. Ensure the card is fully seated and all connectors are clean before rein=
-serting.
-  10. Close the cabinet door and power cycle INV-2 if required.
-  11. Monitor SCADA for update within 2 minutes and verify communications pin=
-g is reachable.
-  12. If SCADA remains stale or ping fails after reseating, proceed to replac=
-e the comms module per inverter manual.
-  13. Close upstream breaker 52-In labeled 'INV-2' to re-energize the inverter
-  14. Verify SCADA data age is less than 2 minutes and ping is reachable
-  15. Confirm inverter display is lit and showing operational readings on reg=
-istered camera feed
+  1. Notify operations and maintenance personnel per =C2=A71910.147(c)(6)(i)
+  2. Shut down the inverter and isolate power sources per plant shutdown proc=
+edure
+  3. Verify power is isolated at the inverter's dedicated AC disconnect switc=
+h and upstream breaker (52-In) before accessing INV-2 cabinet
+  4. Confirm zero energy by performing a voltage test on the isolated circuit
+  5. Apply lockout/tagout devices to the AC disconnect switch and upstream br=
+eaker per plant LOTO program =C2=A71910.147(c)(7)
+  6. Verify mains and PV input isolation are OFF before accessing the inverte=
+r compartment
+  7. Notify operations and maintenance personnel per =C2=A71910.147(c)(6)(i)
+  8. Shut down INV-2 and isolate power sources per plant shutdown procedure
+  9. Verify power is isolated at INV-2's dedicated AC disconnect switch and u=
+pstream breaker (52-In) before accessing the inverter compartment
+  10. Confirm zero energy by performing a voltage test on the isolated circuit
+  11. Apply lockout/tagout devices to the AC disconnect switch and upstream b=
+reaker per plant LOTO program =C2=A71910.147(c)(7)
+  12. Verify mains and PV input isolation are OFF before accessing the invert=
+er compartment
+  13. Open INV-2 cabinet door and locate the inverter comms card (usually mou=
+nted on the side or rear panel)
+  14. Carefully unseat the comms card by pulling it straight out of its socke=
+t, inspecting the card edge and connector for corrosion or bent pins
+  15. Reinsert the comms card firmly until it seats fully (listen/feel for th=
+e latch click)
+  16. Close the cabinet door, restore mains and PV input, and power cycle the=
+ inverter
+  17. Monitor SCADA for data freshness (target < 5 min) and verify the invert=
+er display is lit and responding
+  18. If communication remains down, proceed to replace the comms card
+  19. Inspect the LOTO devices for damage and ensure all personnel are clear =
+of the equipment
+  20. Remove all lockout/tagout devices in accordance with =C2=A71910.147(c)(=
+7)(iii)(A)(1) and =C2=A71910.147(c)(7)(iii)(B)
+  21. Restore power by closing breaker 52-In (AC disconnect switch)
+  22. Notify personnel that the system has been re-energized and perform a st=
+art-up check before resuming operations
+  23. Remove all lockout/tagout devices in accordance with =C2=A71910.147(c)(=
+7)(iii)(A)(1) and =C2=A71910.147(c)(7)(iii)(B)
+  24. Restore power by closing breaker 52-In (AC disconnect switch)
+  25. Notify personnel that the system has been re-energized and perform a st=
+art-up check before resuming operations
 
 Do not:
+  - Do not attempt to reseat the comms card with power applied; risk of elect=
+rical shock or further hardware damage
+  - Do not force the card if resistance is felt; check for obstructions or mi=
+salignment before reinserting
+  - Do not substitute an inspect-only visit or a power-cycle for the work ord=
+er; it does not restore a failed comms card
+  - Do not attempt to reseat the comms card with power applied; risk of elect=
+rical shock or further hardware damage.
+  - Do not force the card if resistance is felt; check for obstructions or mi=
+salignment before reinserting.
   - Do not substitute an inspect-only visit or a power-cycle for the work ord=
 er; it does not restore a failed comms card.
 
@@ -52,19 +79,6 @@ We will verify against the plant before closing this order:
 s, not the contractor's photo
   - JEV verdict 'verified' from the registered camera stations and the sensor=
  state
-  - INV-2 SCADA data_age_min is less than 2 and status is 'running' as read d=
-irectly from plant HMI or historian
-  - INV-2 answers comms_ping with successful response (no timeout)
-  - Inverter display on INV-2 is lit and shows active operational readings in=
- a verifier-selected camera view
-  - INV-3 SCADA data_age_min at most 5 and status running
-  - INV-3 answers comms_ping (its comms card is back on the network)
-  - INV-3 display lit and showing readings in a camera view the verifier pick=
-s, not the contractor's photo
-  - The SCADA data age for INV-3, read directly from the plant HMI or histori=
-an, is less than 2 minutes.
-  - The inverter's display on INV-3 is lit and shows active operational readi=
-ngs (not dark or blank), confirming local power and responsiveness.
 
 (Includes lessons from verified past incidents: L-demo-20261017-golden1.)
 

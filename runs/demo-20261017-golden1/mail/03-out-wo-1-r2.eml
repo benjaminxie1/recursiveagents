@@ -2,52 +2,78 @@ From: GridTwin Ops <ops@gridtwin.example>
 To: Mesa Electrical Field Services <dispatch@mesa-field.example>
 Subject: Re: [WO-1] not verified, please return (scada_fresh_and_running,
  display_lit@inv3_cabinet, jev_fix_verified)
-Date: Sat, 17 Oct 2026 15:29:56 -0700
-Message-ID: <179227619656.30241.14334213667408765843@gridtwin.example>
+Date: Sat, 17 Oct 2026 15:38:18 -0700
+Message-ID: <179227669856.38997.16551698143980650573@gridtwin.example>
 X-GridTwin-Work-Order: WO-1
 X-GridTwin-Round: 2
 X-GridTwin-Simulated: true (never sent)
-In-Reply-To: <179227618856.30241.12132144059370313791@gridtwin.example>
-References: <179227618856.30241.12132144059370313791@gridtwin.example>
+In-Reply-To: <179227668713.38997.4434261469855724519@gridtwin.example>
+References: <179227668713.38997.4434261469855724519@gridtwin.example>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="===============0581056108788311070=="
+Content-Type: multipart/mixed; boundary="===============8262883204293910094=="
 
---===============0581056108788311070==
+--===============8262883204293910094==
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-Checked SCADA data age (136=E2=80=AFmin, stale=E2=80=AF>=E2=80=AF5), inverter=
- display (dark, confidence=E2=80=AF0.95), and JEV verification (not=E2=80=AFv=
-erified, p=E2=80=AF=3D=E2=80=AF0). You must reseat the communications card, c=
-onfirm power is restored, ensure the cabinet display lights up, and verify fr=
-esh SCADA data (<5=E2=80=AFmin). Submit new camera footage showing a lit disp=
-lay and SCADA data age <2=E2=80=AFmin. We will re=E2=80=91run the scada_fresh=
-_and_running, display_lit@inv3_cabinet, and jev_fix_verified checks.
+Checked: SCADA freshness (data_age_min=E2=80=AF=3D=E2=80=AF136=E2=80=AFmin, s=
+tatus=E2=80=AFrunning, ac_kw=E2=80=AF=3D=E2=80=AF981.58), inverter cabinet di=
+splay (screen dark, confidence=E2=80=AF0.95), JEV verification (not_verified=
+=E2=80=AFp=3D0.0; telemetry stale, camera feed failed).
+
+Failed: SCADA data=E2=80=AF>=E2=80=AF5=E2=80=AFmin old, display not lit, JEV =
+cannot verify fix.
+
+You must re=E2=80=91isolate INV=E2=80=913, reseat or replace the communicatio=
+ns card, confirm lockout/tagout removal, restore power, and ensure the cabine=
+t screen illuminates. Then verify SCADA updates to =E2=89=A45=E2=80=AFmin and=
+ capture a fresh verifier=E2=80=91camera view of the cabinet display.
+
+We will next check: SCADA data_age_min, display illumination from the verifie=
+r camera, and a new JEV verification result.
 
 Required now:
-  1. Shut OFF / tagout INV-3 at upstream breaker 52-In labeled 'INV-3' per si=
-ngle-line diagram
-  2. Open the inverter cabinet door and visually inspect the comms card for a=
-ny obvious damage or loose seating.
-  3. Carefully remove the communication card from its slot (if applicable) or=
- disconnect and reseat the fiber/connector at INV-3 cabinet.
-  4. Ensure the card is fully seated and connectors are clean before reinsert=
-ing.
-  5. Close the cabinet door and power cycle the inverter if required.
-  6. Monitor SCADA for update within 2 minutes; verify communications ping is=
- reachable.
-  7. If SCADA remains stale or ping fails after reseating, proceed to replace=
- the comms module per inverter manual.
-  8. Re-energize INV-3 by closing upstream breaker 52-In
+  1. Notify operations and maintenance personnel per =C2=A71910.147(c)(6)(i)
+  2. Shut down the inverter and isolate power sources per plant shutdown proc=
+edure
+  3. Verify power is isolated at the inverter's dedicated AC disconnect switc=
+h and upstream breaker (52-In) before accessing INV-3 cabinet
+  4. Confirm zero energy by performing a voltage test on the isolated circuit
+  5. Apply lockout/tagout devices to the AC disconnect switch and upstream br=
+eaker per plant LOTO program =C2=A71910.147(c)(7)
+  6. Verify mains and PV input isolation are OFF before accessing the inverte=
+r compartment.
+  7. Open INV-3 cabinet door and locate the inverter comms card (usually moun=
+ted on the side or rear panel).
+  8. Carefully unseat the comms card by pulling it straight out of its socket=
+, inspecting the card edge and connector for corrosion or bent pins.
+  9. Reinsert the comms card firmly until it seats fully (listen/feel for the=
+ latch click).
+  10. Close the cabinet door, restore mains and PV input, and power cycle the=
+ inverter.
+  11. Monitor SCADA for data freshness (target < 5 min) and verify the invert=
+er display is lit and responding.
+  12. If communication remains down, proceed to replace the comms card.
+  13. Inspect the LOTO devices for damage and ensure all personnel are clear =
+of the equipment
+  14. Remove all lockout/tagout devices in accordance with =C2=A71910.147(c)(=
+7)(iii)(A)(1) and =C2=A71910.147(c)(7)(iii)(B)
+  15. Restore power by closing breaker 52-In (AC disconnect switch)
+  16. Notify personnel that the system has been re-energized and perform a st=
+art-up check before resuming operations
 
 Do not:
+  - Do not attempt to reseat the comms card with power applied; risk of elect=
+rical shock or further hardware damage.
+  - Do not force the card if resistance is felt; check for obstructions or mi=
+salignment before reinserting.
   - Do not substitute an inspect-only visit or a power-cycle for the work ord=
 er; it does not restore a failed comms card.
 
 Attached: what the unit must look like when it is fixed, and our failing phot=
 o.
 
---===============0581056108788311070==
+--===============8262883204293910094==
 Content-Type: image/png
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="expected-state.png"
@@ -17058,7 +17084,7 @@ EQPP0VXIpQuFQjabffz4seM4DADsl0ol/OLYRe31ep1Ox3YA6SCJ0LXMpaFDIbEGQTKZlCTpxRdf
 vHv37pMnTwqFAvM2BiR2o94KuVJmBe68LJyclLEN6rruuXMXUkzwBuCrQfD/AzaOgzoqaEN0AAAA
 AElFTkSuQmCC
 
---===============0581056108788311070==
+--===============8262883204293910094==
 Content-Type: image/jpeg
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="verifier-photo.jpg"
@@ -20491,4 +20517,4 @@ p7kR7WmTg7WPVhkcE8j1rkNY8a6h4P1ePQtSKBcbrV7kbhMnThu5HQjr09amTdykkYfiia4t7xdN
 17SJrCa6iLJdhQUbttDj5S3fFN8JXerl49H0zUpb24iQu80rBFVR/E3oO3qa9AOoQa14d+xXcVjN
 azJlrdl+Xn+R9xXnNjaw/Dn+1raK3uVtb+4Ekd3KxlAQDiLf2AOcZ9aTTerBabH/2Q==
 
---===============0581056108788311070==--
+--===============8262883204293910094==--

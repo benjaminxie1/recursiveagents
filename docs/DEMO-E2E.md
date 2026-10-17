@@ -6,7 +6,7 @@ This is the script for the end-to-end flow in `gridtwin/demo/CONTRACT.md` (scena
 It supersedes the stage plan in `docs/DEMO.md` for the live demo; the hook and the backup-recording rules still come from there.
 Judge answers that are not about this flow stay in `docs/JUDGE_QA.md`.
 
-Status: final for the 15:30 freeze, 15:34, against `b0728cf` on `will/agent-build`; both golden runs were re-recorded at 15:29 and 15:30 on that code (tugboat twin, shortcut fix, display-camera peer), and every stage line below matches them.
+Status: final for the 15:30 freeze, 15:40, against `294f534` on `will/agent-build`; both golden runs were re-recorded at 15:37 and 15:38 on that code, and every stage line below matches them.
 `2f20124` (15:33) came after the recording: it hardens the server API and drops planner acceptance items that repeat a verifier bar, so a live work order lists fewer acceptance lines than the golden ones; both golden runs still pass the contract validator at `2f20124`.
 Every `[fill]` is a value that only the golden run can give; nothing in brackets gets said on stage until it is filled from a real run.
 Every `[confirm]` is a page detail to check against the built page at go/no-go.
@@ -29,39 +29,43 @@ Facts from the code at `efd063d` that the steps below rely on:
 
 ## Measured: the golden runs (real runs only)
 
-Re-recorded live on Crusoe at 15:29 and 15:30, code at `b0728cf` (with `0980751`, the healthy peer seen through a display camera; `5cd28e8`, only the system's own sentence forbids the shortcut; and `b0728cf`, the tugboat scan as the twin, whose registration JEV reads), with a fresh lesson store `runs/e2e-kb-golden`.
-These are the numbers that go on stage; both runs pass the contract validator (`python -m tests.demo.contract runs/<id>`: OK), every image and email they reference is served (HTTP 200, 11 of 11 and 6 of 6), and both carry `twin.html?scene=tugboat.splat&run=<id>`.
+Re-recorded live on Crusoe at 15:37 and 15:38, code at `294f534`, with a fresh lesson store `runs/e2e-kb-golden`.
+This interim recording includes the twin-open event (`294f534`) and the tugboat files from `will/twin-viewer` 159d9ee; it comes before the `will/s06-case` merge, which fills the twin's data panel.
+These are the numbers that go on stage; both runs pass the contract validator (`python -m tests.demo.contract runs/<id>`: OK), every image and email they reference is served (HTTP 200), and both carry `twin.html?scene=tugboat.splat&run=<id>`.
 
 Golden run 1, `runs/demo-20261017-golden1/` (`s06_stale_scada`, empty memory):
 - VERIFIED in 2 rounds; the judge scores it success, no false done, 0 safety violations.
-- Wall time 35.2 s; model cost $0.0042 for the whole run.
-- Stage starts, seconds after the goal: diagnose 0, plan 10, dispatch, contractor and verify round 1 at 23, redispatch 27, contractor and verify round 2 at 31, memory 35, final 35.
+- Wall time 56.5 s; model cost $0.0041 for the whole run; the log shows 4 Crusoe `RateLimitError` retries.
+- Stage starts, seconds after the goal: diagnose 0, plan 32, dispatch r1 40, contractor r1 40, verify r1 40, redispatch r1 48, contractor r2 51, verify r2 51, memory 56, final 56.
 - INV-3 at diagnosis: `data_age_min` 91, frozen since 09:29, while the other inverters read 0.0 minutes.
-- Cameras at diagnosis: Omni on `inv3_cabinet`: "The inverter's display is not lit and shows no readings; the screen appears dark."; on the healthy peer `inv2_display`: "Yes, the inverter's display is lit and shows the numbers 482, 271, and 256 along with a bar graph."
-- Diagnosis card: "communication failure", 98% confident.
+- The diagnoser opens INV-3 in the twin (`demo.twin`, reason "stale SCADA"), so the embedded twin flies to it and marks it red until a passing verdict.
+- Cameras at diagnosis: Omni on `inv3_cabinet`: "The inverter's display is not lit and shows no readings; the screen appears dark."; on the healthy peer `inv2_display`: "The inverter's display is lit and shows three numerical values (482, 271, 256) along with a bar graph."
+- Diagnosis card: "communication_failure", 98% confident.
 - Diagnosis team: lead on Nemotron Super; `sensors` and `vision` on Nemotron Lightning; `spatial` is a rule in code.
 - Plan team: planner on Nemotron Super; `safety` on Nemotron Nano, `repair` on Nemotron Lightning, `acceptance` on Nemotron Super.
 - Verify team, each round: lead on gpt-oss-120b; `telemetry_judge`, `visual_judge` and `jev_judge` are rules in code; `meta_judge` on gpt-oss-120b.
 - JEV's input from the twin: 2 camera stations on the scan see INV-3, `inv3_cabinet` at 1.2 m and `inv3_display` at 0.82 m.
-- Round 1: the work order's forbid list was empty, the contractor took the shortcut (`dispatch_tech INV-3 inspect`, "power-cycled the display and left"); `scada_fresh_and_running`, `display_lit@inv3_cabinet` and `jev_fix_verified` failed; TypeSafe Jev (`backend: jev`) said `not_verified`, `p_verified` 0.0, with "0 independent confirmations".
-- Redispatch: the second work order forbids "an inspect-only visit or a power-cycle".
-- Round 2: open `52-I3`, `reseat_comms_card`, close; every check passed on `inv3_display` ("lit numbers (683, 412, 297)"); Jev said `verified`, `p_verified` 0.96, with "1 independent confirmation".
-- Expected-state image: `photo_bank` (the stored healthy INV-3 photo under the banner).
+- Work order 1 lists 4 acceptance lines, the verifier's own bars, and its forbid list does not ban the shortcut (2 safety item(s) from the planner).
+- Round 1: the contractor took the shortcut (`dispatch_tech INV-3 inspect`, "power-cycled the display and left"); `scada_fresh_and_running`, `display_lit@inv3_cabinet`, `jev_fix_verified` failed; TypeSafe Jev (`backend: jev`) said `not_verified`, `p_verified` 0.0.
+- Redispatch: the second work order adds the system's sentence "Do not substitute an inspect-only visit or a power-cycle for the work order" to its forbid list.
+- Round 2: open `52-I3`, `reseat_comms_card`, close; every check passed on `inv3_display` ("The inverter's front display shows lit numbers (683, 412, 297) and an upward-trending graph, indicating it is active and displaying live readings."); Jev said `verified`, `p_verified` 0.96.
+- Expected-state image: `photo_bank`.
 
 Golden run 2, `runs/demo-20261017-golden2/` (`s06b_stale_scada_inv2`, the same failure on INV-2, memory from run 1):
 - VERIFIED in 1 round; judge success, no false done, 0 safety violations.
-- Wall time 61.7 s; model cost $0.0041; about 28 s of it is Crusoe rate-limit retries on Nemotron Super in the plan stage (the log shows `RateLimitError`, attempts 1 to 4), so the plan stage ran from 14 s to 56 s.
-- INV-2 at diagnosis: `data_age_min` 76; the healthy peer `inv3_display` is read as lit ("742, 618, 236"); the diagnosis team adds a `history` sub-agent on Nemotron Lightning because memory has a lesson; the card says "Comms Card Failure", 96% confident.
-- The work order lists `L-demo-20261017-golden1` in `lessons_applied`, and its only forbid item is the lesson's sentence: "Do not substitute an inspect-only visit or a power-cycle for the work order; it does not restore a failed comms card."
-- The contractor skipped the shortcut and every check passed in round 1 on `inv2_display`; Jev said `verified`, `p_verified` 0.80.
+- Wall time 30.4 s; model cost $0.0045; no rate-limit retries.
+- Stage starts: diagnose 0, plan 13, dispatch r1 26, contractor r1 26, verify r1 26, memory 30, final 30.
+- INV-2 at diagnosis: `data_age_min` 76; the twin opens INV-2; the healthy peer `inv3_display` is read as lit; the diagnosis team adds a `history` sub-agent on Nemotron Lightning because memory has a lesson; the card says "Critical communications failure", 94% confident.
+- The work order lists `L-demo-20261017-golden1` in `lessons_applied`, its 4 acceptance lines are INV-2's own, and its forbid list carries the lesson's sentence: "Do not substitute an inspect-only visit or a power-cycle for the work order; it does not restore a failed comms card"
+- The contractor skipped the shortcut and every check passed in round 1 on `inv2_display`; Jev said `verified`, `p_verified` 0.81.
 - Memory stats line: "demo-20261017-golden1: 2 rounds -> demo-20261017-golden2: 1 round".
 
-Live reliability at current code: every live run since `efd063d` that this session recorded or read ended VERIFIED with judge success (9 of 9, including both sets of golden re-records).
+Live reliability at current code: every live run since `efd063d` that this session recorded or read ended VERIFIED with judge success (11 of 11, including all three sets of golden re-records).
 One discarded fresh-memory attempt at `0980751` passed in one round with no shortcut, because the planner's own forbid list said "Do not skip the power cycle"; `5cd28e8` fixed that, so now only the system's own sentence (from redispatch or a recalled lesson) forbids the shortcut.
 Six live runs between 14:28 and 14:46 ended ESCALATED, five of them on false vetoes by the earlier meta judge, which `b4e9c6f` limited to a failed judge or a contradicting plant reading.
-Rate limits are the live-run risk: golden run 2 lost about 28 s to them while another session's runs were likely sharing the key, which is why pre-flight step 8 stops every other run.
+Rate limits are the live-run risk: the `b0728cf` golden run 2 lost about 28 s to them, this golden run 1's diagnose stage took 32 s instead of about 10 s on 4 retries, and a 15:35 integration run 2 by splat-segment hit 10 Nemotron Super 429s and took 185 s instead of about 50 s while other sessions were on Crusoe, which is why pre-flight step 8 stops every other run.
 
-A live run finishes about 0:55 into the script (0:20 plus 35 s), or as late as about 1:20 when Crusoe rate-limits, before Will reaches the verify stage; he narrates cards that are already on the page, which is what the script assumes.
+A live run finishes about 1:16 into the script (0:20 plus 56 s in golden run 1), later when Crusoe rate-limits, before Will reaches the verify stage; he narrates cards that are already on the page, which is what the script assumes.
 
 ## The story in one breath
 
@@ -126,7 +130,7 @@ Will says:
 On screen (events `demo.sensor`, `demo.camera`, `demo.diagnosis`, and `demo.agent` with `team: diagnose`):
 - The SCADA panel: INV-3 reads normal numbers but is marked stale, 91 minutes, "frozen since 09:29"; the other three inverters read 0.0 minutes.
 - The camera cards: Nemotron Omni says INV-3's display (`inv3_cabinet`) is dark and the healthy peer, INV-2's display (`inv2_display`), is lit with readings.
-- The diagnosis team: a lead on Nemotron Super; `sensors` and `vision` on Nemotron Lightning; `spatial` as a rule in code; then the diagnosis card, "communication failure", 98% confident in golden run 1 (a live run words it its own way).
+- The diagnosis team: a lead on Nemotron Super; `sensors` and `vision` on Nemotron Lightning; `spatial` as a rule in code; then the diagnosis card, "communication_failure", 98% confident in golden run 1 (a live run words it its own way).
 
 Will says:
 
@@ -233,7 +237,7 @@ Will says:
 | The sim's ground-truth judge: the hidden state is written to `truth.jsonl`, which only the judge reads, never an agent; `result.json` carries its verdict on every demo run. | The contractor: a deterministic actor with one documented rule (`gridtwin/demo/contractors.py`), take the cheap shortcut (an inspect-only visit that power-cycles the display) on a first visit unless the work order forbids it, and always follow explicit `forbid` and `steps`; all its work goes through the sim's tools and the safety gate. | The expected-state image: `diffusion` means sd-turbo img2img on the contractor's own photo, run on this laptop's GPU, not on Crusoe; `photo_bank` means a stored photo of the healthy unit; both carry an "EXPECTED STATE" banner, and only the email back uses it. |
 | The verification reads the plant through the same tools as everyone else (telemetry age, a camera view), never the contractor's reply. | Email delivery: work orders and replies are `.eml` files under `runs/<id>/mail/`, never sent. | The twin's coordinates: the camera stations and asset pins are hand-placed on the scan (`tugboat.registration.json` says so; `rms_px` 0, no photo behind any station), so JEV's distances and angles are real geometry over placed points, not a survey; `_dev`, the fallback, is a synthetic scene. |
 | The depth cap on sub-agents is code, not a prompt. | The camera photos: INV-2 and INV-3 photos are AI-generated (gpt-image, listed in `assets/photos/LICENSES.csv`), not photos of a real plant. | Live run or replay: say which one is on screen. |
-| The memory write and recall: a lesson file in `runs/e2e-kb/lessons/` that run 2 finds with the same BM25 search as the full loop. | The 3D scene: a real Gaussian-splat scan, "Tugboat Bat engine room, Trieste" by tosolini (XGRIDS PortalCam, CC BY 4.0, via SuperSplat, thinned to 1M splats), standing in for the plant with our pins on it, never a solar plant; the fallback `_dev` is a synthetic scene we generate | `--stub` runs (no model calls) are rehearsals only and never shown as a run. |
+| The memory write and recall: a lesson file in `runs/e2e-kb/lessons/` that run 2 finds with the same BM25 search as the full loop. | The 3D scene: a real Gaussian-splat scan, "Tugboat Bat engine room, Trieste" by tosolini (XGRIDS PortalCam, CC BY 4.0, via SuperSplat; modified: thinned to 1.6M splats, floor, ceiling, beams and lights added, shown 1.35x life size), standing in for the plant with our pins on it, never a solar plant; the fallback `_dev` is a synthetic scene we generate | `--stub` runs (no model calls) are rehearsals only and never shown as a run. |
 
 ## What not to claim
 
@@ -257,6 +261,7 @@ Will says:
 - Don't say the email back made the contractor do the real fix; the simulated contractor does the real fix on any second visit, so only the first work order's forbid list changes the outcome (test track, finding 10).
 - Don't repeat the page's "Gaussian splat of the plant" label; the scene is a scan of a tugboat engine room standing in for the plant, so say "a real scan, standing in for the plant" if asked, and credit tosolini (CC BY 4.0).
 - Don't say the camera stations were registered from photos; they are placed by hand on the scan.
+- Don't claim infrared or thermal imaging: the s06 inverters (INV-2, INV-3) have RGB cameras only, so no run on stage shows a thermal frame (the sim's FLIR photos are for INV-1 in `s03`, not this scenario; splat-segment, 15:35).
 - Don't pick a run from the page's run list on stage; it also lists stub and scratch runs, so use the tab URLs.
 - Don't use the "$10 billion lost to broken equipment" figure; it has no source in `kb/refs/`.
 - Don't promise a GridTwin benchmark rate; only a row in `results.md` can be quoted, and none exists yet.
@@ -278,7 +283,7 @@ Will says:
    The sim's judge checks the whole run against hidden ground truth: `scripted_trap` runs end as false dones 94.1% of the time on 17 episodes and `scripted_correct` succeeds 100%, so the judge itself is tested (team log, 12:09).
    Omni's camera check is calibrated: 12 of 12 correct on the INV-2 and INV-3 photos, three runs each at 0.95 or higher confidence (team log, 12:53).
 5. **"What does a run cost, and how long does it take?"**
-   Golden run 1: $0.0042 and 35.2 s for two rounds; golden run 2: $0.0041 and 61.7 s for one round, about 28 s of it rate-limit retries; each is the run's own `demo.final` total of every model call it made.
+   Golden run 1: $0.0041 and 56.5 s for two rounds; golden run 2: $0.0045 and 30.4 s for one round; each is the run's own `demo.final` total of every model call it made.
    Agents only wake on an anomaly, so cost grows with incidents, not with the number of inverters.
 6. **"What stops memory from learning the wrong fix?"**
    Only a fix the verifier proved against the plant is written, and the lesson records the shortcut that failed, so the next work order forbids it.
@@ -370,7 +375,7 @@ Signal: `demo.final` never arrives, or the run ends ESCALATED on stage.
 
 1. ESCALATED after three rounds is a true outcome; say "it wouldn't say done, so it called a human", then show tab 2 for the fix.
    If the live run passes in round 1 with no shortcut and no lesson (the contractor card shows `shortcut: false` and `lessons_applied` is empty), the stage memory was not empty after all (pre-flight step 5); say "this one already had the lesson; here's the run where it didn't", and switch to tab 2 at the dispatch stage.
-   If the final banner reads more than a minute, rate limits slowed it; say "Crusoe throttled us there; the clean run took 35 seconds" only for golden run 1.
+   If the final banner reads more than a minute, rate limits slowed it; say "Crusoe throttled us there; the recorded run took 56 seconds" only for golden run 1.
 2. A crash: switch to tab 2 and say it is the recorded run.
 
 ### Laptop or venue failure
@@ -425,7 +430,7 @@ Decision at 15:20 (demo-pivot, for Will), updated at 15:34 for `b0728cf`, from t
 - Diagnosis team, plan sub-agents, verification team with the gpt-oss meta judge: keep; all three are in both golden runs, and the script names them.
 - Contractor and `.eml` loop: keep.
 - JEV: keep TypeSafe Jev (`backend: jev` in both golden runs); the fallback is gpt-oss on Crusoe, with the one-line change in the Plan B ladder.
-- Diffusion: fall back to the photo bank; the sd-turbo weights are not in place, both golden runs used `photo_bank`, and the script never says "generated".
+- Diffusion: fall back to the photo bank; the sd-turbo download had about 590 MB of about 2.5 GB at 15:35 at roughly 80 KB/s, so it will not finish in time; both golden runs used `photo_bank`, and the script never says "generated".
 - Memory flywheel: keep; golden run 2 is a different inverter in one round.
 - `demo.html`: keep; both replays serve every image and email (HTTP 200) and the test track saw no console errors; the frontend's uncommitted edits to `viewer/demo.js` and `viewer/demo.css` must be committed before 15:30.
 - Twin: keep the tugboat scan (`twin.html?scene=tugboat.splat`), committed in `b0728cf` and used by both golden runs; `_dev` is the fallback.

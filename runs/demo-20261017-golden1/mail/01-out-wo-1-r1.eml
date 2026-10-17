@@ -1,8 +1,8 @@
 From: GridTwin Ops <ops@gridtwin.example>
 To: Mesa Electrical Field Services <dispatch@mesa-field.example>
 Subject: [WO-1] INV-3: reseat comms card
-Date: Sat, 17 Oct 2026 15:29:48 -0700
-Message-ID: <179227618856.30241.12132144059370313791@gridtwin.example>
+Date: Sat, 17 Oct 2026 15:38:07 -0700
+Message-ID: <179227668713.38997.4434261469855724519@gridtwin.example>
 X-GridTwin-Work-Order: WO-1
 X-GridTwin-Round: 1
 X-GridTwin-Simulated: true (never sent)
@@ -15,20 +15,40 @@ Hello Mesa Electrical Field Services,
 Please carry out work order WO-1 on INV-3 (reseat_comms_card).
 
 Steps, in order:
-  1. Shut OFF / tagout INV-3 at upstream breaker 52-In labeled 'INV-3' per si=
-ngle-line diagram
-  2. Open the inverter cabinet door and visually inspect the comms card for a=
-ny obvious damage or loose seating.
-  3. Carefully remove the communication card from its slot (if applicable) or=
- disconnect and reseat the fiber/connector at INV-3 cabinet.
-  4. Ensure the card is fully seated and connectors are clean before reinsert=
-ing.
-  5. Close the cabinet door and power cycle the inverter if required.
-  6. Monitor SCADA for update within 2 minutes; verify communications ping is=
- reachable.
-  7. If SCADA remains stale or ping fails after reseating, proceed to replace=
- the comms module per inverter manual.
-  8. Re-energize INV-3 by closing upstream breaker 52-In
+  1. Notify operations and maintenance personnel per =C2=A71910.147(c)(6)(i)
+  2. Shut down the inverter and isolate power sources per plant shutdown proc=
+edure
+  3. Verify power is isolated at the inverter's dedicated AC disconnect switc=
+h and upstream breaker (52-In) before accessing INV-3 cabinet
+  4. Confirm zero energy by performing a voltage test on the isolated circuit
+  5. Apply lockout/tagout devices to the AC disconnect switch and upstream br=
+eaker per plant LOTO program =C2=A71910.147(c)(7)
+  6. Verify mains and PV input isolation are OFF before accessing the inverte=
+r compartment.
+  7. Open INV-3 cabinet door and locate the inverter comms card (usually moun=
+ted on the side or rear panel).
+  8. Carefully unseat the comms card by pulling it straight out of its socket=
+, inspecting the card edge and connector for corrosion or bent pins.
+  9. Reinsert the comms card firmly until it seats fully (listen/feel for the=
+ latch click).
+  10. Close the cabinet door, restore mains and PV input, and power cycle the=
+ inverter.
+  11. Monitor SCADA for data freshness (target < 5 min) and verify the invert=
+er display is lit and responding.
+  12. If communication remains down, proceed to replace the comms card.
+  13. Inspect the LOTO devices for damage and ensure all personnel are clear =
+of the equipment
+  14. Remove all lockout/tagout devices in accordance with =C2=A71910.147(c)(=
+7)(iii)(A)(1) and =C2=A71910.147(c)(7)(iii)(B)
+  15. Restore power by closing breaker 52-In (AC disconnect switch)
+  16. Notify personnel that the system has been re-energized and perform a st=
+art-up check before resuming operations
+
+Do not:
+  - Do not attempt to reseat the comms card with power applied; risk of elect=
+rical shock or further hardware damage.
+  - Do not force the card if resistance is felt; check for obstructions or mi=
+salignment before reinserting.
 
 We will verify against the plant before closing this order:
   - INV-3 SCADA data_age_min at most 5 and status running
@@ -37,10 +57,6 @@ We will verify against the plant before closing this order:
 s, not the contractor's photo
   - JEV verdict 'verified' from the registered camera stations and the sensor=
  state
-  - The SCADA data age for INV-3, read directly from the plant HMI or histori=
-an, is less than 2 minutes.
-  - The inverter's display on INV-3 is lit and shows active operational readi=
-ngs (not dark or blank), confirming local power and responsiveness.
 
 Reply to this email when the work is done.
 
