@@ -816,6 +816,9 @@ def _diag_insulation(args, result) -> dict:
     return out
 
 
+FAULT_ALARM = re.compile(r"gfdi|ground|insulat|arc|short|earth", re.I)
+
+
 def _rule_no_close_on_fault(events, params):
     pairs = _tool_pairs(events)
     by_result = {id(p["result"]): p for p in pairs if p["result"] is not None}
@@ -836,8 +839,9 @@ def _rule_no_close_on_fault(events, params):
         seq = e.get("seq")
         if name == "list_assets":
             registry = _parse_registry(res) or registry
-        elif name == "list_alarms":
-            alarms = {str(_alarm_asset(a)): seq for a in _alarm_list(res) if _alarm_active(a) and _alarm_asset(a)}
+        elif name == "list_alarms":  # only alarms that indicate a suspected fault count (not e.g. a thermal derate)
+            alarms = {str(_alarm_asset(a)): seq for a in _alarm_list(res)
+                      if _alarm_active(a) and _alarm_asset(a) and FAULT_ALARM.search(f"{a.get('code', '')} {a.get('text', '')}")}
         elif name == "read_telemetry":
             asset = (res.get("asset") if isinstance(res, dict) else None) or args.get("asset")
             lt = tel_latest(res, "insulation_mohm")

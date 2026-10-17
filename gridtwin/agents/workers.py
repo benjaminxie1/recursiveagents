@@ -201,7 +201,7 @@ class ReadCache:
 
 class Worker:
     def __init__(self, name: str, toolbox, log, board: Board, kb_dir, run_dir: Path, chaos: Chaos | None = None,
-                 cache: ReadCache | None = None):
+                 cache: ReadCache | None = None, actions: list | None = None):
         assert name in WORKERS, name
         self.name, self.actor = name, f"worker:{name}"
         self.log, self.board, self.chaos = log, board, chaos
@@ -212,7 +212,7 @@ class Worker:
         else:
             self.tb = ActorToolbox(toolbox, self.actor)
         self.path = Path(run_dir) / "workers" / f"{name}.json"
-        self.actions: list[tuple[str, str]] = []  # (tool, canonical args) for loop detection
+        self.actions: list = actions if actions is not None else []  # (tool, canonical args), shared and in order
         self.tool_calls = 0
         self.cache = cache or ReadCache(log)
         self.task_calls, self.task_cap = 0, 99
@@ -221,7 +221,7 @@ class Worker:
     def save(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
         tmp = self.path.with_suffix(".tmp")
-        tmp.write_text(json.dumps({"messages": self.messages, "actions": self.actions, "tool_calls": self.tool_calls}, default=str))
+        tmp.write_text(json.dumps({"messages": self.messages, "tool_calls": self.tool_calls}, default=str))
         tmp.replace(self.path)
 
     def load(self) -> bool:
@@ -229,7 +229,6 @@ class Worker:
             return False
         d = json.loads(self.path.read_text())
         self.messages, self.tool_calls = d["messages"], d.get("tool_calls", 0)
-        self.actions = [tuple(a) for a in d.get("actions", [])]
         return True
 
     def brief(self, text: str):
@@ -347,6 +346,7 @@ class Team:
                  registry: dict | None = None):
         self.toolbox, self.log, self.kb_dir, self.run_dir = toolbox, log, kb_dir, Path(run_dir)
         self.cache = ReadCache(log, registry)
+        self.action_log: list = []  # every worker's actions, in order
         allow_c2_types(log)
         self.board = Board(log)
         self.briefing, self.chaos, self.max_restarts = briefing, chaos, max_restarts
@@ -355,7 +355,7 @@ class Team:
 
     def worker(self, name: str) -> Worker:
         if name not in self.workers:
-            w = Worker(name, self.toolbox, self.log, self.board, self.kb_dir, self.run_dir, self.chaos, self.cache)
+            w = Worker(name, self.toolbox, self.log, self.board, self.kb_dir, self.run_dir, self.chaos, self.cache, self.action_log)
             w.brief(self.briefing)
             self.workers[name] = w
         return self.workers[name]
@@ -375,7 +375,8 @@ class Team:
                 self.log.emit("supervisor", "supervisor", {
                     "decision": "restart", "reason": f"worker {worker} crashed ({type(e).__name__}: {e}); restarting from saved history",
                 })
-                fresh = Worker(worker, self.toolbox, self.log, self.board, self.kb_dir, self.run_dir, self.chaos, self.cache)
+                fresh = Worker(worker, self.toolbox, self.log, self.board, self.kb_dir, self.run_dir, self.chaos, self.cache,
+                               self.action_log)
                 fresh.load()
                 fresh.task_calls = w.task_calls
                 self.workers[worker] = w = fresh
@@ -397,10 +398,7 @@ class Team:
         return {"status": status, "summary": str(d.get("summary", ""))[:1500], "next_tasks": tasks}
 
     def actions(self) -> list[tuple[str, str]]:
-        out = []
-        for w in self.workers.values():
-            out.extend(w.actions)
-        return out
+        return [tuple(a) for a in self.action_log]
 
     def tool_calls(self) -> int:
         return sum(w.tool_calls for w in self.workers.values())

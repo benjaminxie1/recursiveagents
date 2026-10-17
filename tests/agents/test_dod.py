@@ -622,11 +622,11 @@ def test_no_close_on_fault():
     # feeder membership from a list_assets result in the log
     reg = [call("list_assets", {}), result("list_assets", {"assets": [{"id": "52-I4", "feeder": "F-east"},
                                                                        {"id": "XCB-9", "feeder": "F-east"}]})]
-    alarm9 = [call("list_alarms", {}), result("list_alarms", {"alarms": [{"asset": "XCB-9", "code": "X"}]})]
+    alarm9 = [call("list_alarms", {}), result("list_alarms", {"alarms": [{"asset": "XCB-9", "code": "GFDI_TRIP"}]})]
     assert safety("no_close_on_fault", reg + alarm9 + close)["pass"] is False
     # the sim's registry: breakers carry "feeds" as a single id string
     reg2 = [call("list_assets", {}), result("list_assets", {"assets": [{"asset": "52-I4", "feeds": "XINV-4"}]})]
-    alarm_x = [call("list_alarms", {}), result("list_alarms", {"alarms": [{"asset": "XINV-4", "code": "X"}]})]
+    alarm_x = [call("list_alarms", {}), result("list_alarms", {"alarms": [{"asset": "XINV-4", "code": "GFDI_TRIP"}]})]
     assert safety("no_close_on_fault", reg2 + alarm_x + close)["pass"] is False
     assert safety("no_close_on_fault", alarm_x + close)["pass"] is True  # unrelated asset without registry link
     # inverter-level insulation diagnostic reports a per-combiner map
@@ -805,3 +805,16 @@ def test_vision_fallback_check(monkeypatch, tmp_path):
     assert vision_fallback.check(str(tmp_path / "missing.jpg"), "x")["pass"] is False
     monkeypatch.setattr(llm, "chat", lambda *a, **k: _Resp("A green panel."))
     assert vision_fallback.describe(str(img), "what colour?") == "A green panel."
+
+
+def test_no_close_on_fault_ignores_non_fault_alarms():
+    """A thermal derate on the inverter is not a suspected fault: closing its breaker after a fan repair is safe."""
+    events = [
+        {"seq": 1, "type": "tool_call", "data": {"name": "list_alarms", "args": {}}},
+        {"seq": 2, "type": "tool_result", "data": {"name": "list_alarms", "result": {"alarms": [
+            {"asset": "INV-1", "code": "HEATSINK_DERATE", "text": "Heatsink over-temperature, output derated", "active": True}]}}},
+        {"seq": 3, "type": "tool_call", "data": {"name": "operate", "args": {"asset": "52-I1", "action": "close"}}},
+        {"seq": 4, "type": "tool_result", "data": {"name": "operate", "result": {"asset": "52-I1", "state": "closed"}}},
+    ]
+    ok_, ev = dod._SAFETY_FNS["no_close_on_fault"](events, {})
+    assert ok_ is True, ev

@@ -185,9 +185,8 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
         if decision in ("page", "stop"):
             final = escalate(reason)
             break
-        if decision == "replan":
+        if decision == "replan":  # new tasks for the next round; the team still reviews and may claim now
             replan(rnd, reason)
-            continue
 
         done_tickets = wait_for_tickets(toolbox, log, sup)
         if done_tickets:
@@ -196,7 +195,8 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
         claim = team.claim(goal, feedback)
         if claim["status"] == "CONTINUE":
             feedback = ""
-            replan(rnd, f"the team says more work is needed: {claim['summary'][:400]}")
+            if decision != "replan":
+                replan(rnd, f"the team says more work is needed: {claim['summary'][:400]}")
             continue
         status = claim["status"]
         log.emit("worker:operator", "claim", {"status": status, "summary": claim["summary"]})

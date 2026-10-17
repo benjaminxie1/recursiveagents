@@ -8,6 +8,7 @@ and emits no events itself (the Toolbox logs `gate` events).
 from __future__ import annotations
 
 import json
+import re
 import math
 import os
 
@@ -315,6 +316,18 @@ def fast_path(proposed: dict, state: dict) -> dict | None:
     if proposed.get("tool") != "operate":
         return None
     action, value = proposed.get("action"), _num(proposed.get("value"))
+    m = re.fullmatch(r"52-I(\d+)", str(proposed.get("asset", "")))
+    if action == "close" and m:  # policy rule 3 for an inverter feeder: deterministic on the alarms the gate can see
+        n = m.group(1)
+        on_feeder = re.compile(rf"^(INV-{n}|CB-{n}\.\d+|52-I{n})$")
+        alarms = [a for a in (state.get("active_alarms") or []) if isinstance(a, dict) and on_feeder.match(str(a.get("asset", "")))]
+        fault = [a for a in alarms if re.search(r"gfdi|ground|insulat|arc|short|earth", f"{a.get('code', '')} {a.get('text', '')}", re.I)]
+        if fault:
+            return {"route": "reject", "unsafe": 0.95,
+                    "reason": f"policy rule 3: suspected fault on the feeder ({', '.join(str(a.get('code')) for a in fault)}); do not close"}
+        if any(str(a.get("code", "")).upper().endswith("TRIP") for a in alarms):
+            return None  # an unexplained protection trip is a judgement call for the model
+        return {"route": "proceed", "unsafe": 0.0, "reason": f"policy rule 3: no fault or trip alarm on feeder {n}; closing is safe"}
     scada = state.get("asset_scada") or state.get("telemetry") or {}
     if action in ("open", "isolate"):
         return {"route": "proceed", "unsafe": 0.0, "reason": f"policy rule 1: '{action}' de-energizes equipment"}
