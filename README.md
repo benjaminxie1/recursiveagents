@@ -70,7 +70,7 @@ Benchmark arms: `scripted_correct`, `scripted_trap`, `baseline`, `self_verify`, 
 - `gridtwin/bench.py`, `gridtwin/run.py`, `gridtwin/serve.py`: benchmark, single-run CLI and evidence-viewer server.
 - `viewer/`: evidence viewer and inspection wall (plain HTML and JavaScript).
 - `kb/`: the agents' runtime knowledge base (plant profile, cached references, verified lessons).
-- `docs/`: plan, simulator spec, judge Q&A prep, team decision log and research.
+- `docs/`: plan, simulator spec, pitch and demo script (`docs/DEMO.md`), judge Q&A prep, team decision log and research.
 
 ## Built during the hackathon
 
