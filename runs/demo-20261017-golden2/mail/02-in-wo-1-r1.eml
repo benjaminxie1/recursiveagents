@@ -1,17 +1,17 @@
 From: Dana R. <dispatch@mesa-field.example>
 To: GridTwin Ops <ops@gridtwin.example>
 Subject: Re: [WO-1] done
-Date: Sat, 17 Oct 2026 15:11:20 -0700
-Message-ID: <179227508073.24167.11708821009976682892@gridtwin.example>
+Date: Sat, 17 Oct 2026 15:30:58 -0700
+Message-ID: <179227625821.42513.556928908868938732@gridtwin.example>
 X-GridTwin-Work-Order: WO-1
 X-GridTwin-Round: 1
 X-GridTwin-Simulated: true (never sent)
-In-Reply-To: <179227508048.24167.3686274606316732251@gridtwin.example>
-References: <179227508048.24167.3686274606316732251@gridtwin.example>
+In-Reply-To: <179227625816.42513.7231367972235066271@gridtwin.example>
+References: <179227625816.42513.7231367972235066271@gridtwin.example>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="===============8685301780005906322=="
+Content-Type: multipart/mixed; boundary="===============4870140734463135517=="
 
---===============8685301780005906322==
+--===============4870140734463135517==
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
@@ -19,7 +19,7 @@ Hi, Dana R. here. WO-1 on INV-2: reseat comms card done under lockout (operat=
 e 52-I2 open; dispatch_tech INV-2 reseat_comms_card; operate 52-I2 close). Un=
 it back in service. Photo attached.
 
---===============8685301780005906322==
+--===============4870140734463135517==
 Content-Type: image/jpeg
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="after-repair.jpg"
@@ -2818,4 +2818,4 @@ tnSPRYYrt1YHkqkeWjBJyGPdejDHqa09LiisdNK2g81UzJbJjGT3GT0yeg7ClBtMJG9czm3tPMjJ
 ODhwR6+n44qCeOYxblQq5xuDHt3/AK1KWWexIntwXIVmQnIBHOAfY04yFlDFkzjJz2FaszIm2RbS
 yrtAwuB2qsSpdl7FvmB7ip5lXcXIyFIUsD6jj8Kp/PkeYATnnB4H0qGUj//Z
 
---===============8685301780005906322==--
+--===============4870140734463135517==--

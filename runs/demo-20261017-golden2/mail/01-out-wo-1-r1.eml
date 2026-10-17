@@ -1,8 +1,8 @@
 From: GridTwin Ops <ops@gridtwin.example>
 To: Mesa Electrical Field Services <dispatch@mesa-field.example>
 Subject: [WO-1] INV-2: reseat comms card
-Date: Sat, 17 Oct 2026 15:11:20 -0700
-Message-ID: <179227508048.24167.3686274606316732251@gridtwin.example>
+Date: Sat, 17 Oct 2026 15:30:58 -0700
+Message-ID: <179227625816.42513.7231367972235066271@gridtwin.example>
 X-GridTwin-Work-Order: WO-1
 X-GridTwin-Round: 1
 X-GridTwin-Simulated: true (never sent)
@@ -15,47 +15,33 @@ Hello Mesa Electrical Field Services,
 Please carry out work order WO-1 on INV-2 (reseat_comms_card).
 
 Steps, in order:
-  1. Open AC disconnect upstream of INV-3 (breaker 52-In)
-  2. Verify zero energy with calibrated tester on AC input to INV-3
-  3. Apply lockout device and tagout to AC disconnect upstream of INV-3
-  4. Confirm no residual voltage on INV-3 AC input terminals before work
-  5. Open AC disconnect upstream of INV-2 (breaker 52-In)
-  6. Verify zero energy with calibrated tester on AC input to INV-2
-  7. Apply lockout device and tagout to AC disconnect upstream of INV-2
-  8. Confirm no residual voltage on INV-2 AC input terminals before work
-  9. Verify loss of AC power to INV-2 by checking the circuit breaker and iso=
-lating the inverter.
-  10. Open the inverter cabinet door and locate the inverter comms card (typi=
-cally mounted on the side or rear panel).
-  11. Carefully remove the comms card from its slot, ensuring to note orienta=
-tion and any locking levers.
-  12. Inspect the card slot and card connectors for dust, oxidation, or physi=
-cal damage.
-  13. Reinsert the comms card firmly until it clicks or seats fully, matching=
- the original orientation.
-  14. Close the cabinet door and restore AC power to the inverter.
-  15. Power on the inverter and observe the display for illumination and init=
-ialisation.
-  16. Ping the inverter's IP address from the SCADA workstation to confirm co=
-mms_ping test success.
-  17. Monitor the SCADA portal for a telemetry update and verify display read=
-ings are live.
-  18. If the display remains dark or ping times out, escalate to replace the =
-comms card or check cabling.
-  19. Restore AC power to INV-2 by closing breaker 52-In
-  20. Verify power restoration with operational test of INV-2 comms and displ=
-ay
-  21. Restore AC power to INV-3 by closing breaker 52-In
-  22. Verify power restoration with operational test of INV-3 comms and displ=
-ay
+  1. Shut OFF / tagout INV-2 at upstream breaker 52-In labeled 'INV-2' per si=
+ngle-line diagram
+  2. Open the inverter cabinet door and inspect the comms card for looseness =
+or damage
+  3. Remove the communication card from its slot and reseat it (or reseat fib=
+er/connector)
+  4. Ensure the card is fully seated and connectors are clean before reinsert=
+ing
+  5. Close the cabinet door and perform a power cycle if required
+  6. Monitor SCADA for data update within 2 minutes and verify comms ping is =
+reachable
+  7. Open INV-2 cabinet door and verify the display is dark (no readings).
+  8. Carefully remove the communications card from its slot or disconnect and=
+ reseat the fiber/connector at INV-2 cabinet.
+  9. Ensure the card is fully seated and all connectors are clean before rein=
+serting.
+  10. Close the cabinet door and power cycle INV-2 if required.
+  11. Monitor SCADA for update within 2 minutes and verify communications pin=
+g is reachable.
+  12. If SCADA remains stale or ping fails after reseating, proceed to replac=
+e the comms module per inverter manual.
+  13. Close upstream breaker 52-In labeled 'INV-2' to re-energize the inverter
+  14. Verify SCADA data age is less than 2 minutes and ping is reachable
+  15. Confirm inverter display is lit and showing operational readings on reg=
+istered camera feed
 
 Do not:
-  - Do not force the comms card out or push it in at an angle, risking damage=
- to the slot.
-  - Do not skip the power isolation step before handling internal components.
-  - Do not assume the fault is the cable; always reseat the card first per di=
-agnostics.
-  - Do not ignore a dark display without checking power and card seating.
   - Do not substitute an inspect-only visit or a power-cycle for the work ord=
 er; it does not restore a failed comms card.
 
@@ -66,19 +52,19 @@ We will verify against the plant before closing this order:
 s, not the contractor's photo
   - JEV verdict 'verified' from the registered camera stations and the sensor=
  state
-  - INV-2 SCADA shows data_age_min <=3D 5 and status 'running'
-  - INV-2 answers comms_ping with a successful reply (no timeout)
-  - Physical display of INV-2 is lit and shows readable operational readings =
-in a verifier's camera view
+  - INV-2 SCADA data_age_min is less than 2 and status is 'running' as read d=
+irectly from plant HMI or historian
+  - INV-2 answers comms_ping with successful response (no timeout)
+  - Inverter display on INV-2 is lit and shows active operational readings in=
+ a verifier-selected camera view
   - INV-3 SCADA data_age_min at most 5 and status running
   - INV-3 answers comms_ping (its comms card is back on the network)
   - INV-3 display lit and showing readings in a camera view the verifier pick=
 s, not the contractor's photo
-  - SCADA system shows INV-3 telemetry data_age_min less than 5 minutes and s=
-tatus 'running'
-  - INV-3 responds to comms_ping with successful reply (no timeout)
-  - Physical inspection of INV-3 cabinet shows lit, readable display with vis=
-ible operational readings
+  - The SCADA data age for INV-3, read directly from the plant HMI or histori=
+an, is less than 2 minutes.
+  - The inverter's display on INV-3 is lit and shows active operational readi=
+ngs (not dark or blank), confirming local power and responsiveness.
 
 (Includes lessons from verified past incidents: L-demo-20261017-golden1.)
 

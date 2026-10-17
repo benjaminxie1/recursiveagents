@@ -2,79 +2,52 @@ From: GridTwin Ops <ops@gridtwin.example>
 To: Mesa Electrical Field Services <dispatch@mesa-field.example>
 Subject: Re: [WO-1] not verified, please return (scada_fresh_and_running,
  display_lit@inv3_cabinet, jev_fix_verified)
-Date: Sat, 17 Oct 2026 15:10:20 -0700
-Message-ID: <179227502087.18686.11717935208789410952@gridtwin.example>
+Date: Sat, 17 Oct 2026 15:29:56 -0700
+Message-ID: <179227619656.30241.14334213667408765843@gridtwin.example>
 X-GridTwin-Work-Order: WO-1
 X-GridTwin-Round: 2
 X-GridTwin-Simulated: true (never sent)
-In-Reply-To: <179227500940.18686.10338637442899425100@gridtwin.example>
-References: <179227500940.18686.10338637442899425100@gridtwin.example>
+In-Reply-To: <179227618856.30241.12132144059370313791@gridtwin.example>
+References: <179227618856.30241.12132144059370313791@gridtwin.example>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="===============5837679041218655573=="
+Content-Type: multipart/mixed; boundary="===============0581056108788311070=="
 
---===============5837679041218655573==
+--===============0581056108788311070==
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-We verified the three acceptance items:
-
-- SCADA freshness: data_age_min=E2=80=AF=3D=E2=80=AF136.0=E2=80=AF(min), stat=
-us=E2=80=AF=3D=E2=80=AFrunning, ac_kw=E2=80=AF=3D=E2=80=AF981.58 =E2=80=93 st=
-ale (>5=E2=80=AFmin). =20
-- Cabinet display: screen dark, confidence=E2=80=AF0.95, bar=E2=80=AF0.7. =20
-- JEV verification: not_verified (p=E2=80=AF=3D=E2=80=AF0.0); telemetry 136=
-=E2=80=AFmin old, camera failure 0.95, 0 independent confirmations.
-
-You must repeat the isolation, reseat the comms card, confirm the display ill=
-uminates, and ensure the inverter is brought back online. Capture a fresh cam=
-era view of the cabinet display and provide SCADA telemetry showing data_age_=
-min=E2=80=AF<=E2=80=AF5=E2=80=AFminutes.
-
-Next we will re=E2=80=91check SCADA freshness, the lit display image, and JEV=
- verification for a =E2=80=9Cverified=E2=80=9D verdict.
+Checked SCADA data age (136=E2=80=AFmin, stale=E2=80=AF>=E2=80=AF5), inverter=
+ display (dark, confidence=E2=80=AF0.95), and JEV verification (not=E2=80=AFv=
+erified, p=E2=80=AF=3D=E2=80=AF0). You must reseat the communications card, c=
+onfirm power is restored, ensure the cabinet display lights up, and verify fr=
+esh SCADA data (<5=E2=80=AFmin). Submit new camera footage showing a lit disp=
+lay and SCADA data age <2=E2=80=AFmin. We will re=E2=80=91run the scada_fresh=
+_and_running, display_lit@inv3_cabinet, and jev_fix_verified checks.
 
 Required now:
-  1. Open AC disconnect upstream of INV-3 (breaker 52-In)
-  2. Verify zero energy with calibrated tester on AC input to INV-3
-  3. Apply lockout device and tagout to AC disconnect upstream of INV-3
-  4. Confirm no residual voltage on INV-3 AC input terminals before work
-  5. Verify loss of AC power to INV-3 by checking the circuit breaker and iso=
-lating the inverter.
-  6. Open the inverter cabinet door and locate the inverter comms card (typic=
-ally mounted on the side or rear panel).
-  7. Carefully remove the comms card from its slot, ensuring to note orientat=
-ion and any locking levers.
-  8. Inspect the card slot and card connectors for dust, oxidation, or physic=
-al damage.
-  9. Reinsert the comms card firmly until it clicks or seats fully, matching =
-the original orientation.
-  10. Close the cabinet door and restore AC power to the inverter.
-  11. Power on the inverter and observe the display for illumination and init=
-ialisation.
-  12. Ping the inverter's IP address from the SCADA workstation to confirm co=
-mms_ping test success.
-  13. Monitor the SCADA portal for a telemetry update and verify display read=
-ings are live.
-  14. If the display remains dark or ping times out, escalate to replace the =
-comms card or check cabling.
-  15. Restore AC power to INV-3 by closing breaker 52-In
-  16. Verify power restoration with operational test of INV-3 comms and displ=
-ay
+  1. Shut OFF / tagout INV-3 at upstream breaker 52-In labeled 'INV-3' per si=
+ngle-line diagram
+  2. Open the inverter cabinet door and visually inspect the comms card for a=
+ny obvious damage or loose seating.
+  3. Carefully remove the communication card from its slot (if applicable) or=
+ disconnect and reseat the fiber/connector at INV-3 cabinet.
+  4. Ensure the card is fully seated and connectors are clean before reinsert=
+ing.
+  5. Close the cabinet door and power cycle the inverter if required.
+  6. Monitor SCADA for update within 2 minutes; verify communications ping is=
+ reachable.
+  7. If SCADA remains stale or ping fails after reseating, proceed to replace=
+ the comms module per inverter manual.
+  8. Re-energize INV-3 by closing upstream breaker 52-In
 
 Do not:
-  - Do not force the comms card out or push it in at an angle, risking damage=
- to the slot.
-  - Do not skip the power isolation step before handling internal components.
-  - Do not assume the fault is the cable; always reseat the card first per di=
-agnostics.
-  - Do not ignore a dark display without checking power and card seating.
   - Do not substitute an inspect-only visit or a power-cycle for the work ord=
 er; it does not restore a failed comms card.
 
 Attached: what the unit must look like when it is fixed, and our failing phot=
 o.
 
---===============5837679041218655573==
+--===============0581056108788311070==
 Content-Type: image/png
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="expected-state.png"
@@ -17085,7 +17058,7 @@ EQPP0VXIpQuFQjabffz4seM4DADsl0ol/OLYRe31ep1Ox3YA6SCJ0LXMpaFDIbEGQTKZlCTpxRdf
 vHv37pMnTwqFAvM2BiR2o94KuVJmBe68LJyclLEN6rruuXMXUkzwBuCrQfD/AzaOgzoqaEN0AAAA
 AElFTkSuQmCC
 
---===============5837679041218655573==
+--===============0581056108788311070==
 Content-Type: image/jpeg
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="verifier-photo.jpg"
@@ -20518,4 +20491,4 @@ p7kR7WmTg7WPVhkcE8j1rkNY8a6h4P1ePQtSKBcbrV7kbhMnThu5HQjr09amTdykkYfiia4t7xdN
 17SJrCa6iLJdhQUbttDj5S3fFN8JXerl49H0zUpb24iQu80rBFVR/E3oO3qa9AOoQa14d+xXcVjN
 azJlrdl+Xn+R9xXnNjaw/Dn+1raK3uVtb+4Ekd3KxlAQDiLf2AOcZ9aTTerBabH/2Q==
 
---===============5837679041218655573==--
+--===============0581056108788311070==--
