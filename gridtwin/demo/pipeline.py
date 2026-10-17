@@ -120,12 +120,12 @@ def _latest(tel) -> dict:
 
 
 class Demo:
-    def __init__(self, scenario=SCENARIO, memory_dir=None, stub=False, run_id=None, max_rounds=MAX_ROUNDS):
+    def __init__(self, scenario=SCENARIO, memory_dir=None, stub=False, run_id=None, max_rounds=MAX_ROUNDS, runs_dir=None):
         from gridtwin.agents.gate import make_gate
 
         self.t0 = time.time()
         self.gate = make_gate()
-        self.sim, self.tb, raw, self.sc = episode.start(scenario, run_id=run_id, gate=self.gate)
+        self.sim, self.tb, raw, self.sc = episode.start(scenario, run_id=run_id, gate=self.gate, runs_dir=runs_dir)
         if hasattr(self.gate, "client"):
             self.gate.client.log = raw  # the gate's lockout rule reads open tickets from this run's log
         self.raw_log, self.log = raw, LockedLog(raw)
@@ -389,5 +389,5 @@ class Demo:
         return {"run_id": self.run_id, **final}
 
 
-def run_demo(scenario=SCENARIO, memory_dir=None, stub=False, run_id=None, max_rounds=MAX_ROUNDS, goal=None) -> dict:
-    return Demo(scenario, memory_dir, stub, run_id, max_rounds).run(goal)
+def run_demo(scenario=SCENARIO, memory_dir=None, stub=False, run_id=None, max_rounds=MAX_ROUNDS, goal=None, runs_dir=None) -> dict:
+    return Demo(scenario, memory_dir, stub, run_id, max_rounds, runs_dir).run(goal)

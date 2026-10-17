@@ -1,0 +1,120 @@
+"""End-to-end demo pipeline in stub mode: real sim, real gate rules, real mail files, no model calls."""
+import email
+import email.policy
+import json
+from pathlib import Path
+
+import pytest
+
+from gridtwin.demo import brains as B
+from gridtwin.demo.contractors import SHORTCUT_WORDS, forbids_shortcut
+from gridtwin.demo.pipeline import run_demo
+
+
+def events(run_dir: Path) -> list[dict]:
+    return [json.loads(l) for l in (run_dir / "events.jsonl").read_text().splitlines() if l.strip()]
+
+
+def of(evs, type_):
+    return [e["data"] for e in evs if e["type"] == type_]
+
+
+@pytest.fixture(scope="module")
+def two_runs(tmp_path_factory):
+    root = tmp_path_factory.mktemp("demo")
+    mem = root / "kb"
+    first = run_demo(stub=True, memory_dir=mem, run_id="r1", runs_dir=root / "runs")
+    second = run_demo(stub=True, memory_dir=mem, run_id="r2", runs_dir=root / "runs")
+    return root / "runs", first, second
+
+
+def test_first_run_catches_the_shortcut_and_verifies_in_round_two(two_runs):
+    runs, first, _ = two_runs
+    assert first["status"] == "VERIFIED" and first["rounds"] == 2
+    evs = events(runs / "r1")
+    verdicts = of(evs, "demo.verdict")
+    assert [v["pass"] for v in verdicts] == [False, True]
+    assert set(verdicts[0]["failed"]) >= {"scada_fresh_and_running", "jev_fix_verified"}
+    visits = of(evs, "demo.contractor")
+    assert visits[0]["shortcut"] is True and visits[1]["shortcut"] is False
+
+
+def test_judge_agrees_no_false_done_no_safety_violation(two_runs):
+    runs, first, second = two_runs
+    for r in (first, second):
+        assert r["judge"]["success"] is True
+        assert r["judge"]["false_done"] is False
+        assert r["judge"]["safety_violations"] == 0
+
+
+def test_second_run_recalls_the_lesson_and_passes_first_visit(two_runs):
+    runs, _, second = two_runs
+    assert second["status"] == "VERIFIED" and second["rounds"] == 1
+    evs = events(runs / "r2")
+    recall = [m for m in of(evs, "demo.memory") if m["op"] == "recall"][0]
+    assert recall["lessons"] and recall["lessons"][0]["id"] == "L-r1"
+    wo = of(evs, "demo.workorder")[0]
+    assert wo["lessons_applied"] == ["L-r1"] and forbids_shortcut(wo)
+
+
+def test_recursion_is_one_level_with_three_subagents(two_runs):
+    runs, _, _ = two_runs
+    agents = of(events(runs / "r1"), "demo.agent")
+    depths = {a["id"]: a["depth"] for a in agents}
+    assert max(depths.values()) == 1
+    subs = {a["id"] for a in agents if a["depth"] == 1}
+    assert len(subs) == 3 and all(a["parent"] == "planner" for a in agents if a["depth"] == 1)
+    root_done = [a for a in agents if a["depth"] == 0 and a["status"] == "done"][0]
+    assert root_done["output"]["depth_cap_enforced"] is True
+
+
+def test_depth_cap_is_code_not_prompt():
+    root = B.Agent("p", "planner", "planner", 0)
+    kid = root.spawn("repair", "x")
+    with pytest.raises(B.DepthExceeded):
+        kid.spawn("deeper", "y")
+
+
+def test_every_email_is_a_parseable_eml_file_never_sent(two_runs):
+    runs, _, _ = two_runs
+    mails = of(events(runs / "r1"), "demo.email")
+    assert [m["direction"] for m in mails] == ["out", "in", "out", "in"]
+    for m in mails:
+        p = Path(m["eml"])
+        p = p if p.is_absolute() else Path(__file__).resolve().parents[2] / p
+        msg = email.message_from_bytes(p.read_bytes(), policy=email.policy.default)
+        assert msg["X-GridTwin-Simulated"].startswith("true")
+        assert msg["Subject"] == m["subject"]
+    back = mails[2]
+    assert back["round"] == 2 and any(a["name"].startswith("expected-state") for a in back["attachments"])
+
+
+def test_verification_reads_the_plant_not_the_email(two_runs):
+    """Round 1's contractor said done; every check still failed because the plant was not fixed."""
+    runs, _, _ = two_runs
+    evs = events(runs / "r1")
+    reply = [m for m in of(evs, "demo.email") if m["direction"] == "in"][0]
+    assert "done" in reply["body"].lower()
+    r1 = [c for c in of(evs, "demo.check") if c["round"] == 1]
+    assert r1 and not any(c["pass"] for c in r1)
+
+
+def test_verifier_picks_a_camera_the_contractor_did_not_use(two_runs):
+    runs, _, _ = two_runs
+    evs = events(runs / "r1")
+    contractor_vps = {a["args"].get("viewpoint") for v in of(evs, "demo.contractor") for a in v["actions"] if a["tool"] == "get_camera_view"}
+    verifier_vps = {c["viewpoint"] for c in of(evs, "demo.camera") if c.get("round") == 2}
+    assert verifier_vps and not (verifier_vps & contractor_vps)
+
+
+def test_shortcut_rule():
+    assert not forbids_shortcut({"forbid": ["Do not work energized"]})
+    for w in SHORTCUT_WORDS:
+        assert forbids_shortcut({"forbid": [f"no {w} visits"]})
+
+
+def test_server_rejects_bad_scenario():
+    from gridtwin.demo.serve import start_run
+
+    with pytest.raises(ValueError):
+        start_run({"scenario": "../../etc"})

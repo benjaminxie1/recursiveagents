@@ -16,6 +16,8 @@ from gridtwin.demo.events import SUBAGENT_ROLES
 from gridtwin.sim.tools import WORK_ORDERS
 
 MAX_DEPTH = 1  # the planner is depth 0; its sub-agents are depth 1 and cannot spawn
+# Crusoe rate limits are per model, so the planner's three sub-agents run on three different Nemotron models.
+SUB_MODEL_ROLE = {"safety": "gate", "repair": "worker", "acceptance": "supervisor"}
 
 
 class DepthExceeded(RuntimeError):
@@ -25,8 +27,10 @@ class DepthExceeded(RuntimeError):
 class Agent:
     """One node of the agent tree. spawn() is the only way to create a child, and it enforces MAX_DEPTH."""
 
-    def __init__(self, id: str, role: str, model_role: str, depth: int = 0, parent: "Agent | None" = None, task: str = ""):
+    def __init__(self, id: str, role: str, model_role: str, depth: int = 0, parent: "Agent | None" = None, task: str = "",
+                 team: str = "plan", round: int = 0):
         self.id, self.role, self.model_role, self.depth, self.parent, self.task = id, role, model_role, depth, parent, task
+        self.team, self.round = (parent.team, parent.round) if parent else (team, round)
         self.children: list[Agent] = []
 
     @property
@@ -42,7 +46,7 @@ class Agent:
 
     def event(self, status: str, output=None) -> dict:
         return {"id": self.id, "parent": self.parent.id if self.parent else None, "depth": self.depth, "role": self.role,
-                "model": self.model, "task": self.task, "status": status, "output": output}
+                "model": self.model, "task": self.task, "status": status, "output": output, "team": self.team, "round": self.round}
 
 
 DIAGNOSE_SYS = """You are the diagnosis lead of an agent team that runs a 20 MW solar plant (4 inverters INV-1..INV-4, feeder breakers 52-I1..52-I4).
@@ -75,9 +79,9 @@ what failed (with the numbers), what they must do now, and what proof you will c
 
 
 def _ask(role: str, system: str, user: str, log=None, actor: str | None = None, thinking: bool = False,
-         max_tokens: int = 2048) -> dict:
+         max_tokens: int = 2048, max_tries: int = 8) -> dict:
     resp = llm.chat(role, [{"role": "system", "content": system}, {"role": "user", "content": user}],
-                    max_tokens=max_tokens, log=log, actor=actor, thinking=thinking, max_tries=4)
+                    max_tokens=max_tokens, log=log, actor=actor, thinking=thinking, max_tries=max_tries)
     txt = llm.text(resp) or llm.reasoning(resp)
     out = extract_json(txt)
     if not isinstance(out, dict):
@@ -98,15 +102,15 @@ class LiveBrains:
         user = json.dumps({"diagnosis": diagnosis, "lessons": [_lesson_brief(l) for l in lessons]}, default=str)
         return _ask("planner", PLAN_SYS, user, self.log, "planner", max_tokens=4096)
 
-    def subagent(self, role: str, task: str, diagnosis: dict, lessons: list[dict]) -> dict:
+    def subagent(self, role: str, task: str, diagnosis: dict, lessons: list[dict], model_role: str = "worker") -> dict:
         user = json.dumps({"task": task, "diagnosis": diagnosis, "lessons": [_lesson_brief(l) for l in lessons]}, default=str)
-        return _ask("worker", SUB_SYS[role], user, self.log, f"subagent:{role}", max_tokens=2048)
+        return _ask(model_role, SUB_SYS[role], user, self.log, f"subagent:{role}", max_tokens=4096)
 
     def email_back(self, wo: dict, failed: list[dict]) -> str:
         user = json.dumps({"work_order": {k: wo[k] for k in ("wo_id", "asset", "work_order", "steps", "forbid", "acceptance")},
                            "failed_checks": failed}, default=str)
         resp = llm.chat("verifier", [{"role": "system", "content": EMAIL_BACK_SYS}, {"role": "user", "content": user}],
-                        max_tokens=2048, log=self.log, actor="verifier", max_tries=4)
+                        max_tokens=2048, log=self.log, actor="verifier", max_tries=8)
         return (llm.text(resp) or "").strip()
 
 
@@ -128,7 +132,7 @@ class StubBrains:
     def plan(self, diagnosis: dict, lessons: list[dict]) -> dict:
         return {"briefs": {r: f"{r} for {diagnosis['asset']}" for r in SUBAGENT_ROLES}, "rationale": "stub"}
 
-    def subagent(self, role: str, task: str, diagnosis: dict, lessons: list[dict]) -> dict:
+    def subagent(self, role: str, task: str, diagnosis: dict, lessons: list[dict], model_role: str = "worker") -> dict:
         a = diagnosis["asset"]
         n = a.split("-")[-1]
         if role == "safety":
@@ -149,13 +153,14 @@ def _lesson_brief(l: dict) -> dict:
 
 def run_subagents(planner: Agent, brains, briefs: dict, diagnosis: dict, lessons: list[dict], on_event) -> dict:
     """Spawn one sub-agent per role (depth 1) and run them in parallel. Returns {role: output or None}."""
-    kids = [planner.spawn(role, str(briefs.get(role) or f"{role} for {diagnosis.get('asset')}")) for role in SUBAGENT_ROLES]
+    kids = [planner.spawn(role, str(briefs.get(role) or f"{role} for {diagnosis.get('asset')}"), SUB_MODEL_ROLE.get(role, "worker"))
+            for role in SUBAGENT_ROLES]
     for k in kids:
         on_event(k, "spawned", None)
 
     def one(k: Agent):
         try:
-            out = brains.subagent(k.role, k.task, diagnosis, lessons)
+            out = brains.subagent(k.role, k.task, diagnosis, lessons, k.model_role)
             on_event(k, "done", out)
             return k.role, out
         except Exception as e:  # noqa: BLE001 - a failed sub-agent is reported, the planner falls back
