@@ -184,6 +184,7 @@ figcaption .who { display: block; font-size: 14px; color: var(--ink-3); margin-b
 .evidence li::marker { color: var(--ink-3); }
 
 .twin { display: flex; flex-direction: column; gap: 10px; }
+.twin > h3 { margin-bottom: 2px; } /* with the 10px gap, the frame starts level with the camera photos */
 .twin .frame { position: relative; aspect-ratio: 4 / 3; border-radius: 8px; overflow: hidden; background: #141516; border: 1px solid var(--rule-strong); }
 .twin iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
 .twin .wait { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: #c9ced2; font-size: 17px; }
