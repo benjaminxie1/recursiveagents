@@ -37,6 +37,12 @@ HEALTHY_DIRS = ("healthy", "normal", "thermal_normal")
 IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png", ".webp")
 
 MODEL_ID = "stabilityai/sd-turbo"
+# The large files; a run only tries diffusion when all of them are in the local cache.
+WEIGHT_FILES = (
+    "unet/diffusion_pytorch_model.fp16.safetensors",
+    "text_encoder/model.fp16.safetensors",
+    "vae/diffusion_pytorch_model.fp16.safetensors",
+)
 # Long edge of the img2img canvas. sd-turbo is trained at 512 px; the result is resized back to the source size.
 DIFFUSION_EDGE_PX = 512
 # sd-turbo runs int(steps * strength) denoising steps; 0.5 keeps the cabinet, doors and framing of the source.
@@ -78,10 +84,23 @@ def expected_state_image(asset: str, src_image, prompt: str, out_path) -> dict:
 
 
 def diffusion_enabled() -> bool:
-    """True unless GRIDTWIN_NO_DIFFUSION is set or torch/diffusers are not installed. Imports nothing heavy."""
+    """True unless GRIDTWIN_NO_DIFFUSION is set, torch/diffusers are not installed, or the weights are not fully
+    in the local cache. Imports nothing heavy, so a machine without the model pays no torch import."""
     if os.environ.get("GRIDTWIN_NO_DIFFUSION", "").strip().lower() not in ("", "0", "false"):
         return False
+    return _installed() and _weights_cached()
+
+
+def _installed() -> bool:
     return all(importlib.util.find_spec(m) is not None for m in ("torch", "diffusers"))
+
+
+def _weights_cached() -> bool:
+    try:
+        from huggingface_hub import try_to_load_from_cache
+    except ImportError:
+        return False
+    return all(isinstance(try_to_load_from_cache(MODEL_ID, f), str) for f in WEIGHT_FILES)
 
 
 def warm_up(background: bool = True) -> None:
@@ -151,7 +170,7 @@ def _pipeline(allow_download: bool = False):
                 from diffusers import AutoPipelineForImage2Image
 
                 device, dtype = _device()
-                kwargs = {"torch_dtype": dtype, "local_files_only": not allow_download}
+                kwargs = {"dtype": dtype, "local_files_only": not allow_download}
                 if dtype == torch.float16:
                     kwargs["variant"] = "fp16"
                 t0 = time.monotonic()
@@ -303,7 +322,7 @@ def main(argv=None) -> None:
     ap.add_argument("--download", action="store_true", help=f"allow downloading {MODEL_ID} (about 2.6 GB)")
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
-    if args.download and diffusion_enabled():
+    if args.download and _installed():
         t0 = time.monotonic()
         _pipeline(allow_download=True)
         print(f"pipeline ready in {time.monotonic() - t0:.1f}s")
