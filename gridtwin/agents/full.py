@@ -21,6 +21,8 @@ HOLD_MIN = 30          # wait this long after a full pass, then re-verify (catch
 VERIFY_RESERVE = 12    # tool calls kept back for the verifier
 MAX_ROUNDS = 5
 STATE_TOOLS = ("operate", "dispatch_tech")
+# Ablation (docs/JUDGE_QA.md Q2): the weakest plausible DONE checklist, "the alarms are gone".
+WEAK_DONE_CHECKS = [{"id": "weak_no_alarms", "kind": "telemetry", "op": "no_alarms", "max_age_min": 60}]
 
 BRIEFING = """GOAL (from the operator): {goal}
 
@@ -97,7 +99,10 @@ def write_lesson(kb: KB, planner: Planner, goal: str, status: str, checks: list,
     return kb.write_lesson(lesson, actor=actor)
 
 
-def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = None, max_rounds: int = MAX_ROUNDS) -> dict:
+def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = None, max_rounds: int = MAX_ROUNDS,
+        weak_dod: bool = False, floors: bool = True) -> dict:
+    """`weak_dod` swaps the planner's DONE checks for WEAK_DONE_CHECKS; `floors=False` also turns off the
+    checks the planner can't weaken (the verifier's audit and the post-pass hold). Both are ablations only."""
     kb_dir = Path(kb_dir)
     ensure_gate(toolbox, log)
     ensure_goal(goal, log)
@@ -111,8 +116,11 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
     ltxt, rtxt, lessons = kb_context(kb, goal, "planner")
     p = planner.plan(goal, registry, f"Lessons:\n{ltxt}\n\nReferences:\n{rtxt}")
     dod, tasks = p["dod"], p["tasks"]
+    if weak_dod:
+        dod = {**dod, "branches": {**dod["branches"], "DONE": [dict(c) for c in WEAK_DONE_CHECKS]}}
     log.emit("planner", "dod", {"checks": dod["branches"], "tasks": tasks, "repairs": p["repairs"],
-                                "lessons_used": [h["id"] for h in lessons]})
+                                "lessons_used": [h["id"] for h in lessons],
+                                **({"ablation": {"weak_dod": weak_dod, "floors": floors}} if weak_dod or not floors else {})})
 
     team = Team(toolbox, log, kb_dir, run_dir, BRIEFING.format(goal=goal, registry=compact_registry(registry), lessons=ltxt, refs=rtxt), chaos,
                 registry=registry)
@@ -162,7 +170,7 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
         log.emit("worker:operator", "claim", {"status": status, "summary": claim["summary"]})
 
         n0 = len(read_events(log))
-        v = verifier.verify(goal, status, dod["branches"][status])
+        v = verifier.verify(goal, status, dod["branches"][status], audit=floors)
         if v["added"]:
             dod, _ = D.merge_checks(dod, status, v["added"])
             log.emit("verifier", "dod", {"checks": dod["branches"], "added_by_verifier": [c["id"] for c in v["added"]]})
@@ -170,7 +178,7 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
         all_verdicts += v["verdicts"]
         passing_seqs = [e["seq"] for e in read_events(log)[n0:] if e.get("type") == "verdict" and (e.get("data") or {}).get("pass")]
 
-        if v["pass"] and status == "DONE":
+        if floors and v["pass"] and status == "DONE":
             sup.emit("hold", f"all {len(v['verdicts'])} checks passed; holding {HOLD_MIN} sim-minutes, then re-verifying everything")
             ActorToolbox(toolbox, "supervisor").call("wait", {"minutes": HOLD_MIN})
             n0 = len(read_events(log))
@@ -216,6 +224,16 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
     log.emit("supervisor", "final", {"status": final["status"], "summary": final["summary"]})
     snap = llm.USAGE.snapshot() if hasattr(llm, "USAGE") else {}
     return {"status": final["status"], "summary": final["summary"], "usage": snap, "restarts": team.restarts}
+
+
+def run_weak_dod(goal, toolbox, log, budget, kb_dir):
+    """Bench arm: weak planner checklist, floors on. The hold and the audit should still catch traps."""
+    return run(goal, toolbox, log, budget, kb_dir, weak_dod=True)
+
+
+def run_weak_dod_no_floors(goal, toolbox, log, budget, kb_dir):
+    """Bench arm: weak checklist and no floors, to show what the floors are worth."""
+    return run(goal, toolbox, log, budget, kb_dir, weak_dod=True, floors=False)
 
 
 def _feedback(v: dict) -> str:

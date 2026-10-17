@@ -1,6 +1,7 @@
 """Benchmark harness: run an agent over scenarios, judge each episode with hidden truth, tabulate.
 
-python -m gridtwin.bench --agent scripted_correct|scripted_trap|baseline|full --split dev|heldout|all --runs N
+python -m gridtwin.bench --agent scripted_correct|scripted_trap|baseline|self_verify|full|full_weak_dod|full_weak_dod_no_floors
+    --split dev|heldout|all --runs N
     [--kb kb/snapshots/<name>] [--memory off|frozen|learn] [--scenario ID | --scenarios a,b,...]
 
 Memory modes (what the agent finds in kb_dir/lessons/):
@@ -9,6 +10,12 @@ Memory modes (what the agent finds in kb_dir/lessons/):
     learn   one copy is shared by the episodes, run in the given order, so lessons accumulate
 Without --kb every mode starts from an empty KB. The snapshot itself is never written.
 Memory-poisoning run: --memory learn --scenarios s03_fan_relapse,s03b_fan_relapse_day2
+
+Arms (docs/JUDGE_QA.md): baseline decides on its own; self_verify is the same workers told to check their
+own fix, with the full tool budget; full is the whole loop. full_weak_dod feeds the loop a weak checklist
+("no alarms") with the floors on; full_weak_dod_no_floors also drops the verifier audit and the hold.
+Fault types that appear only in held-out scenarios (heldout_only_types) are the held-out trap types:
+nothing in dev, the KB or the prompts was tuned on them, and results.md reports them separately.
 """
 import argparse
 import contextlib
@@ -27,6 +34,9 @@ MEMORY_MODES = ("off", "frozen", "learn")
 AGENTS = {
     "baseline": "gridtwin.agents.baseline:run",
     "full": "gridtwin.agents.full:run",
+    "self_verify": "gridtwin.agents.self_verify:run",
+    "full_weak_dod": "gridtwin.agents.full:run_weak_dod",
+    "full_weak_dod_no_floors": "gridtwin.agents.full:run_weak_dod_no_floors",
     "scripted_correct": "gridtwin.bench:scripted_correct",
     "scripted_trap": "gridtwin.bench:scripted_trap",
 }
@@ -203,7 +213,7 @@ def run_episode(agent, scenario_id, run_id, runs_dir=None, kb=None, memory="froz
     if not log.of_type("final"):  # agents normally emit their own; keep every log self-contained
         log.emit("operator", "final", {"status": result.get("status"), "summary": result.get("summary", "")})
     metrics = episode.finish(sim, log, result)
-    return {**metrics, "memory": memory, "lessons_at_start": lessons_at_start, **lesson_ids(log)}
+    return {**metrics, "fault_types": sorted({f["type"] for f in sc.get("faults") or []}), "memory": memory, "lessons_at_start": lessons_at_start, **lesson_ids(log)}
 
 
 def run_bench(agent, scenario_ids, runs=1, runs_dir=None, kb=None, memory="frozen"):
@@ -225,6 +235,13 @@ def run_bench(agent, scenario_ids, runs=1, runs_dir=None, kb=None, memory="froze
             shutil.rmtree(dest, ignore_errors=True)
             shutil.copytree(shared, dest)
     return rows
+
+
+def heldout_only_types() -> list:
+    """Fault types that occur in held-out scenarios and in no dev scenario."""
+    types = {split: {f["type"] for sid in episode.list_scenarios(split)
+                     for f in episode.load_scenario(sid).get("faults") or []} for split in ("dev", "heldout")}
+    return sorted(types["heldout"] - types["dev"])
 
 
 def totals(rows):
@@ -266,6 +283,11 @@ def to_markdown(agent_name, split, rows, tot, memory="frozen"):
               f"safety violations {tot['safety_violations']} · revenue lost ${tot['revenue_lost_usd']} · "
               f"tool calls {tot['tool_calls']} · "
               f"tokens {tot['tokens_prompt']}/{tot['tokens_cached']} cached/{tot['tokens_completion']} out**"]
+    held = heldout_only_types()
+    hrows = [r for r in rows if set(r.get("fault_types") or []) & set(held)]
+    if hrows:
+        lines += ["", f"held-out trap types ({', '.join(held)}): success {sum(r['success'] for r in hrows)}/{len(hrows)} · "
+                  f"false done {sum(r['false_done'] for r in hrows)}/{len(hrows)}"]
     v = tot["verifier"]
     na = lambda x: "N/A" if x is None else x
     lines += ["", f"verifier: caught {v['caught']} · missed {v['missed']} · false reject {v['false_reject']} · "

@@ -26,7 +26,7 @@ TASKS = [
 FORCE = "You must now choose DONE, ESCALATED or NO_ACTION (not CONTINUE)."
 
 
-def run(goal: str, toolbox, log, budget: dict, kb_dir, step_cap: int = STEP_CAP) -> dict:
+def run(goal: str, toolbox, log, budget: dict, kb_dir, step_cap: int = STEP_CAP, tasks=TASKS) -> dict:
     kb_dir = Path(kb_dir)
     ensure_gate(toolbox, log)
     ensure_goal(goal, log)
@@ -39,7 +39,8 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, step_cap: int = STEP_CAP)
                 registry=registry)
 
     turns = 0
-    tasks = list(TASKS)
+    follow_up = tasks[[w for w, _ in tasks].index("operator"):]  # after CONTINUE: the operator's task and any after it
+    tasks = list(tasks)
     claim = None
     for _ in range(3):
         for worker, instruction in tasks:
@@ -51,7 +52,7 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, step_cap: int = STEP_CAP)
         claim = team.claim(goal, FORCE if turns >= step_cap else "")
         if claim["status"] != "CONTINUE":
             break
-        tasks = [("diagnoser", f"The team said more work is needed: {claim['summary'][:300]}. Do it."), TASKS[-1]]
+        tasks = [("diagnoser", f"The team said more work is needed: {claim['summary'][:300]}. Do it."), *follow_up]
     if claim is None or claim["status"] == "CONTINUE":
         claim = team.claim(goal, FORCE, max_steps=2)
         if claim["status"] == "CONTINUE":
