@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GridTwin plant twin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="twin-embed.css">
+<script type="importmap">
+{ "imports": { "three": "/vendor/three.module.min.js", "three/addons/controls/OrbitControls.js": "/vendor/OrbitControls.js",
+               "@sparkjsdev/spark": "/vendor/spark.module.min.js" } }
+</script>
+</head>
+<body>
+<div id="view" class="view" aria-label="Plant digital twin, walkable"></div>
+<div id="pins" class="pins"></div>
+<div id="loader" class="loader"><span id="pct" class="mono">Loading twin 0%</span><i><b id="bar"></b></i></div>
+
+<div class="tl">
+  <div id="where" class="where mono">Plant overview</div>
+  <div id="hint" class="hint">Drag to orbit · scroll to zoom · click an asset</div>
+</div>
+<div class="tr seg" role="group" aria-label="Navigation">
+  <button id="mOrbit" class="on" title="Orbit around the plant">Orbit</button><button id="mWalk" title="Walk through the plant (W A S D)">Walk</button><button id="mThermal" title="Thermal view">Thermal</button><button id="mInside" title="Walk into the equipment room (inverters, transformer)">Inside</button><button id="mHome" title="Back to the overview" aria-label="Overview">⌂</button>
+</div>
+<div class="bl legend mono">
+  <span><i class="lg bad"></i>Fault</span><span><i class="lg hot"></i>Thermal</span><span><i class="lg work"></i>Worked on</span><span><i class="lg ok"></i>Verified</span>
+</div>
+<aside id="card" class="card" hidden></aside>
+<script type="module" src="twin-embed.js"></script>
+</body>
+</html>
