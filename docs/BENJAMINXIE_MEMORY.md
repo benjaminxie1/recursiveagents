@@ -15,6 +15,7 @@ Same rules as `docs/MEMORY.md`: append `HH:MM name: text` lines (Pacific time), 
 - 10:18 Benjamin: decision API = TypeSafe **Jev** `POST https://api.typesafe.ai/v1/systemone`, model `jev-latest`, questions keyed by name, types `choice` / `score` / `noul`. Signups were reportedly paused on Sep 22, and it's also on OpenRouter as `typesafe/jev-1.14-20261014`. Or **OpenAI Decisions** `POST /v1/decisions`, model `gpt-6-luna`, questions as an array, types `predicate` / `choice` / `score`, public beta since Oct 6, accepts images. Details in `docs/SIMULATOR.md` §3.
 - 10:18 Benjamin: **Alike** = a16z Speedrun SR006, docs at alike.help (index: alike.help/llms.txt). MCP `https://alike.network/api-general/mcp`, Streamable HTTP, browser OAuth only (no API key). Tools: `resolve_work_item`, `record_decision`, `search_entities`, `search_environment`, `message_agent_session`. Mapping is in `docs/PLAN.md` §8.
 - 10:18 Benjamin: Crusoe reference = the skill file in crusoecloud/crusoe-developer-hub `examples/hackathons/crusoe-cv-recursive-agents-hackathon/`. Key points are in `CLAUDE.md`.
+- 10:27 Benjamin: Jev works with our key (served `jev-1.13.0`, ~430 input tokens). Response shape: `answers.<name>` = `{type:"choice", choice, confidence, probabilities:{...}}` or `{type:"noul", noul: <prob>}`. Test (close a breaker with a ground-fault alarm): `reject` 0.98, unsafe 0.91.
 
 ## Setup state
 
