@@ -43,6 +43,10 @@ Read it at the start of a session, after `docs/HACKATHON.md`.
 - 11:30 Jonathan (ws2): `gate` role = `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B` (no other role uses it, so it has its own rate-limit bucket); the supervisor's drift judge runs on the planner model.
 - 11:30 Jonathan (ws2): `full.run` and `baseline.run` install `make_gate()` on the Toolbox when the caller built it with `gate=None` (the bench does), so every benchmark operate/dispatch is gated; `GRIDTWIN_NO_GATE=1` turns that off.
 - 11:30 Jonathan (ws2): event order per claim is `claim` (actor `worker:operator`), then one `verdict` per check (actor `verifier`); a DONE is final only after all checks pass, a 30 sim-minute `wait`, and a second full pass. `final` is emitted by `supervisor` (full) or `worker:operator` (baseline).
+- 11:05 Benjamin: the Gaussian splat twin is required, not optional: it is the plant view in the demo and the source of the verifier's visual-check viewpoints (`docs/PLAN.md` §2.6).
+- 11:19 Benjamin: splat pitched as spatial map plus verifier-chosen viewpoints; we admit sim state is painted in, and the real-world story is nightly drone recapture. Sun ray-tracing for shading is dropped (`docs/JUDGE_QA.md`).
+- 11:19 Benjamin: benchmark gets a third arm, a self-verify baseline (same workers told to verify, same token budget).
+- 11:19 Benjamin: in the live demo, judges pick one of 3–4 pre-tested scenarios.
 
 ## Open questions
 
