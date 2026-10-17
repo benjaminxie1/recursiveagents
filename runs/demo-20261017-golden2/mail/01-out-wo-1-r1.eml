@@ -1,0 +1,87 @@
+From: GridTwin Ops <ops@gridtwin.example>
+To: Mesa Electrical Field Services <dispatch@mesa-field.example>
+Subject: [WO-1] INV-2: reseat comms card
+Date: Sat, 17 Oct 2026 15:11:20 -0700
+Message-ID: <179227508048.24167.3686274606316732251@gridtwin.example>
+X-GridTwin-Work-Order: WO-1
+X-GridTwin-Round: 1
+X-GridTwin-Simulated: true (never sent)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Hello Mesa Electrical Field Services,
+
+Please carry out work order WO-1 on INV-2 (reseat_comms_card).
+
+Steps, in order:
+  1. Open AC disconnect upstream of INV-3 (breaker 52-In)
+  2. Verify zero energy with calibrated tester on AC input to INV-3
+  3. Apply lockout device and tagout to AC disconnect upstream of INV-3
+  4. Confirm no residual voltage on INV-3 AC input terminals before work
+  5. Open AC disconnect upstream of INV-2 (breaker 52-In)
+  6. Verify zero energy with calibrated tester on AC input to INV-2
+  7. Apply lockout device and tagout to AC disconnect upstream of INV-2
+  8. Confirm no residual voltage on INV-2 AC input terminals before work
+  9. Verify loss of AC power to INV-2 by checking the circuit breaker and iso=
+lating the inverter.
+  10. Open the inverter cabinet door and locate the inverter comms card (typi=
+cally mounted on the side or rear panel).
+  11. Carefully remove the comms card from its slot, ensuring to note orienta=
+tion and any locking levers.
+  12. Inspect the card slot and card connectors for dust, oxidation, or physi=
+cal damage.
+  13. Reinsert the comms card firmly until it clicks or seats fully, matching=
+ the original orientation.
+  14. Close the cabinet door and restore AC power to the inverter.
+  15. Power on the inverter and observe the display for illumination and init=
+ialisation.
+  16. Ping the inverter's IP address from the SCADA workstation to confirm co=
+mms_ping test success.
+  17. Monitor the SCADA portal for a telemetry update and verify display read=
+ings are live.
+  18. If the display remains dark or ping times out, escalate to replace the =
+comms card or check cabling.
+  19. Restore AC power to INV-2 by closing breaker 52-In
+  20. Verify power restoration with operational test of INV-2 comms and displ=
+ay
+  21. Restore AC power to INV-3 by closing breaker 52-In
+  22. Verify power restoration with operational test of INV-3 comms and displ=
+ay
+
+Do not:
+  - Do not force the comms card out or push it in at an angle, risking damage=
+ to the slot.
+  - Do not skip the power isolation step before handling internal components.
+  - Do not assume the fault is the cable; always reseat the card first per di=
+agnostics.
+  - Do not ignore a dark display without checking power and card seating.
+  - Do not substitute an inspect-only visit or a power-cycle for the work ord=
+er; it does not restore a failed comms card.
+
+We will verify against the plant before closing this order:
+  - INV-2 SCADA data_age_min at most 5 and status running
+  - INV-2 answers comms_ping (its comms card is back on the network)
+  - INV-2 display lit and showing readings in a camera view the verifier pick=
+s, not the contractor's photo
+  - JEV verdict 'verified' from the registered camera stations and the sensor=
+ state
+  - INV-2 SCADA shows data_age_min <=3D 5 and status 'running'
+  - INV-2 answers comms_ping with a successful reply (no timeout)
+  - Physical display of INV-2 is lit and shows readable operational readings =
+in a verifier's camera view
+  - INV-3 SCADA data_age_min at most 5 and status running
+  - INV-3 answers comms_ping (its comms card is back on the network)
+  - INV-3 display lit and showing readings in a camera view the verifier pick=
+s, not the contractor's photo
+  - SCADA system shows INV-3 telemetry data_age_min less than 5 minutes and s=
+tatus 'running'
+  - INV-3 responds to comms_ping with successful reply (no timeout)
+  - Physical inspection of INV-3 cabinet shows lit, readable display with vis=
+ible operational readings
+
+(Includes lessons from verified past incidents: L-demo-20261017-golden1.)
+
+Reply to this email when the work is done.
+
+GridTwin Ops (automated agent team)
