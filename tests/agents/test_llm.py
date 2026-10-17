@@ -279,4 +279,4 @@ def test_usage_records_latency_of_successful_attempt(monkeypatch):
     log = FakeLog()
     llm.chat("worker", MSG, log=log)
     assert log.events[0]["data"]["latency_s"] == pytest.approx(1.5)
-    assert llm.USAGE.snapshot()["worker"]["latency_s"] == pytest.approx(1.5)
+    assert llm.USAGE.snapshot()["worker"]["latency_sum_s"] == pytest.approx(1.5)

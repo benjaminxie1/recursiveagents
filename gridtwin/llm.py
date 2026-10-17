@@ -105,7 +105,7 @@ THROTTLE = Throttle()
 
 # ---------- usage totals ----------
 
-_ZERO = {"calls": 0, "prompt": 0, "cached": 0, "completion": 0, "usd": 0.0, "latency_s": 0.0}
+_ZERO = {"calls": 0, "prompt": 0, "cached": 0, "completion": 0, "usd": 0.0, "latency_sum_s": 0.0}
 
 
 def cost_usd(model: str, prompt: int, cached: int, completion: int) -> float:
@@ -136,7 +136,7 @@ class Usage:
             r["cached"] += cached
             r["completion"] += completion
             r["usd"] += usd
-            r["latency_s"] += latency_s or 0.0
+            r["latency_sum_s"] += latency_s or 0.0
         rec = {"role": role, "prompt": prompt, "cached": cached, "completion": completion,
                "model": model, "usd": usd}
         if latency_s is not None:
