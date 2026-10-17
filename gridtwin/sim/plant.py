@@ -391,7 +391,11 @@ class Plant:
         self.advance(2)
         state = self.visual_state(vp["asset"], mode)
         path = self.camera.capture(viewpoint, vp["asset"], mode, state)
-        return {"image_path": path, "viewpoint": viewpoint, "asset": vp["asset"], "mode": mode, "captured_at": self.now_str()}
+        out = {"image_path": path, "viewpoint": viewpoint, "asset": vp["asset"], "mode": mode, "captured_at": self.now_str()}
+        render = self.camera.render(viewpoint, mode, state)
+        if render:  # additive (C1): the splat seen from this viewpoint; vision still reads image_path
+            out["render_path"] = render
+        return out
 
     def diagnostic(self, asset, test) -> dict:
         minutes = CFG["diagnostics"].get(test)

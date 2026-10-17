@@ -115,9 +115,11 @@ function renderTiles(S) {
     const st = S.st[s.id];
     const [cls, badge, why] = statusOf(st, S);
     const last = st.shots[st.shots.length - 1];
-    const img = last
-      ? `<a href="/${esc(last.image_path)}" target="_blank"><img src="/${esc(last.image_path)}" alt="${esc(s.id)} ${esc(last.mode)}"></a>`
-      : '<div class="noimg">no photo yet</div>';
+    // With a splat render, the tile shows the twin's view of the station and the camera photo as an inset.
+    const img = !last ? '<div class="noimg">no photo yet</div>' : last.render_path
+      ? `<a href="/${esc(last.render_path)}" target="_blank"><img src="/${esc(last.render_path)}" alt="${esc(s.id)} splat view"></a>
+         <a href="/${esc(last.image_path)}" target="_blank"><img class="inset" src="/${esc(last.image_path)}" alt="${esc(s.id)} ${esc(last.mode)} photo"></a>`
+      : `<a href="/${esc(last.image_path)}" target="_blank"><img src="/${esc(last.image_path)}" alt="${esc(s.id)} ${esc(last.mode)}"></a>`;
     const dots = (s.modes || ['rgb']).map((m) => {
       const n = st.shots.filter((x) => x.mode === m).length;
       return `<i class="dot ${n ? cls : 'empty'}" title="${esc(m)}: ${n} photo${n === 1 ? '' : 's'}"></i>`;
@@ -160,6 +162,8 @@ function renderMap(S) {
 function render() {
   const S = derive(events.slice(0, cursor));
   renderTiles(S); renderMap(S);
+  window.wallTwin = { stations, S, status: (s) => statusOf(S.st[s.id], S)[0], flash: (vp) => window.wallFlash?.(vp) };
+  window.dispatchEvent(new Event('wall:render'));
   const n = S.captured.size, total = totalViews();
   $('#views').textContent = `Run ${runId || '—'} · ${n} of ${total} views`;
   $('#progressBar').style.width = `${total ? (100 * n) / total : 0}%`;
@@ -227,7 +231,8 @@ async function main() {
     el.classList.add('flash');
     setTimeout(() => el.classList.remove('flash'), 1200);
   };
-  $('#map').onclick = (e) => { const g = e.target.closest('.stn'); if (g) flash(g.dataset.vp); };
+  window.wallFlash = flash;
+  $('#map').onclick = (e) => { const g = e.target.closest('.stn'); if (g) { flash(g.dataset.vp); window.twinFocus?.(g.dataset.vp); } };
   render();
   if (!runId) {
     $('#summary').innerHTML = '<span class="muted">No runs yet. Start one, for example <code>python -m gridtwin.bench --agent scripted_correct --scenario s03_fan_relapse</code>, then reload.</span>';

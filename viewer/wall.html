@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GridTwin inspection wall</title>
 <link rel="stylesheet" href="wall.css">
+<script type="importmap">
+{ "imports": { "three": "/vendor/three.module.min.js", "three/addons/controls/OrbitControls.js": "/vendor/OrbitControls.js",
+               "@sparkjsdev/spark": "/vendor/spark.module.min.js" } }
+</script>
 </head>
 <body>
 <header class="top">
@@ -25,6 +29,12 @@
 
 <div id="summary" class="summary"></div>
 
+<section id="twin" class="twin" hidden>
+  <div id="twinView" class="twin-view"></div>
+  <div class="twin-cap"><b>Plant twin</b> · Gaussian splat skinned from site photos · drag to orbit, click a camera to jump to it
+    <span class="twin-btns"><button id="twinThermal" title="Thermal view: assets with a failed check glow">thermal</button><button id="twinHome" title="Whole plant">overview</button><button id="twinHide" title="Hide the 3D view">hide</button></span></div>
+  <div id="twinShot" class="twin-shot" hidden></div>
+</section>
 <main class="layout">
   <section id="tiles" class="tiles" aria-label="Camera stations"></section>
   <aside class="side">
@@ -41,5 +51,6 @@
   </aside>
 </main>
 <script src="wall.js"></script>
+<script type="module" src="wall-splat.js"></script>
 </body>
 </html>

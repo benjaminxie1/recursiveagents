@@ -4,6 +4,9 @@ Source photos live in folders named after their state, so the camera copies the 
 opaque path under runs/<run_id>/frames/ and only that path is ever returned to agents.
 """
 import hashlib
+import json
+import os
+import shutil
 from pathlib import Path
 
 import yaml
@@ -11,6 +14,7 @@ from PIL import Image, ImageDraw
 
 REPO = Path(__file__).resolve().parents[2]
 PHOTOS = REPO / "assets" / "photos"
+SPLAT_RENDERS = REPO / "assets" / "splats" / "renders"
 EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
@@ -48,3 +52,27 @@ class Camera:
             return str(dst.relative_to(REPO))
         except ValueError:
             return str(dst)
+
+    def render(self, viewpoint, mode, state):
+        """The plant splat re-rendered from this viewpoint with the hidden state painted in (scripts/render_splat_views.py),
+        copied to an opaque frame path like the photo. None when there is no render for it or GRIDTWIN_SPLAT=0:
+        the photo is still the frame vision reads, so a missing render never breaks a run."""
+        if os.environ.get("GRIDTWIN_SPLAT", "1") == "0":
+            return None
+        try:
+            if not hasattr(self, "_render_index"):
+                idx = SPLAT_RENDERS / "index.json"
+                self._render_index = json.loads(idx.read_text()) if idx.exists() else {}
+            hit = self._render_index.get(viewpoint, {}).get(state)
+            src = REPO / hit["file"] if hit else None
+            if src is None or not src.exists():
+                return None
+            dst = self.frames_dir / f"{self.captures:03d}-{viewpoint}-{mode}-splat.jpg"
+            self.frames_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(src, dst)
+            try:
+                return str(dst.relative_to(REPO))
+            except ValueError:
+                return str(dst)
+        except Exception:  # a broken render cache must never break a camera call
+            return None
