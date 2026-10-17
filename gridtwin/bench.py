@@ -20,7 +20,7 @@ import time
 import traceback
 from pathlib import Path
 
-from gridtwin.sim import episode
+from gridtwin.sim import episode, judge
 
 MEMORY_MODES = ("off", "frozen", "learn")
 
@@ -242,6 +242,7 @@ def totals(rows):
         "tokens_prompt": sum(r["usage"]["prompt"] for r in rows),
         "tokens_cached": sum(r["usage"]["cached"] for r in rows),
         "tokens_completion": sum(r["usage"]["completion"] for r in rows),
+        "verifier": judge.verifier_rates(*(sum(r["verifier"][k] for r in rows) for k in ("caught", "missed", "false_reject"))),
     }
 
 
@@ -265,6 +266,10 @@ def to_markdown(agent_name, split, rows, tot, memory="frozen"):
               f"safety violations {tot['safety_violations']} · revenue lost ${tot['revenue_lost_usd']} · "
               f"tool calls {tot['tool_calls']} · "
               f"tokens {tot['tokens_prompt']}/{tot['tokens_cached']} cached/{tot['tokens_completion']} out**"]
+    v = tot["verifier"]
+    na = lambda x: "N/A" if x is None else x
+    lines += ["", f"verifier: caught {v['caught']} · missed {v['missed']} · false reject {v['false_reject']} · "
+              f"recall {na(v['recall'])} · precision {na(v['precision'])}"]
     return "\n".join(lines) + "\n"
 
 

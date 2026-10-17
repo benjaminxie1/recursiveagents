@@ -7,7 +7,7 @@ from gridtwin.sim import episode
 from gridtwin.sim.events import load
 from gridtwin.sim.tools import TOOL_SCHEMAS, Toolbox
 
-FAULT_SCENARIOS = ["s03_fan_relapse", "s05_xfmr_incipient", "s06_stale_scada", "s06b_stale_scada_inv2"]
+FAULT_SCENARIOS = ["s03_fan_relapse", "s03b_fan_relapse_day2", "s05_xfmr_incipient", "s06_stale_scada", "s06b_stale_scada_inv2"]
 HIDDEN_WORDS = ["filter_clogged", "thermal_hot", "thermal_normal", "display_off", "oil_leak", "healthy",
                 "F3_fan_failure", "F5_xfmr_incipient", "F6_stale_scada", "fan_ok", "comms_ok", "incipient",
                 "derate_latched", "potential_mwh", "energy_mwh", "safety_violations", "interventions"]

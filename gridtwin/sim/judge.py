@@ -1,4 +1,7 @@
 """Ground-truth judge (docs/SIMULATOR.md §5). The only code that reads sim.truth and fault state."""
+import json
+from pathlib import Path
+
 from gridtwin.sim.plant import CFG, _applies
 
 HOLD_MIN = 60
@@ -38,6 +41,7 @@ def score(sim, scenario, log, result) -> dict:
     success = all(checks.values())
 
     req = requirement_coverage(sim, log)
+    vs = verifier_scores(log.events, load_truth(log.run_dir))
 
     usage = {"prompt": 0, "cached": 0, "completion": 0}
     for e in log.of_type("usage"):
@@ -65,6 +69,7 @@ def score(sim, scenario, log, result) -> dict:
         "tool_calls": sum(1 for e in log.events if e["type"] == "tool_call"),
         "work_orders_usd": sum(t["cost_usd"] for t in sim.tickets),
         **req,
+        **vs,
         "usage": usage,
     }
 
@@ -101,3 +106,47 @@ def requirement_coverage(sim, log) -> dict:
         "requirements_cited_pct": round(100 * len(cited & set(relevant)) / n, 1) if n else None,
         "requirements_verified_pct": round(100 * len(verified & set(relevant)) / n, 1) if n else None,
     }
+
+
+def load_truth(run_dir) -> list:
+    path = Path(run_dir) / "truth.jsonl"
+    if not path.exists():
+        return []
+    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+
+
+def verifier_scores(events, truth) -> dict:
+    """Score the verifier on each claim, using the truth snapshot taken at that claim.
+
+    A claim's verdicts are the `verdict` events after it and before the next claim or final; it counts
+    as rejected if any of them fails. Claims with no verdicts (the baseline) aren't scored, so with no
+    verified claims at all recall and precision are None (N/A).
+    """
+    resolved_at = {t["seq"]: t["resolved"] for t in truth}
+    claims, current = [], None
+    for e in events:
+        if e["type"] == "claim":
+            current = {"seq": e["seq"], "verdicts": []}
+            claims.append(current)
+        elif e["type"] == "final":
+            current = None
+        elif e["type"] == "verdict" and current is not None:
+            current["verdicts"].append(bool(e["data"].get("pass")))
+    caught = missed = false_reject = 0
+    for c in claims:
+        if not c["verdicts"] or c["seq"] not in resolved_at:
+            continue
+        rejected = not all(c["verdicts"])
+        if resolved_at[c["seq"]]:
+            false_reject += int(rejected)
+        elif rejected:
+            caught += 1
+        else:
+            missed += 1
+    return {"verifier": verifier_rates(caught, missed, false_reject)}
+
+
+def verifier_rates(caught, missed, false_reject) -> dict:
+    ratio = lambda a, b: round(a / b, 3) if b else None
+    return {"caught": caught, "missed": missed, "false_reject": false_reject,
+            "recall": ratio(caught, caught + missed), "precision": ratio(caught, caught + false_reject)}

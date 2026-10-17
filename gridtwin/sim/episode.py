@@ -1,4 +1,5 @@
 """Episode lifecycle (contract C1): build sim + toolbox + log for a scenario, then judge it."""
+import json
 import time
 from pathlib import Path
 
@@ -34,9 +35,23 @@ def start(scenario_id, run_id=None, gate=None, notifier=None, runs_dir=None):
     sim = Plant(sc["seed"], sc["start"], sc.get("faults", []), sc.get("weather"), sc.get("preroll_min", 120), camera)
     sim.scenario = sc
     sim.run_dir = run_dir
-    log = EventLog(run_dir, clock=sim.now_str)
+    log = EventLog(run_dir, clock=sim.now_str, on_emit=lambda e: _snapshot_truth(sim, run_dir, e))
     toolbox = Toolbox(sim, log, gate=gate, notifier=notifier, budget=sc.get("budget"))
     return sim, toolbox, log, sc
+
+
+def fault_id(f) -> str:
+    return f"{f.type}:{f.asset}" if f.asset else f.type
+
+
+def _snapshot_truth(sim, run_dir, event):
+    """On every claim and final, record what was really true then. Only the judge reads truth.jsonl."""
+    if event["type"] not in ("claim", "final"):
+        return
+    faults = {fault_id(f): bool(f.is_resolved(sim)) for f in sim.faults}
+    row = {"seq": event["seq"], "type": event["type"], "resolved": all(faults.values()), "faults": faults}
+    with (Path(run_dir) / "truth.jsonl").open("a") as fh:
+        fh.write(json.dumps(row, sort_keys=True) + "\n")
 
 
 def finish(sim, log, result) -> dict:

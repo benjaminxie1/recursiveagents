@@ -11,8 +11,9 @@ TYPES = {
 
 
 class EventLog:
-    def __init__(self, run_dir, clock=None):
-        """`clock` is a zero-arg callable returning the sim time string for `t_sim`."""
+    def __init__(self, run_dir, clock=None, on_emit=None):
+        """`clock` is a zero-arg callable returning the sim time string for `t_sim`.
+        `on_emit(event)` runs after each event is written (episode uses it for truth snapshots)."""
         self.run_dir = Path(run_dir)
         self.run_dir.mkdir(parents=True, exist_ok=True)
         self.path = self.run_dir / "events.jsonl"
@@ -20,6 +21,7 @@ class EventLog:
         self.clock = clock
         self.seq = 0
         self.events = []
+        self.on_emit = on_emit
 
     def emit(self, actor: str, type: str, data: dict) -> dict:
         if actor not in ACTORS_FIXED and not actor.startswith("worker:"):
@@ -38,6 +40,8 @@ class EventLog:
         with self.path.open("a") as f:
             f.write(json.dumps(event, sort_keys=True, default=str) + "\n")
         self.events.append(event)
+        if self.on_emit:
+            self.on_emit(event)
         return event
 
     def of_type(self, type: str) -> list:
