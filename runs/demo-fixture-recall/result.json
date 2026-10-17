@@ -1,0 +1,17 @@
+{
+  "run_id": "demo-fixture-recall",
+  "status": "VERIFIED",
+  "rounds": 1,
+  "summary": "INV-3 verified in round 1. The recalled lesson stopped the restart shortcut.",
+  "usd": 0.031,
+  "wall_s": 64.6,
+  "judge": {
+    "success": true,
+    "false_done": false,
+    "safety_violations": 0,
+    "claimed_done": true,
+    "resolved": true
+  },
+  "lesson": "L-INV-COMMS-001",
+  "stub": false
+}
