@@ -5,6 +5,7 @@ Synthetic runs follow CONTRACT.md; each mutation test breaks one rule and expect
 from __future__ import annotations
 
 import json
+import time
 from contextlib import contextmanager
 from email.message import EmailMessage
 from pathlib import Path
@@ -91,10 +92,12 @@ def demo_run(root, verdicts=(False, True), recall=(), memory_write=None) -> Run:
     with r.stage("plan", 0):
         r.emit("memory", "demo.memory", op="recall", lessons=[{"id": lid, "text": "Forbid restart."} for lid in recall],
                effect=f"{len(recall)} lesson(s)")
-        planner = dict(id="planner", parent=None, depth=0, role="planner", model="nemotron-super", task="plan")
+        planner = dict(id="planner", parent=None, depth=0, role="planner", model="nemotron-super", task="plan",
+                       team="plan", round=0)
         r.emit("planner", "demo.agent", **planner, status="spawned", output=None)
         for role in ("safety", "repair", "acceptance"):
-            sub = dict(id=f"sub-{role}", parent="planner", depth=1, role=role, model="nemotron-lightning", task=role)
+            sub = dict(id=f"sub-{role}", parent="planner", depth=1, role=role, model="nemotron-lightning", task=role,
+                       team="plan", round=0)
             r.emit(f"subagent:{role}", "demo.agent", **sub, status="spawned", output=None)
             r.emit(f"subagent:{role}", "demo.agent", **sub, status="done", output=f"{role} notes")
         r.emit("planner", "demo.agent", **planner, status="done", output="merged work order")
@@ -179,7 +182,22 @@ def test_a_child_of_a_sub_agent_is_caught_even_if_it_claims_depth_one(tmp_path):
 def test_one_sub_agent_is_not_enough(tmp_path):
     r = demo_run(tmp_path)
     r.drop(lambda e: e["type"] == "demo.agent" and e["data"]["id"] in ("sub-repair", "sub-acceptance"))
-    assert_names(r.problems(), "only 1 sub-agent")
+    assert_names(r.problems(), "only 1 sub-agent(s) in the plan team")
+
+
+def test_a_verify_team_agent_acting_in_the_plan_stage(tmp_path):
+    r = demo_run(tmp_path)
+    for e in r.find("demo.agent", id="sub-repair"):
+        e["data"]["team"] = "verify"
+    assert_names(r.problems(), "of team 'verify' acts in stage 'plan'", "its parent 'planner' is in 'plan'")
+
+
+def test_a_sub_agent_role_outside_the_contract(tmp_path):
+    r = demo_run(tmp_path)
+    for e in r.find("demo.agent", id="sub-repair"):
+        e["data"]["role"] = "freelancer"
+        e["actor"] = "subagent:freelancer"
+    assert_names(r.problems(), "role 'freelancer', not one of ALL_SUBAGENT_ROLES")
 
 
 def test_a_sub_agent_with_an_unknown_parent(tmp_path):
@@ -293,9 +311,18 @@ def test_a_redispatch_without_the_expected_state_image(tmp_path):
     assert_names(r.problems(), "no attached expected-state image")
 
 
-def test_a_failed_verdict_cannot_go_to_memory(tmp_path):
+def test_an_escalated_run_may_score_lessons_but_not_write_one(tmp_path):
     r = demo_run(tmp_path, verdicts=(False,), memory_write=True)
-    assert_names(r.problems(), "memory write without a passing verdict", "failed verdict followed by stage 'memory'")
+    write = r.find("demo.memory", op="write")[0]
+    assert_names(r.problems(), "memory write without a passing verdict")
+    write["data"].update(op="score", lessons=[{"id": "L0", "text": "score 0.5 (-0.5), flagged"}], effect="flagged")
+    assert r.problems() == []
+
+
+def test_a_failed_verdict_cannot_go_straight_to_a_new_contractor_round(tmp_path):
+    r = demo_run(tmp_path)
+    r.drop(lambda e: e["type"] == "demo.stage" and e["data"]["stage"] == "redispatch")
+    assert_names(r.problems(), "stage 'contractor' cannot follow 'verify'")
 
 
 def test_final_rounds_must_match_the_verdicts(tmp_path):
@@ -363,10 +390,18 @@ def test_the_frontend_fixture_honours_the_contract():
 
 
 REAL_RUNS = sorted(p.parent for p in (REPO_ROOT / "runs").glob("*/events.jsonl") if has_demo_events(p))
+IN_PROGRESS_S = 300  # a run without demo.final whose log changed this recently is still being written
+
+
+def in_progress(run_dir) -> bool:
+    log = run_dir / "events.jsonl"
+    return '"demo.final"' not in log.read_text() and time.time() - log.stat().st_mtime < IN_PROGRESS_S
 
 
 @pytest.mark.parametrize("run_dir", REAL_RUNS or [None], ids=lambda p: p.name if p else "none")
 def test_real_demo_runs_honour_the_contract(run_dir):
     if run_dir is None:
         pytest.skip("no runs/*/events.jsonl with demo.* events yet")
+    if in_progress(run_dir):
+        pytest.skip(f"{run_dir.name} is still running")
     assert validate_run(run_dir) == []

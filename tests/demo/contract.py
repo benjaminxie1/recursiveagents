@@ -46,9 +46,10 @@ SCHEMA = {
         "viewpoint": "str", "asset": "str", "mode": "str", "image": "str", "description": "str", "round": "int"}),
     "demo.diagnosis": ({"planner"}, {
         "asset": "str", "fault": "str", "confidence": "num", "summary": "str", "evidence": "list[str]"}),
-    "demo.agent": ({"planner", "subagent:*"}, {
+    "demo.agent": ({"planner", "diagnoser", "verifier", "subagent:*"}, {
         "id": "str", "parent": "str|null", "depth": "int", "role": "str", "model": "str", "task": "str",
-        "status": {"spawned", "done", "failed"}, "output": "any"}),
+        "status": {"spawned", "done", "failed"}, "output": "any", "team": {"diagnose", "plan", "verify"},
+        "round": "int"}),
     "demo.workorder": ({"planner"}, {
         "wo_id": "str", "asset": "str", "work_order": "any", "steps": "list[str]", "forbid": "list[str]",
         "acceptance": "list[str]", "lessons_applied": "list", "round": "int"}),
@@ -65,7 +66,7 @@ SCHEMA = {
         "wo_id": "str", "round": "int", "image": "str", "backend": {"diffusion", "photo_bank"},
         "prompt": "str", "source": "any"}),
     "demo.verdict": ({"verifier"}, {"wo_id": "str", "round": "int", "pass": "bool", "failed": "list[str]"}),
-    "demo.memory": ({"memory"}, {"op": {"recall", "write"}, "lessons": "list[dict]", "effect": "any"}),
+    "demo.memory": ({"memory"}, {"op": {"recall", "write", "score", "stats"}, "lessons": "list[dict]", "effect": "any"}),
     "demo.final": ({"orchestrator"}, {
         "status": {"VERIFIED", "ESCALATED"}, "rounds": "int", "summary": "str", "usd": "num", "wall_s": "num"}),
 }
@@ -77,12 +78,26 @@ SUBSCHEMA = {  # (event type, list or dict field) -> spec for each item
     ("demo.memory", "lessons"): {"id": "str", "text": "str"},
     ("demo.email", "attachments"): {"name": "str", "path": "str"},
 }
+# Stages an agent of each team may appear in (a plan agent may also re-plan during redispatch).
+TEAM_STAGES = {"diagnose": {"diagnose"}, "plan": {"plan", "redispatch"}, "verify": {"verify"}}
+MIN_PLAN_SUBAGENTS = 2
+
+
+def _subagent_roles() -> set[str] | None:
+    """Sub-agent roles the contract allows (gridtwin/demo/events.py ALL_SUBAGENT_ROLES), if importable."""
+    try:
+        from gridtwin.demo.events import ALL_SUBAGENT_ROLES
+    except Exception:  # noqa: BLE001 - the validator still runs without the product package
+        return None
+    return set(ALL_SUBAGENT_ROLES)
+
+
 # Stages an event may appear in (CONTRACT.md "Stages"). Email and memory are keyed by direction and op.
 PLACEMENT = {
     "demo.sensor": {"diagnose", "verify"},
     "demo.camera": {"diagnose", "verify"},
     "demo.diagnosis": {"diagnose"},
-    "demo.agent": {"plan", "redispatch"},
+    "demo.agent": {"diagnose", "plan", "verify", "redispatch"},
     "demo.workorder": {"plan", "dispatch", "redispatch"},
     "demo.email:out": {"dispatch", "redispatch"},
     "demo.email:in": {"contractor"},
@@ -93,6 +108,8 @@ PLACEMENT = {
     "demo.diffusion": {"verify", "redispatch"},
     "demo.memory:recall": {"diagnose", "plan"},
     "demo.memory:write": {"memory"},
+    "demo.memory:score": {"memory"},
+    "demo.memory:stats": {"memory"},
     "demo.final": {"final"},
 }
 
@@ -288,13 +305,19 @@ class _Run:
             if not isinstance(aid, str):
                 continue
             a = agents.setdefault(aid, {"first": i, "depth": d.get("depth"), "parent": d.get("parent"),
-                                        "role": d.get("role"), "statuses": []})
-            for k in ("depth", "parent", "role"):
+                                        "role": d.get("role"), "team": d.get("team"), "statuses": []})
+            team_stages = TEAM_STAGES.get(d.get("team"))
+            if team_stages and self.stage_of.get(i) not in team_stages:
+                self.bad(i, f"agent {aid!r} of team {d.get('team')!r} acts in stage {self.stage_of.get(i)!r}")
+            for k in ("depth", "parent", "role", "team"):
                 if d.get(k) != a[k]:
                     self.bad(i, f"agent {aid!r} changes {k} from {a[k]!r} to {d.get(k)!r}")
             a["statuses"].append(d.get("status"))
+        roles = _subagent_roles()
         for aid, a in agents.items():
             i, depth, parent = a["first"], a["depth"], a["parent"]
+            if depth == 1 and roles is not None and a["role"] not in roles:
+                self.bad(i, f"sub-agent {aid!r} has role {a['role']!r}, not one of ALL_SUBAGENT_ROLES")
             if a["statuses"][0] != "spawned":
                 self.bad(i, f"agent {aid!r} first appears as {a['statuses'][0]!r}, not 'spawned'")
             if a["statuses"][-1] not in ("done", "failed"):
@@ -315,11 +338,14 @@ class _Run:
                                 "sub-agents cannot spawn (no depth 2)")
                 if p["first"] > i:
                     self.bad(i, f"agent {aid!r} appears before its parent {parent!r}")
-        if not any(a["depth"] == 0 for a in agents.values()):
-            self.bad(None, "no depth-0 planner agent")
-        subs = [aid for aid, a in agents.items() if a["depth"] == 1]
-        if len(subs) < 2:
-            self.bad(None, f"only {len(subs)} sub-agent(s); the planner must spawn at least 2")
+                if p["team"] != a["team"]:
+                    self.bad(i, f"agent {aid!r} is in team {a['team']!r} but its parent {parent!r} is in {p['team']!r}")
+        if not any(a["depth"] == 0 and a["team"] == "plan" for a in agents.values()):
+            self.bad(None, "no depth-0 planner agent in the plan team")
+        subs = [aid for aid, a in agents.items() if a["depth"] == 1 and a["team"] == "plan"]
+        if len(subs) < MIN_PLAN_SUBAGENTS:
+            self.bad(None, f"only {len(subs)} sub-agent(s) in the plan team; the planner must spawn at least "
+                           f"{MIN_PLAN_SUBAGENTS}")
 
     def emails(self):
         for i, d in self.of("demo.email"):
@@ -423,7 +449,8 @@ class _Run:
                         if self.events[j].get("actor") == "verifier" and reply_at < j < i]:
                     self.bad(i, "passing verdict without a verifier camera view taken after the reply")
 
-        # what follows each verdict: fail -> redispatch with an image attachment, or ESCALATED; pass -> no redispatch
+        # what follows each verdict: fail -> redispatch with an image attachment, or (memory scoring, then) ESCALATED;
+        # pass -> no redispatch
         starts = [(j, _data(e).get("stage")) for j, e in enumerate(self.events)
                   if e.get("type") == "demo.stage" and _data(e).get("status") == "start"]
         for i, v in verdicts:
@@ -432,8 +459,8 @@ class _Run:
                 if nxt == "redispatch":
                     self.bad(i, "passing verdict followed by a redispatch")
                 continue
-            if nxt not in ("redispatch", "final"):
-                self.bad(i, f"failed verdict followed by stage {nxt!r}, not redispatch or final")
+            if nxt not in ("redispatch", "memory", "final"):
+                self.bad(i, f"failed verdict followed by stage {nxt!r}, not redispatch, memory or final")
             if nxt != "redispatch":
                 continue
             rnd = v.get("round")
