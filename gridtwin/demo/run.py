@@ -11,6 +11,7 @@ import json
 import shutil
 import sys
 import time
+from pathlib import Path
 
 from gridtwin.demo import memory as M
 from gridtwin.demo.pipeline import MAX_ROUNDS, SCENARIO, Demo
@@ -41,9 +42,13 @@ def main(argv=None) -> int:
     ap.add_argument("--max-rounds", type=int, default=MAX_ROUNDS)
     ap.add_argument("--runs-dir", default=None, help="where run folders go (default runs/)")
     a = ap.parse_args(argv)
+    if a.stub and not a.memory:  # rehearsals never write stub lessons into the live lesson store
+        a.memory = str(Path(M.DEFAULT_DIR).parent / "e2e-kb-stub")
     if a.fresh_memory:
         d = M.Memory(a.memory).dir
         shutil.rmtree(d / "lessons", ignore_errors=True)
+        for name in (M.LEDGER, Path(M.LEDGER).with_suffix(".lock").name):  # scores and contractor history start over too
+            (d / name).unlink(missing_ok=True)
     demo = Demo(a.scenario, a.memory, a.stub, a.run_id, a.max_rounds, a.runs_dir)
     trace(demo.log._log)
     print(f"run_id {demo.run_id}  scenario {a.scenario}  stub={a.stub}  page: demo.html?run={demo.run_id}", flush=True)
