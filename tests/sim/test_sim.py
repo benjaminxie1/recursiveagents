@@ -132,10 +132,10 @@ def test_toolbox_contract(tmp_path):
 
 EXTENDED = ["s01_ground_fault", "s02_soiling", "s04_breaker_trip", "s07_vegetation", "s08_hotspot",
             "s09_gf_plus_trip", "s10_fan_cloudy", "s11_soiling_vegetation", "s12_control_cloudy",
-            "s13_fan_plus_stale_scada", "s14_xfmr_plus_soiling"]
+            "s13_fan_plus_stale_scada", "s14_xfmr_plus_soiling", "s15_contractor_botch"]
 HIDDEN_WORDS += ["connector_burnt", "connector_normal", "thermal_hotspot", "array_soiled", "array_overgrown",
                  "array_normal", "handle_tripped", "handle_closed", "F1_ground_fault", "F2_soiling",
-                 "F4_breaker_trip", "F7_vegetation", "F8_hotspot", "block_soiling", "cb_shading", "string_factor"]
+                 "F4_breaker_trip", "F7_vegetation", "F8_hotspot", "block_soiling", "cb_shading", "string_factor", "botched"]
 
 
 @pytest.mark.parametrize("sid", EXTENDED)
@@ -220,3 +220,31 @@ def test_requirement_tags_flow_from_dod_branches_through_evaluate(tmp_path):
         return out
     m = run(agent, "s05_xfmr_incipient", tmp_path)
     assert m["requirements_cited_pct"] == 50.0 and m["requirements_verified_pct"] == 50.0
+
+
+def _fan_job(tb, sim):
+    tb.call("operate", {"asset": "52-I1", "action": "open"})
+    tk = tb.call("dispatch_tech", {"asset": "INV-1", "work_order": "replace_fan_filter"})
+    tb.call("wait", {"minutes": 61})
+    tb.call("operate", {"asset": "52-I1", "action": "close"})
+    tb.call("wait", {"minutes": 5})
+    return tk
+
+
+def test_botched_ticket_completes_but_fan_stays_dead(tmp_path):
+    sim, tb, log, sc = episode.start("s15_contractor_botch", run_id="botch", runs_dir=tmp_path)
+    tk = _fan_job(tb, sim)
+    assert sim.tickets[0]["status"] == "complete"
+    assert sim.faults[0].active and not sim.faults[0].is_resolved(sim)
+    assert sim.scada["INV-1"]["fan_rpm"] == 0
+    assert sim.truth["work_done"][0]["fixed"] is False and sim.truth["work_done"][0]["botched"] is True
+    assert "botch" not in json.dumps(tk)
+    _fan_job(tb, sim)  # the second ticket works normally
+    assert sim.truth["work_done"][1]["fixed"] is True and "botched" not in sim.truth["work_done"][1]
+    assert sim.scada["INV-1"]["fan_rpm"] > 0
+
+
+def test_scenarios_without_botched_work_fix_first_time(tmp_path):
+    sim, tb, log, sc = episode.start("s03_fan_relapse", run_id="nobotch", runs_dir=tmp_path)
+    _fan_job(tb, sim)
+    assert sim.truth["work_done"][0]["fixed"] is True and "botched" not in sim.truth["work_done"][0]

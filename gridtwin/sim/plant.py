@@ -42,7 +42,7 @@ TFMT = "%Y-%m-%dT%H:%M"
 
 
 class Plant:
-    def __init__(self, seed: int, start: str, faults=(), weather=None, preroll_min: int = 120, camera=None):
+    def __init__(self, seed: int, start: str, faults=(), weather=None, preroll_min: int = 120, camera=None, botched_work=()):
         self.seed = seed
         self.rng = random.Random(seed)
         self.start = datetime.strptime(start, TFMT)
@@ -77,6 +77,8 @@ class Plant:
 
         self.alarm_log = []
         self.tickets = []
+        # contractor botches: the first `times` matching tickets complete without fixing anything
+        self._botch_left = [{**b, "times": b.get("times", 1)} for b in botched_work or []]
         self.pages = []
         self.actions = []
         self.scada = {}          # asset -> {point: value} as last reported to SCADA
@@ -224,8 +226,14 @@ class Plant:
                 tk["violation_logged"] = True
             if self.t >= tk["_eta"]:
                 tk["status"] = "complete"
-                fixed = any(f.on_work(self, tk["asset"], tk["work_order"]) for f in self.faults if f.active)
-                self.truth["work_done"].append({**{k: v for k, v in tk.items() if not k.startswith("_")}, "fixed": fixed})
+                botch = next((b for b in self._botch_left if b["times"] > 0 and b["asset"] == tk["asset"]
+                              and b["work_order"] == tk["work_order"]), None)
+                if botch:
+                    botch["times"] -= 1
+                    extra = {"fixed": False, "botched": True}
+                else:
+                    extra = {"fixed": any(f.on_work(self, tk["asset"], tk["work_order"]) for f in self.faults if f.active)}
+                self.truth["work_done"].append({**{k: v for k, v in tk.items() if not k.startswith("_")}, **extra})
 
     def _scada_step(self):
         for i, s in self.inv.items():

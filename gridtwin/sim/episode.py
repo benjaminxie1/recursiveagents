@@ -32,7 +32,8 @@ def start(scenario_id, run_id=None, gate=None, notifier=None, runs_dir=None):
     run_id = run_id or f"{scenario_id}-{time.strftime('%Y%m%d-%H%M%S')}"
     run_dir = Path(runs_dir or RUNS) / run_id
     camera = Camera(sc["seed"], run_dir)
-    sim = Plant(sc["seed"], sc["start"], sc.get("faults", []), sc.get("weather"), sc.get("preroll_min", 120), camera)
+    sim = Plant(sc["seed"], sc["start"], sc.get("faults", []), sc.get("weather"), sc.get("preroll_min", 120), camera,
+                botched_work=sc.get("botched_work"))
     sim.scenario = sc
     sim.run_dir = run_dir
     log = EventLog(run_dir, clock=sim.now_str, on_emit=lambda e: _snapshot_truth(sim, run_dir, e))
