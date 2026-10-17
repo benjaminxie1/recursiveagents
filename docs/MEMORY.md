@@ -31,7 +31,9 @@ Read it at the start of a session, after `docs/HACKATHON.md`.
 - 10:05 Will: Jonathan's agent has a separate local workspace (`recursive-agents-hackathon`, with its own `crusoe.py` client); agree at kickoff that this repo is the one codebase.
 - 10:05 Will: who creates the Crusoe organization and invites the others.
 - 10:05 Will: the reference video and splat source (`docs/PLAN.md` section 9).
+- 10:06 Will: official judging criteria are now in `docs/HACKATHON.md` (Technicality 40%, Live Demo 20%, Creativity 25%, Future Potential 15%); tracks, deadline and other rules are still unconfirmed.
 
 ## Lessons
 
 - 10:05 Will: Crusoe rate limits are per model, so spread roles across models and put a card on file first.
+- 10:07 Will: Benjamin rewrote `claude/sweet-faraday-yssuo9` at 10:02 (setup commits squashed into b4ef25f, no file changes); a clone from before then has unrelated history, so back up local work, then `git fetch && git reset --hard origin/claude/sweet-faraday-yssuo9` and re-apply it. Check `git status -sb` for ahead/behind before every push.

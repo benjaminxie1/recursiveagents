@@ -15,13 +15,21 @@ Each fact says where it came from.
 - The page asks for agents that take a goal, plan, spin up sub-agents, delegate, talk to each other, check their own progress, recover when things break, and keep going.
 - It names persistent loops that rarely need a human, agent teams and delegation, memory, and long-running inference as the target, not one-shot agents.
 
-## Judging, tracks and rules
+## Judging criteria (official, pasted by Will from the organizers, Oct 17 2026)
 
-The official criteria are on the event's Details tab, which needs a Cerebral Valley login: https://cerebralvalley.ai/e/crusoe-recursive-agents-hackathon/details
-Replace this section with the official text once someone signs in and reads it.
+- **Technicality (40%):** How difficult is this project to recreate? Does this involve technicality beyond your average hackathon project? Are you impressed with what they built in such a short time?
+- **Live Demo (20%):** How is the actual demo of the project? Does it impress you? Is it well-engineered and working?
+- **Creativity and Originality (25%):** How creative is the project? Is this something you have never seen before?
+- **Future Potential and AI Impact (15%):** Does this project point toward an interesting future for AI? Does it advance how we think about AI capabilities, autonomy, learning, evaluation, or agentic systems?
+
+The weights add up to 100%.
+The demo is judged live, so a recorded run is only a fallback.
+
+## Tracks and other rules
+
+The official Details tab needs a Cerebral Valley login: https://cerebralvalley.ai/e/crusoe-recursive-agents-hackathon/details
 
 Unconfirmed, from `docs/PLAN.md` (Benjamin, Oct 17 09:47 PDT):
-- Judges weight technicality at 40%.
 - There are three tracks; two are named "Done Means Done" (our primary) and "Shared Brain".
 - A side prize, Best Use of Nemotron, is the RTX 5090.
 - "Dashboard as the main feature" is a banned project type.
@@ -33,7 +41,7 @@ Unconfirmed, from Jonathan's agent (Alike decision, Oct 16-17):
 - That time was inferred from the event page's embedded data, not stated in words.
 - As of Oct 16 it found no published judging criteria, judges, tracks or prize split.
 
-These two sources disagree on whether tracks and weights exist, so confirm with organizers or the Details tab before planning around the 40% figure.
+The judging weights are now confirmed; tracks, the dashboard ban, the README rule and the deadline still need checking with organizers.
 
 ## Schedule we are working to
 
@@ -65,7 +73,7 @@ These two sources disagree on whether tracks and weights exist, so confirm with 
 
 Full report with sources: `docs/research/past-winners.md` (researched Oct 17 2026).
 The only full Cerebral Valley rubric on record (Built with Opus 4.6) was Demo 30%, Impact 25%, model use 25%, Depth and Execution 20%, and finalists played pre-recorded 3-minute videos.
-If today's 40% technicality figure holds, engineering counts about twice as much here.
+Here technicality is 40%, so engineering counts about twice as much, and the demo is live rather than recorded.
 
 What won, across Cerebral Valley, Crusoe, NVIDIA and other agent hackathons:
 - A measured before-and-after number beat more polished demos (Nemotron Seoul grand prize).
@@ -74,7 +82,13 @@ What won, across Cerebral Valley, Crusoe, NVIDIA and other agent hackathons:
 - One concrete problem with a named user, done end to end, beat broad platforms.
 - Deep use of the sponsor stack, with each model's role explained, beat a basic integration.
 
-What that means for GridTwin:
+What that means for GridTwin, by criterion:
+- Technicality (40%): the hard-to-recreate parts are the definition-of-done compiler, the verifier that re-runs checks on its own, the supervisor's loop detection, and visual checks rendered from the splat twin; show all of them working, not on slides.
+- Live Demo (20%): the live run has to work on venue Wi-Fi, so cache the splat and footage locally, pre-warm the prefix cache, and keep the recorded run only as a fallback.
+- Creativity (25%): a separate verifier on its own is not new, because past winners did it; the new part is agents writing their own runnable definition of done and checking it against a 3D twin of the plant, so put that up front.
+- Future Potential (15%): pitch the false-done rate as an evaluation result for autonomous agents in general, not only for power plants.
+
+What won elsewhere, applied to GridTwin:
 - Lead with the false-done rate from real runs, baseline against our loop, over several runs.
 - Show the verifier rejecting a "done" claim and the team recovering, live.
 - Inject a failure on stage (kill a sub-agent, force a 429) and let judges watch the supervisor route around it.
