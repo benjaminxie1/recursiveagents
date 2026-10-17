@@ -4,6 +4,6 @@
   "license": "CC BY 4.0",
   "license_url": "https://creativecommons.org/licenses/by/4.0/",
   "url": "https://superspl.at/scene/1a14e1e7",
-  "attribution": "Scan: \"Tugboat Bat engine room, Trieste\" by tosolini (XGRIDS PortalCam), CC BY 4.0, via SuperSplat. Thinned to 1M splats.",
-  "changes": "thinned from 7.94M to 1M Gaussians by scripts/thin_splat.py; GridTwin asset pins and stations added"
+  "attribution": "Scan: \"Tugboat Bat engine room, Trieste\" by tosolini (XGRIDS PortalCam), CC BY 4.0, via SuperSplat. Modified: thinned to 1.6M splats, floor and ceiling added.",
+  "changes": "1.6M of its 7.94M Gaussians kept by apparent size from the demo camera spots (scripts/thin_splat.py --focus); floor, ceiling, beams and lights added (scripts/room_shell.py); shown 1.35x life size; GridTwin demo labels and stations added (the machines are not really these assets)"
 }

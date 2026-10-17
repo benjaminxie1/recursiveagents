@@ -44,6 +44,7 @@ IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp", ".gif")
 # "<kind>|null" for nullable, "any" for present with any value, or a set of allowed string values.
 SCHEMA = {
     "demo.stage": ({"orchestrator"}, {"stage": set(STAGES), "status": {"start", "end"}, "round": "int"}),
+    "demo.twin": ({"diagnoser"}, {"asset": "str", "action": {"open"}}),
     "demo.sensor": ({"diagnoser"}, {
         "asset": "str", "data_age_min": "num|null", "last_update_ts": "any", "latest": "dict", "stale": "bool"}),
     "demo.camera": ({"diagnoser", "verifier"}, {
@@ -108,6 +109,7 @@ def _subagent_roles() -> set[str] | None:
 
 # Stages an event may appear in (CONTRACT.md "Stages"). Email and memory are keyed by direction and op.
 PLACEMENT = {
+    "demo.twin": {"diagnose"},
     "demo.sensor": {"diagnose", "verify"},
     "demo.camera": {"diagnose", "verify"},
     "demo.diagnosis": {"diagnose"},

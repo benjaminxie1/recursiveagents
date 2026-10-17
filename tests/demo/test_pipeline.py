@@ -212,3 +212,15 @@ def test_planner_text_about_power_cycles_does_not_cancel_the_shortcut(tmp_path, 
     res = run_demo(stub=True, memory_dir=tmp_path / "kb", run_id="wordy", runs_dir=tmp_path / "runs")
     visits = of(events(tmp_path / "runs" / "wordy"), "demo.contractor")
     assert visits[0]["shortcut"] is True and res["rounds"] == 2 and res["status"] == "VERIFIED"
+
+
+def test_the_diagnoser_opens_the_stale_suspect_in_the_twin_before_diagnosing(two_runs):
+    from tests.demo.contract import validate_run
+    runs, _, _ = two_runs
+    evs = events(runs / "r1")
+    twin = [e for e in evs if e["type"] == "demo.twin"]
+    dx = next(e for e in evs if e["type"] == "demo.diagnosis")
+    assert len(twin) == 1 and twin[0]["data"]["asset"] == "INV-3" and twin[0]["data"]["action"] == "open"
+    assert twin[0]["seq"] < dx["seq"] and twin[0]["data"]["twin_url"].startswith("twin.html?scene=")
+    # (runs in a temp folder have absolute image paths, which the validator flags separately)
+    assert not [p for p in validate_run(runs / "r1") if "demo.twin" in p or "unknown demo event" in p]

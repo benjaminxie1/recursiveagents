@@ -48,7 +48,7 @@ def snapshot(run_dir: Path, events: list[dict] | None = None, proc_state: dict |
     result = read_result(run_dir)
     s = {
         "schema": SCHEMA, "run_id": run_dir.name, "scenario": None, "goal": None, "status": "RUNNING", "done": False,
-        "stub": None, "error": None, "current": None, "stages": [], "rounds": 0, "twin_url": None,
+        "stub": None, "error": None, "current": None, "stages": [], "rounds": 0, "twin_url": None, "twin": None,
         "sensors": [], "cameras": [], "diagnosis": None, "agents": [], "teams": [], "work_orders": [], "emails": [],
         "contractor_visits": [], "checks": [], "jev": [], "diffusion": [], "verdicts": [],
         "memory": {"recall": None, "writes": [], "scores": [], "stats": None},
@@ -73,6 +73,9 @@ def snapshot(run_dir: Path, events: list[dict] | None = None, proc_state: dict |
                 s["current"] = {"stage": d.get("stage"), "round": rnd, "seq": seq}
             if d.get("twin_url"):
                 s["twin_url"] = d["twin_url"]
+        elif t == "demo.twin":
+            s["twin"] = {**d, "seq": seq}
+            s["twin_url"] = d.get("twin_url") or s["twin_url"]
         elif t == "demo.sensor":
             sensors[d.get("asset")] = {**d, "seq": seq}
         elif t == "demo.camera":

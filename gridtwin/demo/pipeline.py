@@ -238,6 +238,9 @@ class Demo:
             sensors.append(s)
             self.emit("diagnoser", "demo.sensor", s)
         suspects = [s["asset"] for s in sensors if s["stale"]] or [INVERTERS[0]]
+        # the diagnoser opens the suspect in the splat twin to pull its data; the embedded twin flies to it
+        self.emit("diagnoser", "demo.twin", {"asset": suspects[0], "action": "open", "twin_url": self.twin_url,
+                                             "reason": "stale SCADA" if any(s["stale"] for s in sensors) else "no stale feed; first inverter"})
         diags = {a: self.tb.call("run_diagnostic", {"asset": a, "test": "comms_ping"}) for a in suspects}
         shots = [self.photo(self.vps_for(a)[0], "diagnoser", 0, asset=a) for a in suspects if self.vps_for(a)]
         # one healthy peer for contrast, preferably seen through a display camera (the question is "is the display lit?")

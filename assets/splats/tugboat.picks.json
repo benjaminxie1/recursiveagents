@@ -95,7 +95,24 @@
     -0.39,
     -1.26,
     -2.33
+   ],
+   "asset": "INV-3"
+  },
+  "inv4_cabinet": {
+   "asset": "INV-4",
+   "eye": [
+    -0.1,
+    -1.0,
+    -3.2
+   ],
+   "target": [
+    0.56,
+    -1.2,
+    -2.96
    ]
   }
+ },
+ "viewer": {
+  "case": "assets/demo/s06_case"
  }
 }
