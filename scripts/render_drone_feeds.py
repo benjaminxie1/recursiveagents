@@ -9,6 +9,7 @@ import argparse
 import base64
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 import threading
@@ -40,11 +41,12 @@ def main(argv=None):
     ap.add_argument("--frames", type=int, default=72)
     ap.add_argument("--fps", type=int, default=12)
     ap.add_argument("--crf", type=int, default=28)
+    ap.add_argument("--gpu", action="store_true", help="render on the machine's GPU (a laptop) instead of SwiftShader")
     ap.add_argument("--only", help="comma-separated drone numbers, e.g. 2,3,4; the others keep their drones.json entries")
     a = ap.parse_args(argv)
     from playwright.sync_api import sync_playwright
 
-    ffmpeg = os.environ.get("FFMPEG", "/usr/bin/ffmpeg")
+    ffmpeg = os.environ.get("FFMPEG") or shutil.which("ffmpeg") or "/usr/bin/ffmpeg"
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{server.server_address[1]}"
@@ -53,7 +55,8 @@ def main(argv=None):
     t0 = time.time()
     with tempfile.TemporaryDirectory() as tmp, sync_playwright() as p:
         browser = p.chromium.launch(executable_path=chromium if Path(chromium).exists() else None,
-                                    args=["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"])
+                                    headless=not a.gpu,  # --gpu: a visible window, so Chromium draws on the laptop GPU
+                                    args=["--ignore-gpu-blocklist"] if a.gpu else ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"])
         page = browser.new_page(viewport={"width": 640, "height": 360})
         page.goto(f"{base}/splat-render.html?cam=1")
         page.wait_for_function("window.__ready || window.__error", timeout=240000)
