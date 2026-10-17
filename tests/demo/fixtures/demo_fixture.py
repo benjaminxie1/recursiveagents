@@ -18,6 +18,8 @@ import shutil
 from email.message import EmailMessage
 from pathlib import Path
 
+from gridtwin.demo.pipeline import verifier_acceptance  # work orders open with the verifier's own bars
+
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
 
@@ -154,7 +156,7 @@ def plan(log: Log, recall: bool):
         "repair": ("1. Swap the SCADA comms card (spare P/N CC-485-2) in slot 3.\n2. Re-seat the RS-485 trunk and check termination.\n3. Re-energise and confirm the display shows live kW."
                    if recall else
                    "1. Get INV-3 reporting again and exporting power.\n2. Check the comms card and the RS-485 trunk.\n3. Re-energise and confirm the display shows live kW."),
-        "acceptance": "1. SCADA data_age_min under 5 for INV-3 within 15 min of the visit.\n2. ac_kw within 5% of INV-1, INV-2 and INV-4 at the same irradiance.\n3. Display lit with live kW on a camera view the contractor did not use.",
+        "acceptance": "\n".join(f"{i}. {bar}" for i, bar in enumerate(verifier_acceptance("INV-3"), 1)),
     }
     for i, role in enumerate(tasks):
         log.emit(f"subagent:{role}", "demo.agent", {"id": f"planner.{role}", "parent": "planner", "depth": 1, "role": role,
@@ -179,8 +181,7 @@ def workorder(log: Log, rnd: int, strict: bool):
             "work_order": "INV-3 SCADA comms card failed: telemetry frozen since 07:57, display dark",
             "steps": steps,
             "forbid": [DO_NOT] if strict else [],
-            "acceptance": ["SCADA data_age_min < 5 within 15 min", "ac_kw within 5% of peer inverters",
-                           "Display lit with live kW on an independent camera"],
+            "acceptance": list(verifier_acceptance("INV-3")),
             "lessons_applied": [LESSON_ID] if strict and rnd == 1 else [], "round": rnd}
     log.emit("planner", "demo.workorder", data, 1.4)
     return data
