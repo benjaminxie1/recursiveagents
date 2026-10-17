@@ -26,6 +26,14 @@ BLOCKS = sorted(CFG["blocks"])
 INSULATION_OK_MOHM = 55.0
 GFDI_LIMIT_MOHM = 1.0
 HISTORY_MIN = 240
+
+
+def taxonomy_for(asset: str) -> dict:
+    """System/subsystem/component and applicable standards for an asset (longest matching prefix)."""
+    for prefix in sorted(CFG["taxonomy"], key=len, reverse=True):
+        if asset.startswith(prefix):
+            return dict(CFG["taxonomy"][prefix])
+    return {}
 TFMT = "%Y-%m-%dT%H:%M"
 
 
@@ -314,7 +322,8 @@ class Plant:
             kind = ("inverter" if a.startswith("INV") else "breaker" if a.startswith("52-") else
                     "combiner" if a.startswith("CB-") else "pv_block" if a in BLOCKS else {"MET-1": "met_station", "XFMR-1": "transformer",
                                                              "POI-1": "revenue_meter", "BESS-1": "battery"}[a])
-            item = {"asset": a, "type": kind, "viewpoints": sorted(v for v, d in vps.items() if d["asset"] == a)}
+            item = {"asset": a, "type": kind, **taxonomy_for(a),
+                    "viewpoints": sorted(v for v, d in vps.items() if d["asset"] == a)}
             if a in self.scada:
                 item["points"] = sorted(self.scada[a])
             if a.startswith("INV"):
@@ -326,7 +335,8 @@ class Plant:
                 item["inverter"] = CFG["blocks"][a]
                 item["combiners"] = [f"CB-{a[1]}.{k}" for k in range(1, CFG["combiners_per_block"] + 1)]
             out.append(item)
-        return {"plant": CFG["plant"]["name"], "rating_kwac": CFG["plant"]["rating_kwac"], "now": self.now_str(), "assets": out}
+        return {"plant": CFG["plant"]["name"], "rating_kwac": CFG["plant"]["rating_kwac"], "now": self.now_str(),
+                "standards": CFG["standards"], "assets": out}
 
     def alarms(self, active_only=True):
         return [dict(a) for a in self.alarm_log if a["active"] or not active_only]
