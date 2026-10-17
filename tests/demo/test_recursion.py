@@ -56,13 +56,14 @@ def fake_ask(answers):
     def ask(role, system, user, log=None, actor=None, thinking=False, max_tokens=2048):
         assert max_tokens >= 1024
         seen.append(actor)
+        ask.users[actor] = user
         a = answers.get(actor)
         if isinstance(a, Exception):
             raise a
         if a is None:
             raise RuntimeError(f"no answer for {actor}")
         return dict(a)
-    ask.seen = seen
+    ask.seen, ask.users = seen, {}
     return ask
 
 
@@ -148,10 +149,73 @@ def test_good_evidence_passes_in_stub_and_live(monkeypatch):
     assert out["pass"] is True and out["meta"]["model"] == "openai/gpt-oss-120b"
 
 
-def test_meta_judge_can_veto_good_evidence(monkeypatch):
-    monkeypatch.setattr(R, "_ask", fake_ask({"subagent:meta_judge": {"verdict": "fail", "reason": "photo is from the contractor"}}))
-    out = R.verify_team(WO, 1, plant(), [], "live", Recorder())
-    assert out["pass"] is False and out["failed"] == ["meta_judge"] and "vetoed" in out["meta"]["rule"]
+def fixed_plant(**readings):
+    """Round-2 evidence from e2e-tt3-1: every plant check passes; the ping answers in 14 ms, heatsink 33.5 C, AC 1250 kW."""
+    ev = plant()
+    ev["plant_readings"] = {"comms_ping": {"asset": "INV-3", "test": "comms_ping", "reachable": True, "rtt_ms": 14},
+                            "scada_latest": {"status": "running", "ac_kw": 1250.0, "heatsink_c": 33.5}, "data_age_min": 0.4}
+    ev["plant_readings"].update(readings)
+    return ev
+
+
+INVENTED_RANGE_VETOES = [  # the meta judge's round-2/3 answers in the three runs that escalated a fixed plant
+    {"verdict": "fail", "reason": "comms_ping latency is 14 ms, exceeding the required <10 ms threshold"},
+    {"verdict": "fail", "grounds": "heatsink_c", "reason": "Heatsink 33.5 C is outside the required 40 +-2 C range"},
+    {"verdict": "fail", "grounds": ["ac_kw", "acceptance"], "reason": "AC output 1250 kW is outside 1180-1220 kW"},
+]
+
+
+@pytest.mark.parametrize("veto", INVENTED_RANGE_VETOES)
+def test_a_veto_on_an_invented_range_is_overruled_and_the_fixed_plant_passes(monkeypatch, veto):
+    monkeypatch.setattr(R, "_ask", fake_ask({"subagent:meta_judge": veto}))
+    out = R.verify_team(WO, 2, fixed_plant(), [], "live", Recorder())
+    assert out["pass"] is True and out["failed"] == []
+    assert out["meta"]["verdict"] == "overruled" and out["meta"]["model_verdict"] == "fail"
+    assert "overruled" in out["meta"]["rule"] and out["meta"]["veto"].startswith("overruled")
+
+
+def test_a_grounded_veto_on_a_contradicting_plant_reading_fails_the_fix(monkeypatch):
+    ev = fixed_plant(comms_ping={"asset": "INV-3", "test": "comms_ping", "reachable": False, "error": "timeout after 3 attempts"})
+    monkeypatch.setattr(R, "_ask", fake_ask({"subagent:meta_judge": {
+        "verdict": "fail", "grounds": "comms_ping_unreachable", "reason": "SCADA is fresh but the comms card does not answer a ping"}}))
+    out = R.verify_team(WO, 2, ev, [], "live", Recorder())
+    assert out["pass"] is False and out["failed"] == ["meta_judge"]
+    assert out["meta"]["veto"] == R.GROUNDED and "comms_ping_unreachable" in out["meta"]["rule"]
+
+
+def test_a_veto_naming_a_contradiction_the_plant_does_not_show_is_overruled(monkeypatch):
+    monkeypatch.setattr(R, "_ask", fake_ask({"subagent:meta_judge": {
+        "verdict": "fail", "grounds": "comms_ping_unreachable", "reason": "ping failed"}}))
+    out = R.verify_team(WO, 2, fixed_plant(), [], "live", Recorder())
+    assert out["pass"] is True and out["meta"]["verdict"] == "overruled"
+
+
+def test_veto_grounds_are_a_closed_catalogue_read_from_the_plant():
+    assert R.veto_grounds(fixed_plant(), R.verify_team(WO, 2, fixed_plant(), [], "stub", Recorder())["checks"]) == {}
+    g = R.veto_grounds(fixed_plant(scada_latest={"status": "running", "ac_kw": 0.0}), [])
+    assert set(g) == {"running_with_no_output"}
+    g = R.veto_grounds(fixed_plant(scada_latest={"status": "fault", "ac_kw": 0.0}, data_age_min=30,
+                                   alarms=[{"asset": "INV-3", "code": "F-12", "active": True}]), [], "INV-3")
+    assert set(g) == {"scada_status_not_running", "scada_stale", "active_alarm"}
+    stale = plant(fresh=False)
+    checks = R.verify_team(WO, 1, stale, [], "stub", Recorder())["checks"]
+    assert "scada_fresh_and_running" in R.veto_grounds(stale, checks)
+
+
+def test_the_meta_judge_never_sees_the_work_orders_acceptance_items(monkeypatch):
+    ask = fake_ask({"subagent:meta_judge": {"verdict": "pass", "grounds": None, "reason": "fresh, lit, verified"}})
+    monkeypatch.setattr(R, "_ask", ask)
+    wo = {**WO, "acceptance": ["comms_ping latency less than 10 ms", "Heatsink temperature reads 40+-2 C"]}
+    lessons = [{"id": "L-1", "fix": "reseat_comms_card on INV-3", "acceptance": ["AC output between 1180-1220 kW"]}]
+    R.verify_team(wo, 2, fixed_plant(), lessons, "live", Recorder())
+    user = ask.users["subagent:meta_judge"]
+    assert "acceptance" not in user and "10 ms" not in user and "1180" not in user
+    assert '"veto_grounds": {}' in user and "reseat_comms_card" in user
+
+
+def test_unreadable_meta_verdict_abstains():
+    meta = R.ground_meta({"verdict": "maybe"}, {}, "m")
+    assert meta["verdict"] == "abstain" and R.decide([{"pass": True}], meta) is True
 
 
 def test_meta_judge_failure_abstains_and_the_plant_checks_decide(monkeypatch):
