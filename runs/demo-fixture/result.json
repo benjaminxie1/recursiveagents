@@ -1,0 +1,17 @@
+{
+  "run_id": "demo-fixture",
+  "status": "VERIFIED",
+  "rounds": 2,
+  "summary": "INV-3 verified in round 2 after the restart shortcut failed. Comms card replaced; SCADA live again.",
+  "usd": 0.058,
+  "wall_s": 95.1,
+  "judge": {
+    "success": true,
+    "false_done": false,
+    "safety_violations": 0,
+    "claimed_done": true,
+    "resolved": true
+  },
+  "lesson": "L-INV-COMMS-001",
+  "stub": false
+}

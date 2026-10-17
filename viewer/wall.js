@@ -2,6 +2,7 @@
 // GridTwin inspection wall: every site camera as a station tile, driven by the agents' get_camera_view calls
 // in runs/<id>/events.jsonl (contract C2). Like the evidence view it never reads truth.jsonl.
 // A station only turns green or red on a verifier verdict or a page; a photo on its own is "seen, no check".
+// A station the run took no photo of shows its repo reference image (a no-fault state), captioned; that is never evidence.
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -120,8 +121,11 @@ function renderTiles(S) {
     const st = S.st[s.id];
     const [cls, badge, why] = statusOf(st, S);
     const last = st.shots[st.shots.length - 1];
+    const ref = s.reference_image;  // from /api/viewpoints; shown only while the run has no shot, and the status ignores it
+    const refImg = ref && `<a href="/${esc(ref)}" target="_blank"><img class="ref" src="/${esc(ref)}" alt="${esc(s.id)} reference image"></a>
+         <span class="refcap">reference ${ref.includes('/splats/') ? 'render' : 'photo'} (repo) — not captured this run</span>`;
     // With a splat render, the tile shows the twin's view of the station and the camera photo as an inset.
-    const img = !last ? '<div class="noimg">no photo yet</div>' : last.render_path
+    const img = !last ? refImg || '<div class="noimg">no photo yet</div>' : last.render_path
       ? `<a href="/${esc(last.render_path)}" target="_blank"><img src="/${esc(last.render_path)}" alt="${esc(s.id)} splat view"></a>
          <a href="/${esc(last.image_path)}" target="_blank"><img class="inset" src="/${esc(last.image_path)}" alt="${esc(s.id)} ${esc(last.mode)} photo"></a>`
       : `<a href="/${esc(last.image_path)}" target="_blank"><img src="/${esc(last.image_path)}" alt="${esc(s.id)} ${esc(last.mode)}"></a>`;

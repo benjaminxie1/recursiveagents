@@ -1,0 +1,16 @@
+{
+  "INV-3": {
+    "asset": "INV-3",
+    "test": "comms_ping",
+    "completed_at": "2026-07-14T11:10",
+    "reachable": false,
+    "error": "timeout after 3 attempts"
+  },
+  "INV-2": {
+    "asset": "INV-2",
+    "test": "comms_ping",
+    "completed_at": "2026-07-14T11:20",
+    "reachable": true,
+    "rtt_ms": 14
+  }
+}

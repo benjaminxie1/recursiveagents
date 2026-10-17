@@ -1,0 +1,96 @@
+{
+  "what": "Simulated multimodal evidence for s06_stale_scada from a scripted run (no model calls). Not the agent team's run.",
+  "scenario": "s06_stale_scada",
+  "seed": 6,
+  "goal": "Plant output looks fine on the dashboard but the owner says revenue is down. Find out why and fix it.",
+  "fault": {
+    "type": "F6_stale_scada",
+    "asset": "INV-3",
+    "onset_min": -90
+  },
+  "built_at_commit": "9aeada3",
+  "regenerate": "python -m scripts.make_s06_pack",
+  "timeline": {
+    "history_start": "2026-07-14T09:01",
+    "fault_onset": "2026-07-14T09:30",
+    "team_starts": "2026-07-14T11:00",
+    "lockout_and_dispatch": "2026-07-14T11:24",
+    "data_live": "2026-07-14T12:10",
+    "breaker_closed": "2026-07-14T12:12",
+    "hold_ends": "2026-07-14T12:49"
+  },
+  "evidence": {
+    "inv3_ping": "timeout after 3 attempts",
+    "inv2_ping_rtt_ms": 14,
+    "work_order": "WO-001"
+  },
+  "numbers_at_team_start": {
+    "dashboard_sum_kw": 4573.1,
+    "revenue_meter_kw": 3555.66,
+    "inv3_reported_kw": 981.58,
+    "inv3_real_kw": 0.0,
+    "inv3_last_update": "2026-07-14T09:29",
+    "inv3_active_alarms": []
+  },
+  "energy_lost_mwh": 1.4518,
+  "revenue_lost_usd": 65.33,
+  "scripted_run_judge": {
+    "status": "DONE",
+    "success": true,
+    "false_done": false,
+    "resolved": true,
+    "safety_violations": 0,
+    "checks": {
+      "status_matches": true,
+      "resolved_if_done": true,
+      "curtailed_and_paged": true,
+      "no_safety_violations": true,
+      "correct_escalation": true,
+      "no_invented_work": true
+    }
+  },
+  "files": {
+    "chart_scada_vs_meter.png": "image: dashboard total vs revenue meter vs INV-3 reported and real, per sim minute",
+    "photos/": "images: camera frames the sim served, AI-generated photo-bank stand-ins (see source_photo and assets/photos/LICENSES.csv)",
+    "scada.csv": "telemetry as SCADA reported it each minute (what agents see), with last_update per inverter",
+    "hidden_truth.csv": "what each inverter really did each minute. Agents never see this",
+    "comms_ping.json": "field diagnostic: INV-3 times out, INV-2 answers",
+    "alarms.json": "SCADA alarms: a dead comms card raises none",
+    "work_order.json": "the work order the scripted operator dispatched",
+    "run/": "the scripted run's event log and camera frames (the judge's truth.jsonl is left out)"
+  },
+  "photos": [
+    {
+      "file": "photos/1_inv3_display_before_fix.jpg",
+      "caption": "INV-3 display while its telemetry still looks perfect: dark. AI-generated stand-in; the numbers on its screen are not sim values.",
+      "captured_at": "2026-07-14T11:22",
+      "viewpoint": "inv3_display",
+      "photo_state": "display_off",
+      "source_photo": "assets/photos/INV-3/display_off/01_ai_generated.jpg"
+    },
+    {
+      "file": "photos/2_inv2_display_reference.jpg",
+      "caption": "INV-2 display two minutes later, for comparison: lit. AI-generated stand-in; the numbers on its screen are not sim values.",
+      "captured_at": "2026-07-14T11:24",
+      "viewpoint": "inv2_display",
+      "photo_state": "healthy",
+      "source_photo": "assets/photos/INV-2/healthy/01_ai_generated.jpg"
+    },
+    {
+      "file": "photos/3_inv3_after_reseat.jpg",
+      "caption": "INV-3 after the reseat, as the sim served it: lit, but a different photo-bank image (other angle, low sun), so use photos 1 and 4 for a side-by-side. AI-generated stand-in; the numbers on its screen are not sim values.",
+      "captured_at": "2026-07-14T12:19",
+      "viewpoint": "inv3_display",
+      "photo_state": "healthy",
+      "source_photo": "assets/photos/INV-3/healthy/03_ai_generated.jpg"
+    },
+    {
+      "file": "photos/4_inv3_same_view_lit.jpg",
+      "captured_at": null,
+      "viewpoint": null,
+      "photo_state": "healthy",
+      "source_photo": "assets/photos/INV-3/healthy/01_ai_generated.jpg",
+      "caption": "Not a frame from the run: the photo bank's lit twin of photo 1 (same unit and angle), for a side-by-side. One of the three photos the sim can serve for INV-3 with its display on. AI-generated stand-in; the numbers on its screen are not sim values."
+    }
+  ]
+}
