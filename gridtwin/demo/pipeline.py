@@ -71,7 +71,7 @@ def jev_step(registration, asset, telemetry, visual, log=None, stub=False) -> tu
                  "visual": visual, "note": f"minimal interpreter ({type(e).__name__}: {e})"[:200]}
         good = (not state["sensors"]["stale"]) and visual and all(v.get("pass") for v in visual)
         return state, {"verdict": "verified" if good else "not_verified", "p_verified": 0.9 if good else 0.1,
-                       "uncertainty": 0.2, "backend": "rule", "reason": "deterministic fallback rule"}
+                       "uncertainty": 0.2, "backend": "local", "reason": "rule: deterministic fallback (jev module unavailable)"}
 
 
 def expected_image(asset, src, prompt, out_path) -> dict:
