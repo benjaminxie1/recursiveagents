@@ -156,6 +156,8 @@ def main(argv=None):
     gate = make_gate()
     sim, tb, log, sc = ep.start(a.scenario, run_id=a.run_id, gate=gate, notifier=notifier)
     attach_trace(log)
+    if hasattr(gate, "client"):
+        gate.client.log = log  # gate usage events land in this run's log
     goal = a.goal or sc["goal"]
     run_dir = Path(getattr(log, "run_dir", "runs"))
     print(f"run_id {run_dir.name}  agent={a.agent}  gate={getattr(gate, 'backend', '?')}  live={bool(notifier)}  chaos={a.chaos}")

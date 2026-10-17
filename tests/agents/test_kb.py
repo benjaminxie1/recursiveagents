@@ -144,6 +144,31 @@ def test_same_fix_or_unrelated_symptoms_do_not_supersede(kbdir):
     assert {l["id"] for l in k.lessons()} == {a["id"], b["id"], c["id"]}
 
 
+BASELINE_POSTS = [
+    "INV-3 shows ac_kw 0 while peers produce about 980 kW; last_update_ts is stuck at 08:10 so SCADA data looks stale.",
+    "list_alarms has a comms alarm on INV-3; the camera view of the inverter cabinet shows the HMI powered.",
+    "I reset the alarm on INV-3 with reset_alarm and the status still reads offline in telemetry.",
+    "Export at POI-1 is about 3.7 MW, short of the expected 5 MW for this irradiance.",
+]
+PLANNER_SYMPTOMS = ["one inverter has a frozen last_update_ts while its peers update",
+                    "telemetry for that inverter is stale and ac_kw reads 0", "comms alarm on the inverter"]
+
+
+def test_bm25_top_hit_supersedes_long_baseline_lesson(kbdir):
+    """Long board-post symptoms vs short planner symptoms: Jaccard < 0.4, so only the top-hit path applies."""
+    log = FakeLog()
+    k = KB(kbdir, log=log)
+    other = k.write_lesson(lesson("r0", ["breaker 52-I4 tripped", "export_kw down at POI-1"], "close 52-I4", [1]))
+    base = k.write_lesson(lesson("baseline", BASELINE_POSTS, "operate INV-3 reset_alarm", []))
+    a, b = set(kbmod._symptom_tokens(base)), set(tokenize(" ".join(PLANNER_SYMPTOMS)))
+    assert kbmod._jaccard(a, b) < kbmod.JACCARD_MIN  # really exercising the top-hit path
+    new = k.write_lesson(lesson("r5", PLANNER_SYMPTOMS, "dispatch_tech INV-3 reseat card", [20, 21]))
+    assert new["supersedes"] == base["id"]
+    assert json.loads((kbdir / "lessons" / f"{base['id']}.json").read_text())["superseded_by"] == new["id"]
+    assert {l["id"] for l in k.lessons()} == {other["id"], new["id"]}
+    assert [e["data"]["id"] for e in log.of("supersede")] == [base["id"]]
+
+
 def test_search_emits_one_read_per_lesson_returned(kbdir):
     log = FakeLog()
     k = KB(kbdir, log=log)
@@ -222,6 +247,45 @@ def test_build_plant_profile_grouped_layout(tmp_path):
                  "topology: 'INV-1 -> 52-I1 -> bus'\n")
     md = build_plant_profile(y)
     assert "| INV-1 | inverter |" in md and "| 52-I1 | breaker |" in md and "INV-1 -> 52-I1 -> bus" in md
+
+
+REAL_LAYOUT = """
+plant: {name: Demo Solar, rating_kwac: 5000}
+inverters:
+  rating_kwac: 1250
+  dc_rating_kw: 1500
+  derate_start_c: 50
+  trip_c: 60
+  derate_limit_frac: 0.6
+  ids: [INV-1, INV-2, INV-3, INV-4]
+blocks: {B1: INV-1, B2: INV-2, B3: INV-3, B4: INV-4}
+combiners_per_block: 6
+breakers: {52-I1: INV-1, 52-I4: INV-4, 52-B1: BESS-1, 52-M: XFMR-1}
+bess: {id: BESS-1, power_kw: 2000, energy_kwh: 4000, soc_pct: 60}
+transformer: {id: XFMR-1, rating_kva: 5500}
+work_orders: {inspect: [30, 400, false], replace_fan_filter: [60, 1800, true], reseat_comms_card: [45, 900, true]}
+diagnostics: {comms_ping: 10, iv_curve: 30}
+taxonomy:
+  INV-: {system: power_conversion, component: inverter, standards: [OEM-INV-MANUAL]}
+standards:
+  OEM-INV-MANUAL: "Inverter OEM manual (cooling, comms card, GFDI reset procedure)"
+"""
+
+
+def test_build_plant_profile_real_layout(tmp_path):
+    y = tmp_path / "plant.yaml"
+    y.write_text(REAL_LAYOUT)
+    md = build_plant_profile(y)
+    for i in range(1, 5):
+        assert f"| INV-{i} | inverter | rating_kwac=1250; dc_rating_kw=1500 |" in md
+    assert "| 52-I1 | breaker |  | connects_to: INV-1 |" in md and "52-M connects_to XFMR-1" in md
+    assert "| B1 | block |  | connects_to: INV-1 |" in md
+    assert "| BESS-1 | bess | power_kw=2000; energy_kwh=4000 |" in md
+    assert "| XFMR-1 | transformer | rating_kva=5500 |" in md
+    assert "combiners_per_block: 6" in md
+    for leak in ("replace_fan_filter", "reseat_comms_card", "inspect", "comms_ping", "GFDI", "OEM-INV-MANUAL",
+                 "taxonomy", "derate", "trip_c", "soc_pct"):
+        assert leak not in md, leak
 
 
 def test_cli_snapshot_and_profile_missing(kbdir, tmp_path, capsys):

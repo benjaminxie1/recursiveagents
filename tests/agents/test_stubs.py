@@ -216,6 +216,10 @@ def test_gate_reject_confirm_proceed(tmp_path):
     assert sim.curtail["INV-1"] == 70 and sim.now() != t0
     tb.gate = lambda p, s: 1 / 0  # a crashing gate never raises into the caller
     assert "needs_confirmation" in tb.call("operate", {"asset": "INV-1", "action": "restart"})
+    n_gate = len([e for e in log.events if e["type"] == "gate"])
+    tb.gate = lambda p, s: "proceed"  # a malformed gate answer is routed to confirm, and still logged
+    assert "needs_confirmation" in tb.call("operate", {"asset": "INV-1", "action": "restart"})
+    assert [e["data"]["route"] for e in log.events if e["type"] == "gate"][n_gate:] == ["confirm"]
 
 
 def test_notifier_and_page_event(tmp_path):
@@ -236,6 +240,7 @@ def test_budget_exhausted(tmp_path):
         assert "alarms" in tb.call("list_alarms", {})
     assert tb.call("list_alarms", {}) == {"error": "budget_exhausted"}
     assert tb.call("nope", {}) == {"error": "budget_exhausted"}
+    assert tb.call("operate", "not json") == {"error": "budget_exhausted"}
     sim, tb, log, _ = stubs.start("s00_control", run_id="b2", runs_dir=str(tmp_path))
     tb.call("wait", {"minutes": 240})
     assert tb.call("wait", {"minutes": 240})["waited_min"] == 240
@@ -293,3 +298,20 @@ def test_tool_results_hide_state(tmp_path):
             if e["type"] in ("tool_result", "gate"):
                 blob = json.dumps(e["data"]).lower()
                 assert not any(w in blob for w in HIDDEN), (sid, e)
+
+
+def test_log_is_isolated_from_callers_and_scenario_is_shared(tmp_path):
+    sim, tb, log, sc = _start("s00_control", tmp_path)
+    assert sc is sim.scenario
+    sc["budget"]["tool_calls"] = 1
+    args = {"asset": "INV-1", "points": ["ac_kw"]}
+    r = tb.call("read_telemetry", args)
+    args["asset"] = "mutated"
+    r["now"] = "mutated"
+    on_disk = [json.loads(x) for x in log.path.read_text().splitlines()]
+    assert on_disk == log.events and "mutated" not in json.dumps(log.events)
+    assert tb.call("list_alarms", {}) == {"error": "budget_exhausted"}
+    # reusing an explicit run_id starts a fresh log
+    sim2, tb2, log2, _ = _start("s00_control", tmp_path)
+    tb2.call("list_assets", {})
+    assert [e["seq"] for e in (json.loads(x) for x in log2.path.read_text().splitlines())] == [1, 2]

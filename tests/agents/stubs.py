@@ -405,6 +405,13 @@ class StubSim:
         return out
 
 
+def _copy(obj):
+    try:
+        return copy.deepcopy(obj)
+    except Exception:
+        return obj
+
+
 def _num(v):
     if isinstance(v, bool) or v is None:
         return None
@@ -436,11 +443,12 @@ class StubToolbox:
                 args = None
         if args is None:
             args = {}
-        call_ev = self.log.emit(actor, "tool_call", {"name": name, "args": args if isinstance(args, dict) else str(args)})
-        if not isinstance(args, dict):
-            result = {"error": "bad_args: arguments must be a JSON object"}
-        elif not self._budget_left():
+        logged_args = _copy(args) if isinstance(args, dict) else str(args)
+        call_ev = self.log.emit(actor, "tool_call", {"name": name, "args": logged_args})
+        if not self._budget_left():
             result = {"error": "budget_exhausted"}
+        elif not isinstance(args, dict):
+            result = {"error": "bad_args: arguments must be a JSON object"}
         else:
             self.sim.calls += 1
             try:
@@ -448,7 +456,7 @@ class StubToolbox:
                 result = handler(args, actor, call_ev["seq"]) if handler else {"error": f"unknown_tool: {name}"}
             except Exception as e:  # never raise into the agent loop
                 result = {"error": f"internal_error: {type(e).__name__}: {e}"}
-        self.log.emit(actor, "tool_result", {"name": name, "result": result})
+        self.log.emit(actor, "tool_result", {"name": name, "result": _copy(result)})
         return result
 
     # ---- helpers ----
@@ -464,9 +472,11 @@ class StubToolbox:
             d = {"route": "proceed", "unsafe": 0.0, "reason": "no gate configured"}
         else:
             try:
-                d = self.gate(copy.deepcopy(proposed), state) or {}
+                d = self.gate(copy.deepcopy(proposed), state)
             except Exception as e:
                 d = {"route": "confirm", "unsafe": 0.0, "reason": f"gate error: {type(e).__name__}"}
+            if not isinstance(d, dict):
+                d = {"route": "confirm", "unsafe": 0.0, "reason": "gate returned no decision"}
         route = d.get("route") if d.get("route") in ("proceed", "confirm", "reject") else "confirm"
         unsafe = _num(d.get("unsafe")) or 0.0
         reason = str(d.get("reason") or "")
@@ -483,7 +493,8 @@ class StubToolbox:
                 "viewpoints": [{"id": k, "asset": v["asset"], "modes": list(v["modes"])} for k, v in VIEWPOINTS.items()]}
 
     def _t_list_alarms(self, args, actor, seq):
-        return {"alarms": self.sim.list_alarms(args.get("active_only", True) is not False)}
+        ao = args.get("active_only", True)
+        return {"alarms": self.sim.list_alarms(str(ao).strip().lower() not in ("false", "0", "no"))}
 
     def _t_read_telemetry(self, args, actor, seq):
         try:
@@ -505,6 +516,7 @@ class StubToolbox:
 
     def _t_get_camera_view(self, args, actor, seq):
         vp, mode = args.get("viewpoint"), args.get("mode") or "rgb"
+        mode = mode.lower() if isinstance(mode, str) else mode
         if vp not in VIEWPOINTS:
             return {"error": f"unknown viewpoint: {vp!r}; valid: {sorted(VIEWPOINTS)}"}
         if mode not in VIEWPOINTS[vp]["modes"]:
@@ -613,6 +625,9 @@ def start(scenario_id, run_id=None, gate=None, notifier=None, runs_dir="runs"):
     while run_id is None and run_dir.exists():
         run_dir, k = Path(runs_dir) / f"{base}-{k}", k + 1
     sim = StubSim(scenario)
+    scenario = sim.scenario  # the toolbox enforces this dict's budget
+    for stale in ("events.jsonl", "truth.jsonl"):  # an explicit run_id that already exists starts fresh
+        (run_dir / stale).unlink(missing_ok=True)
     log = StubEventLog(run_dir)
     log.clock = sim.now
     toolbox = StubToolbox(sim, log, gate=gate, notifier=notifier)

@@ -1,5 +1,5 @@
-- `plant/profile.md`: the plant's assets, ratings, telemetry points, controls and topology (no faults or fixes); regenerate with `python -m gridtwin.kb profile`.
+- `plant/profile.md`: the plant's assets, ratings, telemetry points, controls and topology (no faults or fixes), written by hand from docs/SIMULATOR.md; `python -m gridtwin.kb profile` overwrites it from plant.yaml without telemetry points or controls.
 - `refs/`: cached web results, one JSON file per search query, so repeated or offline runs can cite the same URLs.
-- `lessons/`: one JSON file per lesson; lessons are written only from runs whose outcome the verifier checked, and a verified lesson supersedes older ones with the same symptoms and a different fix.
+- `lessons/`: one JSON file per lesson; only a lesson backed by passing verifier checks is `verified` and can supersede older ones with the same symptoms and a different fix (baseline lessons carry `verified: false`).
 - `snapshots/<name>/`: frozen copies of `plant/`, `refs/` and `lessons/` made with `python -m gridtwin.kb snapshot <name>`.
 - Benchmark runs read a frozen snapshot, never the live folders, so before/after numbers stay comparable.

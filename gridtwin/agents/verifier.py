@@ -86,7 +86,7 @@ class Verifier:
 
     # ----- evidence judges (wrap the deterministic checks in dod.py) -----
     def _visual(self, image_path: str, claim: str, viewpoint: str = "", mode: str = "") -> dict:
-        res = D.default_visual_fn()(image_path, claim) if hasattr(D, "default_visual_fn") else _vision_check(image_path, claim)
+        res = _vision_check(image_path, claim)
         vpass, conf = bool(res.get("pass")), float(res.get("confidence") or 0.0)
         out = {"pass": vpass, "confidence": conf, "evidence": res.get("evidence", "")}
         if not vpass or conf < 0.7:
@@ -98,7 +98,7 @@ class Verifier:
         return out
 
     def _citation(self, check: dict, kb_dir) -> dict:
-        base = D.default_citation_fn(check, kb_dir) if hasattr(D, "default_citation_fn") else {"pass": False, "evidence": "no citation backend"}
+        base = D.check_citation(check, kb_dir)
         if not base.get("pass"):
             return base
         text = ""
@@ -146,8 +146,4 @@ class Verifier:
 
 
 def _vision_check(image_path: str, claim: str) -> dict:
-    try:
-        from gridtwin.vision import check  # workstream 3
-    except ImportError:
-        from gridtwin.agents.vision_fallback import check
-    return check(image_path, claim)
+    return D._default_visual_fn()(image_path, claim)  # gridtwin.vision.check (workstream 3) or the local fallback

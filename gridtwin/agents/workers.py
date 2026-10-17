@@ -13,7 +13,7 @@ from pathlib import Path
 
 from gridtwin import llm
 from gridtwin.agents.board import BOARD_TOOLS, Board
-from gridtwin.agents.common import ActorToolbox, allow_c2_types, clip, extract_json, read_events
+from gridtwin.agents.common import ActorToolbox, allow_c2_types, clip, extract_json, last_t_sim, read_events
 from gridtwin.agents.research import SEARCH_WEB_SCHEMA, ResearchToolbox
 
 LOG = logging.getLogger("gridtwin.workers")
@@ -77,9 +77,9 @@ CLAIM_INSTRUCTION = """ROUND REVIEW for the goal: {goal}
 Team board:
 {board}
 {feedback}
-Decide the team's status. If you still need to act (for example close a breaker after completed work, or page a human), make those tool calls first. Then reply with only this JSON:
-{{"status": "DONE" | "ESCALATED" | "NO_ACTION" | "CONTINUE", "summary": "...", "next_tasks": [{{"worker": "inspector|diagnoser|researcher|operator", "instruction": "..."}}]}}
-DONE = the problem is fixed and the plant is healthy now. ESCALATED = a human has been paged because no safe fix exists; the problem is not resolved. NO_ACTION = nothing is wrong and nothing was changed. CONTINUE = more work is needed (give next_tasks)."""
+Decide the team's status now. You may make at most a few tool calls first, only to finish work already under way (for example close a breaker after completed work, confirm with one fresh reading, or page a human). Then reply with only this JSON:
+{{"status": "DONE" | "ESCALATED" | "NO_ACTION" | "CONTINUE", "summary": "..."}}
+DONE = the problem is fixed and the plant is healthy now. ESCALATED = a human has been paged because no safe fix exists; the problem is not resolved. NO_ACTION = nothing is wrong and nothing was changed. CONTINUE = more work is needed (the planner will assign it); say in the summary what is missing."""
 
 
 class WorkerKilled(RuntimeError):
@@ -106,8 +106,45 @@ def _vision_describe(image_path: str, question: str) -> str:
     return describe(image_path, question)
 
 
+READ_ONLY = {"list_assets", "list_alarms", "read_telemetry"}
+
+
+class ReadCache:
+    """Identical read-only calls at the same sim time are answered from the earlier result and cost no budget."""
+
+    def __init__(self, log, registry: dict | None = None):
+        self.log, self.registry, self.hits = log, registry, 0
+        self.seen: dict[str, tuple] = {}
+
+    @staticmethod
+    def key(name: str, args: dict) -> str:
+        a = dict(args)
+        if isinstance(a.get("points"), str):
+            a["points"] = [p.strip() for p in a["points"].split(",") if p.strip()]
+        if isinstance(a.get("points"), list):
+            a["points"] = sorted(a["points"])
+        return name + json.dumps(a, sort_keys=True)
+
+    def get(self, name: str, args: dict):
+        if name == "list_assets" and self.registry:
+            self.hits += 1
+            return {"seq": None, "result": {"note": "registry is in your briefing; no tool call spent"}}
+        if name not in READ_ONLY:
+            return None
+        hit = self.seen.get(self.key(name, args))
+        if hit and hit[0] == last_t_sim(self.log):
+            self.hits += 1
+            return {"seq": hit[1], "result": hit[2], "note": f"duplicate of seq {hit[1]} at the same sim time; no tool call spent"}
+        return None
+
+    def put(self, name: str, args: dict, seq, result):
+        if name in READ_ONLY and isinstance(result, dict) and "error" not in result:
+            self.seen[self.key(name, args)] = (last_t_sim(self.log), seq, result)
+
+
 class Worker:
-    def __init__(self, name: str, toolbox, log, board: Board, kb_dir, run_dir: Path, chaos: Chaos | None = None):
+    def __init__(self, name: str, toolbox, log, board: Board, kb_dir, run_dir: Path, chaos: Chaos | None = None,
+                 cache: ReadCache | None = None):
         assert name in WORKERS, name
         self.name, self.actor = name, f"worker:{name}"
         self.log, self.board, self.chaos = log, board, chaos
@@ -120,6 +157,8 @@ class Worker:
         self.path = Path(run_dir) / "workers" / f"{name}.json"
         self.actions: list[tuple[str, str]] = []  # (tool, canonical args) for loop detection
         self.tool_calls = 0
+        self.cache = cache or ReadCache(log)
+        self.task_calls, self.task_cap = 0, 99
 
     # ----- persistence -----
     def save(self):
@@ -155,7 +194,14 @@ class Worker:
                 return {"error": f"vision failed: {e}"}
         if name in STATE_CHANGING and self.name != "operator":
             return {"error": f"only the operator changes plant state; post a finding recommending '{name}' instead"}
-        self.actions.append((name, json.dumps(args, sort_keys=True)))
+        cached = self.cache.get(name, args)
+        if name not in READ_ONLY or cached is not None:  # loop detection: actions and repeated identical reads
+            self.actions.append((name, json.dumps(args, sort_keys=True)))
+        if cached is not None:
+            return cached
+        if self.task_calls >= self.task_cap:
+            return {"error": f"tool-call cap for this task ({self.task_cap}) reached; post your findings and report now"}
+        self.task_calls += 1
         self.tool_calls += 1
         result = self.tb.call(name, args)
         seq = None
@@ -164,6 +210,7 @@ class Worker:
             if e.get("type") == "tool_result":
                 seq = e.get("seq")
                 break
+        self.cache.put(name, args, seq, result)
         return {"seq": seq, "result": result}
 
     # ----- loop -----
@@ -194,7 +241,10 @@ class Worker:
             return msg.content or ""
         return None
 
-    def run_task(self, instruction: str, max_steps: int = 8, resume: bool = False) -> str:
+    def run_task(self, instruction: str, max_steps: int = 8, resume: bool = False, max_calls: int = 6) -> str:
+        if not resume:
+            self.task_calls = 0
+        self.task_cap = max(0, max_calls)
         if not resume:
             self.messages.append({"role": "user", "content": f"TASK: {instruction}"})
             self.save()
@@ -233,8 +283,10 @@ class Worker:
 class Team:
     """The four workers for one run, with restart-from-history recovery."""
 
-    def __init__(self, toolbox, log, kb_dir, run_dir: Path, briefing: str, chaos: Chaos | None = None, max_restarts: int = 2):
+    def __init__(self, toolbox, log, kb_dir, run_dir: Path, briefing: str, chaos: Chaos | None = None, max_restarts: int = 2,
+                 registry: dict | None = None):
         self.toolbox, self.log, self.kb_dir, self.run_dir = toolbox, log, kb_dir, Path(run_dir)
+        self.cache = ReadCache(log, registry)
         allow_c2_types(log)
         self.board = Board(log)
         self.briefing, self.chaos, self.max_restarts = briefing, chaos, max_restarts
@@ -243,18 +295,18 @@ class Team:
 
     def worker(self, name: str) -> Worker:
         if name not in self.workers:
-            w = Worker(name, self.toolbox, self.log, self.board, self.kb_dir, self.run_dir, self.chaos)
+            w = Worker(name, self.toolbox, self.log, self.board, self.kb_dir, self.run_dir, self.chaos, self.cache)
             w.brief(self.briefing)
             self.workers[name] = w
         return self.workers[name]
 
-    def run_task(self, worker: str, instruction: str, max_steps: int = 8) -> str:
+    def run_task(self, worker: str, instruction: str, max_steps: int = 6, max_calls: int = 6) -> str:
         worker = worker if worker in WORKERS else "diagnoser"
         w = self.worker(worker)
         resume = False
         for attempt in range(self.max_restarts + 1):
             try:
-                return w.run_task(instruction, max_steps=max_steps, resume=resume)
+                return w.run_task(instruction, max_steps=max_steps, resume=resume, max_calls=max_calls)
             except Exception as e:  # crash, timeout, 429 storm: restart from saved history
                 if attempt >= self.max_restarts:
                     self.log.emit("supervisor", "supervisor", {"decision": "worker_failed", "reason": f"{worker}: {type(e).__name__}: {e}"})
@@ -263,16 +315,18 @@ class Team:
                 self.log.emit("supervisor", "supervisor", {
                     "decision": "restart", "reason": f"worker {worker} crashed ({type(e).__name__}: {e}); restarting from saved history",
                 })
-                fresh = Worker(worker, self.toolbox, self.log, self.board, self.kb_dir, self.run_dir, self.chaos)
+                fresh = Worker(worker, self.toolbox, self.log, self.board, self.kb_dir, self.run_dir, self.chaos, self.cache)
                 fresh.load()
+                fresh.task_calls = w.task_calls
                 self.workers[worker] = w = fresh
                 resume = True
         return ""
 
-    def claim(self, goal: str, feedback: str = "", max_steps: int = 4) -> dict:
+    def claim(self, goal: str, feedback: str = "", max_steps: int = 3, max_calls: int = 3) -> dict:
         posts = self.board.read()
         board = "\n".join(f"- [{p['worker']}] {p['text']} (seqs {p.get('evidence')})" for p in posts) or "(no posts)"
-        text = self.run_task("operator", CLAIM_INSTRUCTION.format(goal=goal, board=board, feedback=feedback), max_steps=max_steps)
+        text = self.run_task("operator", CLAIM_INSTRUCTION.format(goal=goal, board=board, feedback=feedback), max_steps=max_steps,
+                             max_calls=max_calls)
         d = extract_json(text) if text else None
         if not isinstance(d, dict):
             d = {"status": "CONTINUE", "summary": (text or "")[:500], "next_tasks": []}

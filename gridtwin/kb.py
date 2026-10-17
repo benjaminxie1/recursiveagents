@@ -32,7 +32,8 @@ DEFAULT_PLANT = ROOT / "gridtwin" / "sim" / "plant.yaml"
 K1 = 1.5
 B = 0.75
 JACCARD_MIN = 0.4          # symptom overlap that counts as "the same problem"
-TOP_HIT_JACCARD_FLOOR = 0.2  # the BM25 top hit must still share this much, so unrelated lessons survive
+TOP_HIT_OVERLAP_MIN = 0.3  # the BM25 top hit must share this fraction of the smaller symptom set, so
+                           # unrelated lessons survive while a long baseline post list still matches a short one
 KINDS = ("plant", "refs", "lessons")
 
 _TOKEN = re.compile(r"[a-z0-9]+(?:[-._][a-z0-9]+)*")
@@ -77,6 +78,13 @@ def _jaccard(a: set, b: set) -> float:
     if not a or not b:
         return 0.0
     return len(a & b) / len(a | b)
+
+
+def _overlap(a: set, b: set) -> float:
+    """Overlap coefficient: shared tokens over the smaller set (robust to very different set sizes)."""
+    if not a or not b:
+        return 0.0
+    return len(a & b) / min(len(a), len(b))
 
 
 def _slug(s: str, n: int = 40) -> str:
@@ -375,7 +383,7 @@ class KB:
         hits = []
         for i, old in enumerate(actives):
             jac = _jaccard(new_set, set(docs[i]))
-            is_top = i == top and scores[i] > 0 and jac >= TOP_HIT_JACCARD_FLOOR
+            is_top = i == top and scores[i] > 0 and _overlap(new_set, set(docs[i])) >= TOP_HIT_OVERLAP_MIN
             if (jac >= JACCARD_MIN or is_top) and _norm_fix(old.get("fix")) != new_fix:
                 hits.append((jac, scores[i], old))
         hits.sort(key=lambda h: (h[0], h[1]), reverse=True)
@@ -449,8 +457,12 @@ _CONTROL_KEYS = ("controls", "actions", "commands")
 _RATING_HINT = re.compile(r"(rat(ed|ing)|capacity|nameplate|nominal|max|limit|kw|kva|mw|mva|mwh|kwh|kv|volt|"
                           r"amp|_a$|_v$|power|energy|strings|modules|area|count|efficien|ratio|size|noct)")
 _DENY = re.compile(r"(fault|truth|hidden|scenario|soil|shad|degrad|health|alarm|trap|fix|symptom|playbook|"
-                   r"seed|noise|onset|initial|state|status|photo|image|camera)")
-_GROUP_DENY = re.compile(r"(fault|truth|hidden|scenario|weather|physics|photo|camera|trap|playbook|seed)")
+                   r"seed|noise|onset|initial|state|status|photo|image|camera|derate|trip|latch|release|"
+                   r"order|repair|procedure|diagnos|standard|soc)")
+# groups that are not assets: fault/scenario data, and the work-order, diagnostic and standards catalogues
+# (their names and descriptions read like fixes, which the profile must never contain)
+_GROUP_DENY = re.compile(r"(fault|truth|hidden|scenario|weather|physics|photo|camera|trap|playbook|seed|"
+                         r"order|diagnos|taxonom|standard|test|procedure|repair|maint|code)")
 
 
 def _fmt(v) -> str:
@@ -459,6 +471,11 @@ def _fmt(v) -> str:
     if isinstance(v, (list, tuple)):
         return ", ".join(_fmt(x) for x in v)
     return str(v)
+
+
+def _singular(key) -> str:
+    k = str(key)
+    return k[:-1] if k.endswith("s") and not k.endswith("ss") else k
 
 
 def _collect_assets(data) -> list[tuple[str, dict, str | None]]:
@@ -494,10 +511,23 @@ def _collect_assets(data) -> list[tuple[str, dict, str | None]]:
     for key, val in data.items():  # grouped layout, e.g. inverters: [...]
         if _GROUP_DENY.search(str(key).lower()) or key in ("topology", "plant"):
             continue
+        typ = _singular(key)
         if isinstance(val, list) and val and all(isinstance(x, dict) for x in val):
-            take(val, str(key).rstrip("s"))
-        elif isinstance(val, dict) and val and all(isinstance(x, dict) for x in val.values()):
-            take(val, str(key).rstrip("s"))
+            take(val, typ)
+        elif not isinstance(val, dict) or not val:
+            continue
+        elif isinstance(val.get("ids"), list):  # shared ratings + id list: {rating_kwac: .., ids: [INV-1, ..]}
+            shared = {k: v for k, v in val.items() if k != "ids"}
+            for aid in val["ids"]:
+                if isinstance(aid, (str, int)):
+                    found.append((str(aid), shared, typ))
+        elif isinstance(val.get("id"), (str, int)):  # one asset: {id: BESS-1, power_kw: ..}
+            found.append((str(val["id"]), val, typ))
+        elif all(isinstance(x, dict) for x in val.values()):  # {INV-1: {...}, ...}
+            take(val, typ)
+        elif all(isinstance(x, (str, int)) and not isinstance(x, bool) for x in val.values()):
+            for aid, tgt in val.items():  # id -> connected asset: {52-I1: INV-1}
+                found.append((str(aid), {"connects_to": str(tgt)}, typ))
     return found
 
 
@@ -539,7 +569,10 @@ def build_plant_profile(plant_yaml=DEFAULT_PLANT, out_md=None) -> str:
              f"Generated from `{plant_yaml.name}`. Assets, ratings, telemetry points, controls and topology only.", ""]
     top = data.get("plant") if isinstance(data, dict) and isinstance(data.get("plant"), dict) else data
     if isinstance(top, dict):
-        overview = [f"- {k}: {v}" for k, v in top.items()
+        scalars = list(top.items())
+        if top is not data and isinstance(data, dict):
+            scalars += [(k, v) for k, v in data.items() if k not in top]  # e.g. combiners_per_block: 6
+        overview = [f"- {k}: {v}" for k, v in scalars
                     if isinstance(v, (str, int, float)) and not isinstance(v, bool) and not _DENY.search(str(k).lower())]
         if overview:
             lines += ["## Overview", "", *overview, ""]

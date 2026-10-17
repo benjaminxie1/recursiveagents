@@ -35,7 +35,8 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, step_cap: int = STEP_CAP)
     registry = ActorToolbox(toolbox, "worker:diagnoser").call("list_assets", {})
     registry = registry if ok(registry) else {}
     ltxt, rtxt, lessons = kb_context(kb, goal, "worker:operator")
-    team = Team(toolbox, log, kb_dir, run_dir, BRIEFING.format(goal=goal, registry=compact_registry(registry), lessons=ltxt, refs=rtxt))
+    team = Team(toolbox, log, kb_dir, run_dir, BRIEFING.format(goal=goal, registry=compact_registry(registry), lessons=ltxt, refs=rtxt),
+                registry=registry)
 
     turns = 0
     tasks = list(TASKS)
@@ -50,7 +51,7 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, step_cap: int = STEP_CAP)
         claim = team.claim(goal, FORCE if turns >= step_cap else "")
         if claim["status"] != "CONTINUE":
             break
-        tasks = [(t.get("worker", "operator"), t["instruction"]) for t in claim["next_tasks"]][:3] or [TASKS[-1]]
+        tasks = [("diagnoser", f"The team said more work is needed: {claim['summary'][:300]}. Do it."), TASKS[-1]]
     if claim is None or claim["status"] == "CONTINUE":
         claim = team.claim(goal, FORCE, max_steps=2)
         if claim["status"] == "CONTINUE":

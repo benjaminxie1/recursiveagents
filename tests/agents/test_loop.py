@@ -80,8 +80,6 @@ def test_verifier_model_never_sees_worker_text(tmp_path, monkeypatch):
 
     monkeypatch.setattr(llm, "chat", fake_chat)
     monkeypatch.setattr(V, "_vision_check", lambda p, c: {"pass": True, "confidence": 0.9, "evidence": "display lit"})
-    if hasattr(D, "default_visual_fn"):
-        monkeypatch.setattr(D, "default_visual_fn", lambda: (lambda p, c: {"pass": True, "confidence": 0.9, "evidence": "display lit"}))
 
     checks = [
         {"id": "fresh", "kind": "telemetry", "op": "fresh", "assets": "INV-*", "max_age_min": 5,

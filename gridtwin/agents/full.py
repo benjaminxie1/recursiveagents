@@ -114,7 +114,8 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
     log.emit("planner", "dod", {"checks": dod["branches"], "tasks": tasks, "repairs": p["repairs"],
                                 "lessons_used": [h["id"] for h in lessons]})
 
-    team = Team(toolbox, log, kb_dir, run_dir, BRIEFING.format(goal=goal, registry=compact_registry(registry), lessons=ltxt, refs=rtxt), chaos)
+    team = Team(toolbox, log, kb_dir, run_dir, BRIEFING.format(goal=goal, registry=compact_registry(registry), lessons=ltxt, refs=rtxt), chaos,
+                registry=registry)
     verifier = Verifier(toolbox, log, kb_dir, registry)
     sup = Supervisor(goal, budget, log, toolbox)
     all_verdicts, failed_before, feedback = [], [], ""
@@ -141,7 +142,8 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
             if left is not None and left < VERIFY_RESERVE + 3:
                 sup.emit("continue", f"skipping remaining tasks: {left} tool calls left, keeping {VERIFY_RESERVE} for verification")
                 break
-            team.run_task(t["worker"], t["instruction"])
+            cap = 6 if left is None else max(1, min(6, left - VERIFY_RESERVE))
+            team.run_task(t["worker"], t["instruction"], max_calls=cap)
 
         decision, reason = sup.decide(rnd, team.actions(), team.board.read())
         if decision in ("page", "stop"):
@@ -153,8 +155,8 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
 
         claim = team.claim(goal, feedback)
         if claim["status"] == "CONTINUE":
-            tasks = claim["next_tasks"] or tasks
             feedback = ""
+            replan(rnd, f"the team says more work is needed: {claim['summary'][:400]}")
             continue
         status = claim["status"]
         log.emit("worker:operator", "claim", {"status": status, "summary": claim["summary"]})

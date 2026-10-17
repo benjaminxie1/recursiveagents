@@ -26,7 +26,8 @@ Principles:
 - Prefer checks that a lazy or mistaken fix would fail. Put hold_min on the key output checks so a fix that only works for a few minutes fails.
 - Use only asset ids, points and viewpoints from the plant registry you are given. Only add a citation check for a URL and quote that appear verbatim in the references you are given.
 - Lessons from verified past incidents are strong hints, not proof: have the team confirm the symptoms first, then apply what worked.
-- Tasks: 3 to 6, ordered so evidence comes before action. Keep the team economical: the whole run, verification included, has about 60 tool calls.
+- Tasks: 2 to 4, ordered so evidence comes before action. The whole run, verification included, has about 60 tool calls, so be economical. The first round establishes facts: one diagnoser survey (active alarms, then the meter and each inverter in a single read each, checking freshness) and camera looks only at assets that the data or alarms point to; never photograph everything. Give the operator a task only for an action you can already justify; you will see the team's findings and assign the fix next.
+- When you assign a fix, give the operator one precise instruction: which asset, which command or work order, the lockout and restore steps, how long to wait, and the reading that confirms it.
 
 The DoD language:
 {schema}
@@ -54,7 +55,7 @@ Team board:
 
 Current DoD check ids by branch: {ids}
 
-Write the next tasks. You may add checks to any branch (existing checks can never be removed). Reply with only JSON:
+Write the next tasks (2 to 3, precise; if the cause is confirmed, the operator's fix comes first). You may add checks to any branch (existing checks can never be removed). Reply with only JSON:
 {{"tasks": [{{"worker": "...", "instruction": "..."}}], "add_checks": {{"DONE": [], "ESCALATED": [], "NO_ACTION": []}}}}"""
 
 
@@ -67,7 +68,7 @@ def compact_registry(registry: dict) -> str:
     lines = []
     for a in (registry or {}).get("assets", []):
         aid = a.get("asset") or a.get("id")
-        bits = [f"{aid} ({a.get('type', '?')})"]
+        bits = [f"{aid} ({a.get('type') or a.get('component') or '?'})"]
         for k in ("rating_kwac", "rated_kw", "breaker", "feeds", "inverter"):
             if a.get(k) is not None:
                 bits.append(f"{k}={a[k]}")
