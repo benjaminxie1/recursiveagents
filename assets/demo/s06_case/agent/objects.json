@@ -1,0 +1,310 @@
+{
+  "plant": "GridTwin Demo Solar",
+  "as_of": "2026-07-14T11:00",
+  "meter": {
+    "id": "POI-1",
+    "export_kw": 3557.68
+  },
+  "objects": {
+    "INV-1": {
+      "kind": "central_inverter",
+      "label": "INV-1 central inverter",
+      "block": "B1",
+      "breaker": "52-I1",
+      "rating_kw": 1250,
+      "scada_latest": {
+        "t": "2026-07-14T11:00",
+        "ac_kw": 1188.76,
+        "dc_kw": 1209.52,
+        "dc_v": 995.7,
+        "heatsink_c": 40.1,
+        "fan_rpm": 2397,
+        "status": "running",
+        "last_update": "2026-07-14T11:00"
+      },
+      "sensors": {
+        "file": "agent/sensors/scada_1min.csv",
+        "columns": [
+          "INV-1_ac_kw",
+          "INV-1_dc_kw",
+          "INV-1_dc_v",
+          "INV-1_heatsink_c",
+          "INV-1_fan_rpm",
+          "INV-1_status",
+          "INV-1_last_update"
+        ]
+      },
+      "camera": {
+        "file": "agent/camera/INV-1_display.jpg",
+        "camera_id": "CAM-B1-DSP",
+        "captured": "2026-07-14T11:00:04"
+      },
+      "infrared": {
+        "file": "agent/infrared/INV-1_ir.png",
+        "radiometric": "agent/infrared/INV-1_ir.csv",
+        "camera_id": "IR-B1-01",
+        "captured": "2026-07-14T11:00:20",
+        "span_c": [
+          20.0,
+          50.0
+        ],
+        "readings": {
+          "Sp1": {
+            "label": "upper louvre, left door",
+            "xy": [
+              118,
+              63
+            ],
+            "temp_c": 39.2
+          },
+          "Sp2": {
+            "label": "display",
+            "xy": [
+              206,
+              72
+            ],
+            "temp_c": 37.4
+          },
+          "Bx1": {
+            "label": "cabinet",
+            "box": [
+              72,
+              12,
+              247,
+              205
+            ],
+            "box_convention": "x0, y0, x1, y1 in the 320x240 grid; x1 and y1 exclusive",
+            "max_c": 39.5,
+            "min_c": 33.1,
+            "mean_c": 36.9
+          }
+        }
+      }
+    },
+    "INV-2": {
+      "kind": "central_inverter",
+      "label": "INV-2 central inverter",
+      "block": "B2",
+      "breaker": "52-I2",
+      "rating_kw": 1250,
+      "scada_latest": {
+        "t": "2026-07-14T11:00",
+        "ac_kw": 1198.47,
+        "dc_kw": 1219.33,
+        "dc_v": 1000.7,
+        "heatsink_c": 40.1,
+        "fan_rpm": 2413,
+        "status": "running",
+        "last_update": "2026-07-14T11:00"
+      },
+      "sensors": {
+        "file": "agent/sensors/scada_1min.csv",
+        "columns": [
+          "INV-2_ac_kw",
+          "INV-2_dc_kw",
+          "INV-2_dc_v",
+          "INV-2_heatsink_c",
+          "INV-2_fan_rpm",
+          "INV-2_status",
+          "INV-2_last_update"
+        ]
+      },
+      "camera": {
+        "file": "agent/camera/INV-2_display.jpg",
+        "camera_id": "CAM-B2-DSP",
+        "captured": "2026-07-14T11:00:04"
+      },
+      "infrared": {
+        "file": "agent/infrared/INV-2_ir.png",
+        "radiometric": "agent/infrared/INV-2_ir.csv",
+        "camera_id": "IR-B2-01",
+        "captured": "2026-07-14T11:00:20",
+        "span_c": [
+          20.0,
+          50.0
+        ],
+        "readings": {
+          "Sp1": {
+            "label": "upper louvre, left door",
+            "xy": [
+              118,
+              66
+            ],
+            "temp_c": 38.6
+          },
+          "Sp2": {
+            "label": "display",
+            "xy": [
+              207,
+              75
+            ],
+            "temp_c": 37.6
+          },
+          "Bx1": {
+            "label": "cabinet",
+            "box": [
+              71,
+              13,
+              251,
+              212
+            ],
+            "box_convention": "x0, y0, x1, y1 in the 320x240 grid; x1 and y1 exclusive",
+            "max_c": 39.9,
+            "min_c": 32.7,
+            "mean_c": 36.9
+          }
+        }
+      }
+    },
+    "INV-3": {
+      "kind": "central_inverter",
+      "label": "INV-3 central inverter",
+      "block": "B3",
+      "breaker": "52-I3",
+      "rating_kw": 1250,
+      "scada_latest": {
+        "t": "2026-07-14T11:00",
+        "ac_kw": 980.75,
+        "dc_kw": 999.22,
+        "dc_v": 995.2,
+        "heatsink_c": 32.1,
+        "fan_rpm": 2386,
+        "status": "running",
+        "last_update": "2026-07-14T09:29"
+      },
+      "sensors": {
+        "file": "agent/sensors/scada_1min.csv",
+        "columns": [
+          "INV-3_ac_kw",
+          "INV-3_dc_kw",
+          "INV-3_dc_v",
+          "INV-3_heatsink_c",
+          "INV-3_fan_rpm",
+          "INV-3_status",
+          "INV-3_last_update"
+        ]
+      },
+      "camera": {
+        "file": "agent/camera/INV-3_display.jpg",
+        "camera_id": "CAM-B3-DSP",
+        "captured": "2026-07-14T11:00:04"
+      },
+      "infrared": {
+        "file": "agent/infrared/INV-3_ir.png",
+        "radiometric": "agent/infrared/INV-3_ir.csv",
+        "camera_id": "IR-B3-01",
+        "captured": "2026-07-14T11:00:20",
+        "span_c": [
+          20.0,
+          50.0
+        ],
+        "readings": {
+          "Sp1": {
+            "label": "upper louvre, left door",
+            "xy": [
+              118,
+              60
+            ],
+            "temp_c": 29.7
+          },
+          "Sp2": {
+            "label": "display",
+            "xy": [
+              205,
+              68
+            ],
+            "temp_c": 34.2
+          },
+          "Bx1": {
+            "label": "cabinet",
+            "box": [
+              71,
+              4,
+              249,
+              212
+            ],
+            "box_convention": "x0, y0, x1, y1 in the 320x240 grid; x1 and y1 exclusive",
+            "max_c": 35.8,
+            "min_c": 29.0,
+            "mean_c": 32.3
+          }
+        }
+      }
+    },
+    "INV-4": {
+      "kind": "central_inverter",
+      "label": "INV-4 central inverter",
+      "block": "B4",
+      "breaker": "52-I4",
+      "rating_kw": 1250,
+      "scada_latest": {
+        "t": "2026-07-14T11:00",
+        "ac_kw": 1204.81,
+        "dc_kw": 1223.45,
+        "dc_v": 1000.6,
+        "heatsink_c": 40.2,
+        "fan_rpm": 2390,
+        "status": "running",
+        "last_update": "2026-07-14T11:00"
+      },
+      "sensors": {
+        "file": "agent/sensors/scada_1min.csv",
+        "columns": [
+          "INV-4_ac_kw",
+          "INV-4_dc_kw",
+          "INV-4_dc_v",
+          "INV-4_heatsink_c",
+          "INV-4_fan_rpm",
+          "INV-4_status",
+          "INV-4_last_update"
+        ]
+      },
+      "camera": {
+        "file": "agent/camera/INV-4_display.jpg",
+        "camera_id": "CAM-B4-DSP",
+        "captured": "2026-07-14T11:00:04"
+      },
+      "infrared": {
+        "file": "agent/infrared/INV-4_ir.png",
+        "radiometric": "agent/infrared/INV-4_ir.csv",
+        "camera_id": "IR-B4-01",
+        "captured": "2026-07-14T11:00:20",
+        "span_c": [
+          20.0,
+          50.0
+        ],
+        "readings": {
+          "Sp1": {
+            "label": "upper louvre, left door",
+            "xy": [
+              119,
+              62
+            ],
+            "temp_c": 38.2
+          },
+          "Sp2": {
+            "label": "display",
+            "xy": [
+              206,
+              71
+            ],
+            "temp_c": 37.6
+          },
+          "Bx1": {
+            "label": "cabinet",
+            "box": [
+              74,
+              10,
+              248,
+              208
+            ],
+            "box_convention": "x0, y0, x1, y1 in the 320x240 grid; x1 and y1 exclusive",
+            "max_c": 40.0,
+            "min_c": 32.6,
+            "mean_c": 36.8
+          }
+        }
+      }
+    }
+  }
+}

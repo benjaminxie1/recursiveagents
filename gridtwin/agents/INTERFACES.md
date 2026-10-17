@@ -63,7 +63,7 @@ Lesson:
  "verified": true, "created_at": "<wall iso>"}
 ```
 - `KB(kb_dir, log=None)`: `.search(query, k=5, kinds=("plant","refs","lessons"), actor="planner") -> [{"kind","id","title","text","score"}]` (BM25; superseded lessons never returned; one `lesson` event `op=read` per lesson returned),
-  `.plant_profile()`, `.lessons(include_superseded=False)`, `.write_lesson(lesson, actor) -> lesson` (emits `op=write`, and `op=supersede` for each lesson it supersedes; only verified lessons supersede), `.refs()`, `.find_ref(url)`, `.add_ref(query, results)`.
+  `.plant_profile()`, `.lessons(include_superseded=False)`, `.write_lesson(lesson, actor) -> lesson` (emits `op=write`, and `op=supersede` for each lesson it supersedes; only verified lessons supersede, and only lessons about the same asset), `.refs()`, `.find_ref(url)`, `.add_ref(query, results)`.
 - `snapshot(kb_dir, name) -> Path`, `build_plant_profile(plant_yaml, out_md)`.
 
 ## Research (`gridtwin/agents/research.py`)

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GridTwin splat render</title>
+<style>html, body { margin: 0; background: #000; } #view { width: 1024px; height: 768px; }</style>
+<script type="importmap">
+{ "imports": { "three": "/vendor/three.module.min.js", "three/addons/controls/OrbitControls.js": "/vendor/OrbitControls.js",
+               "@sparkjsdev/spark": "/vendor/spark.module.min.js" } }
+</script>
+</head>
+<body>
+<div id="view"></div>
+<script type="module">
+// One frame of the plant splat from a viewpoint's pose, with an optional state overlay painted on its asset.
+// ?vp=<viewpoint id>&overlay=<assets/splats/overlays/... path>  Sets window.__frame = {ok, anchor_px} when drawn.
+import { PlantView, loadScene } from './splat.js';
+const q = new URLSearchParams(location.search);
+try {
+  const scene = await loadScene();
+  const st = scene.stations[q.get('vp')];
+  if (!st) throw new Error(`unknown viewpoint ${q.get('vp')}`);
+  const view = new PlantView(document.getElementById('view'), { interactive: false, width: 1024, height: 768 });
+  await view.load(undefined, scene.sky);
+  if (q.get('overlay')) await view.setOverlay('state', '/' + q.get('overlay'));
+  view.look(st.position, st.target, st.fov);
+  await view.renderFrames(4);
+  window.__frame = { ok: true, anchor_px: view.project(scene.anchors[st.asset]) };
+} catch (err) {
+  window.__frame = { ok: false, error: String(err) };
+}
+</script>
+</body>
+</html>

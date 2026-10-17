@@ -26,7 +26,8 @@ The headline metrics are **verified success** (the fault is fixed and stays fixe
 1. **Planner** (Nemotron Super) reads the knowledge base and writes the definition of done as JSON checks of four kinds: `telemetry` (with required data freshness), `visual`, `citation` and `safety`.
 2. **Workers** (Nemotron Lightning, with Nemotron Omni reading photos) use the plant tools.
    Every `operate` and `dispatch_tech` call passes a safety gate first.
-   Deterministic rules enforce lockout (de-energize before work) and block closing a breaker onto a faulted feeder; a decision model (a Crusoe-hosted Nemotron by default) judges everything else against the plant safety policy and can hold or refuse, failing closed when unsure.
+   Only deterministic policy rules can approve an action: one that only removes energy or lowers output, technician work with lockout in place (equipment de-energized first, and nothing re-energized while the work is open), or closing an inverter feeder that has no fault or trip alarm.
+   For anything the rules don't cover, a decision model (a Crusoe-hosted Nemotron by default) can refuse the action or hand it to a human, but never approve it, and it fails closed when unsure.
    The simulator scores any safety violation as a failed run, even if output recovers.
 3. **Verifier** (gpt-oss-120b, a different model family on purpose) takes over when a worker claims done.
    It re-runs every check itself with raw tool access and never reads what the workers wrote.
@@ -37,7 +38,7 @@ The headline metrics are **verified success** (the fault is fixed and stays fixe
 
 The plant simulator holds hidden ground truth that only the benchmark judge reads.
 Its fault library includes traps built to fool a team that does not really check: a fan fault whose alarm clears for ten minutes before the inverter overheats again (F3), and a comms failure that freezes telemetry at perfect-looking values (F6).
-A real photo bank carries each piece of equipment's visual state, so vision reads real images while the true answer stays known.
+A photo bank carries each piece of equipment's visual state, so vision reads real images while the true answer stays known.
 
 ## Results
 
@@ -45,8 +46,17 @@ Measured on Crusoe against the held-out scenarios (faults and combinations the p
 Every row comes from `python -m gridtwin.bench`, and each run writes its table to `runs/bench-*/results.md`.
 
 <!-- RESULTS: filled in from the Crusoe bench runs; never edit numbers by hand. -->
-All arms are being re-run on the current code and the 9-scenario held-out split; this table fills in from those runs.
-An earlier run on 7 held-out scenarios, before the safety-gate and placeholder fixes, is kept in [`results.md`](results.md): there the baselines did not over-claim but under-acted, handing 4 of 5 fixable faults to a human and reporting "nothing wrong" on a cracked module.
+Held-out split, 9 scenarios, at `1d2f85d`; the baselines are re-running on the current safety gate, and the full-loop arms are pending.
+
+| arm | verified success | false done | paged a human | correct escalation | safety violations | tokens in / out |
+|---|---|---|---|---|---|---|
+| `baseline` | 1 of 9 | 1 of 9 | 0 of 9 | 77.8% | 0 | 2,559,144 / 110,462 |
+| `self_verify` | 2 of 9 | 1 of 9 | 2 of 9 | 88.9% | 0 | 6,669,937 / 191,923 |
+| `full` | pending | | | | | |
+
+The baselines' main failure is stopping, not over-claiming.
+Of the six fixable faults, `baseline` fixed none and `self_verify` fixed two, and `baseline` ended 7 runs `ESCALATED` without paging anyone.
+Per-scenario outcomes, what each column means and an earlier 7-scenario run are in [`results.md`](results.md).
 
 ## Run it
 
@@ -79,17 +89,20 @@ Benchmark arms: `scripted_correct`, `scripted_trap`, `baseline`, `self_verify`, 
 
 Everything in this repository was written on Oct 17 2026, the day of the event.
 Before hacking started at 10:45 AM PDT there was only planning and setup: this README, `docs/PLAN.md`, `docs/SIMULATOR.md`, `CLAUDE.md`, `.env.example`, `requirements.txt`, the team notes in `docs/HACKATHON.md` and `docs/MEMORY.md`, the past-winners research, and a Crusoe client wrapper (`gridtwin/config.py`, `gridtwin/llm.py`) with a connectivity smoke test.
-Everything else is in the commit history after 10:45: the plant simulator and fault library, the judge and benchmark, the agent loop, the safety gate, the evidence viewer and inspection wall, the photo bank and the tests.
+Everything else is in the commit history after 10:45: the plant simulator and fault library, the judge and benchmark, the agent loop, the safety gate, the evidence viewer and inspection wall, the photo bank, the plant splat and its renders, the digital twin viewer, the splat registration and segmentation code, and the tests.
 
 Third-party pieces we use but did not build:
 
 - **Model serving:** Crusoe Managed Inference.
 - **Models:** NVIDIA Nemotron 3 Super, Nemotron 3.5 Lightning, Nemotron 3 Nano Omni and Nemotron 3 Nano; OpenAI gpt-oss-120b; Google Gemma 4 31B (vision fallback).
 - **Optional decision backends:** TypeSafe Jev and the OpenAI Decisions API (the default safety gate uses a Crusoe-hosted model).
-- **References:** 55 excerpts from 53 public web pages (OEM manuals and standards summaries), cached with their URLs in `kb/refs/`; live search can use the You.com Search API when a key is set.
+- **References:** 83 excerpts from 81 public web pages (OEM manuals, codes and standards, and field studies), cached with their URLs in `kb/refs/`; live search can use the You.com Search API when a key is set.
 - **Notifications:** ntfy.sh for the live `page_human` push.
-- **Python libraries:** openai, httpx, python-dotenv, PyYAML, Pillow and pytest.
-- **Photos:** 15 photos from Wikimedia Commons under CC BY-SA 4.0, CC BY-SA 3.0, CC BY-SA 2.0, CC BY 3.0, CC BY 2.0 and CC0, each listed with its source, author and license in [`assets/photos/LICENSES.csv`](assets/photos/LICENSES.csv).
+- **Python libraries:** openai, httpx, python-dotenv, PyYAML, Pillow and pytest; NumPy and OpenCV (`opencv-python-headless`) for the splat registration and segmentation code in `gridtwin/splat/`.
+- **Photos:** 15 photos from Wikimedia Commons under CC BY-SA 4.0, CC BY-SA 3.0, CC BY-SA 2.0, CC BY 3.0, CC BY 2.0 and CC0, and 12 AI-generated photos of inverters INV-2 and INV-3 made with OpenAI ChatGPT (gpt-image), each listed with its source, author and license in [`assets/photos/LICENSES.csv`](assets/photos/LICENSES.csv).
   Placeholder cards in `assets/photos/_placeholders/` are generated by our own script.
+- **Plant splat (wall twin and camera renders):** the splat is ours (`scripts/build_splat.py`), skinned with web photos of the Topaz and Waipio solar farms and a combiner box, credited in [`assets/splats/SOURCES.md`](assets/splats/SOURCES.md). The wall renders it with Spark 0.1.10 and three.js r178 (both MIT), vendored in `viewer/vendor/`.
+- **Digital twin viewer (`viewer/twin.html`):** Spark 2.3.1 (Gaussian splat renderer by World Labs, MIT), vendored in `viewer/vendor/spark-2.3.1/`, and three.js 0.180.0 with its OrbitControls add-on (MIT), vendored in `viewer/vendor/three-0.180.0/`.
 - **Development only (not in the product):** Alike, used by the team's coding agents for shared memory.
-<!-- Add the splat capture tool and the registration libraries (opencv, numpy) when the splat registration lands. -->
+<!-- If the demo scene switches to a downloaded CC BY scan, credit it here from `assets/splats/<scene>.credits.json`.
+Do not credit or mention iTek or XGRIDS: none of their scans or code is used, only their tour as a UI reference. -->

@@ -106,3 +106,61 @@ a.seq { font-family: var(--mono); font-size: 11px; color: var(--inspected); text
 .judge details { background: var(--panel); border: 1px dashed var(--line); border-radius: 8px; padding: 8px 12px; }
 .judge table { border-collapse: collapse; margin-top: 6px; }
 .judge td { padding: 1px 10px 1px 0; font-family: var(--mono); }
+
+/* ---------- operator view: status strip, incident card, evidence photos ---------- */
+.status { display: grid; gap: 12px; padding: 12px 16px 0; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tile .label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.tile b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.tile .sub { font-size: 12px; color: var(--muted); }
+.tile.state.DONE { background: var(--done-bg); color: var(--done-ink); border-color: transparent; }
+.tile.state.ESCALATED { background: var(--esc-bg); color: var(--esc-ink); border-color: transparent; }
+.tile.state.NO_ACTION { background: var(--na-bg); color: var(--na-ink); border-color: transparent; }
+.tile.state .label, .tile.state .sub { color: inherit; opacity: .8; }
+
+.ops { display: grid; gap: 12px; padding: 12px 16px 0; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+@media (max-width: 900px) { .ops { grid-template-columns: minmax(0, 1fr); } }
+.incident h3, .evidence h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 12px 0 4px; }
+.incident p { margin: 0; }
+.incident .ask q { font-style: italic; }
+.incident .ask { margin-top: 8px; font-size: 15px; }
+.incident .acts { font-size: 13px; }
+.incident .acts .t { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-right: 4px; }
+.incident .acts li.page { color: var(--page-ink); }
+.badge { display: inline-block; padding: 4px 12px; border-radius: 999px; font-weight: 600; font-size: 15px; background: var(--na-bg); color: var(--na-ink); }
+.badge.DONE { background: var(--done-bg); color: var(--done-ink); }
+.badge.ESCALATED { background: var(--esc-bg); color: var(--esc-ink); }
+
+.asset-shots + .asset-shots { border-top: 1px solid var(--line); margin-top: 10px; }
+.asset-shots h3 { color: var(--ink); }
+.shots { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.shots figure { margin: 0; min-width: 0; }
+.shots img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); display: block; background: var(--line); }
+.shots figcaption { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.shots .note { font-size: 12px; margin-top: 4px; }
+.vv { font-size: 12px; margin-top: 8px; padding: 6px 8px; border-radius: 6px; }
+.vv.pass { background: var(--done-bg); color: var(--done-ink); }
+.vv.fail { background: var(--page-bg); color: var(--page-ink); }
+
+h2.section { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 20px 16px 0; }
+
+/* ---------- two views: operator (incident and proof) and contractor (field work orders) ---------- */
+body[data-view="contractor"] .op-only, body:not([data-view="contractor"]) .contractor-only { display: none; }
+.views { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.controls .views button { border: 0; border-radius: 0; padding: 3px 12px; }
+.controls .views button[aria-selected="true"] { background: var(--ink); color: var(--panel); }
+.work .status { padding: 12px 0 0; }
+.work { padding: 0 16px 24px; }
+.jobs { display: grid; gap: 12px; margin-top: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); }
+.job header { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.job header h3 { margin: 0; font-size: 16px; flex: 1 1 auto; }
+.job .wo { font-family: var(--mono); font-size: 12px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 4px; }
+.job .badge { font-size: 13px; padding: 2px 10px; }
+.job .badge.working { background: var(--esc-bg); color: var(--esc-ink); }
+.job .meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.job h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 14px 0 4px; }
+.job p { margin: 0 0 4px; font-size: 13px; }
+.job .acts { font-size: 13px; }
+.job .acts li.ok { color: var(--done-ink); }
+.job .acts li.bad { color: var(--page-ink); }
+.job .safety li.bad { background: var(--page-bg); border-radius: 6px; padding: 4px 8px; }

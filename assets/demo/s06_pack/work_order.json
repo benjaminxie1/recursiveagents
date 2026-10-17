@@ -1,0 +1,12 @@
+[
+  {
+    "ticket": "WO-001",
+    "asset": "INV-3",
+    "work_order": "reseat_comms_card",
+    "status": "complete",
+    "created": "2026-07-14T11:25",
+    "eta": "2026-07-14T12:10",
+    "cost_usd": 900,
+    "needs_deenergized": true
+  }
+]

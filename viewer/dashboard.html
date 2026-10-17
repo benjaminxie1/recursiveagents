@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GridTwin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css">
+<script type="importmap">
+{ "imports": { "three": "/vendor/three.module.min.js", "three/addons/controls/OrbitControls.js": "/vendor/OrbitControls.js",
+               "@sparkjsdev/spark": "/vendor/spark.module.min.js" } }
+</script>
+</head>
+<body>
+<header class="rail">
+  <div class="wrap rail-in">
+    <nav class="crumbs" aria-label="Breadcrumb"><b>GridTwin</b><i>/</i><span id="plant">Demo Solar</span><i>/</i><span id="crumb" class="ink"></span></nav>
+    <div class="rail-r">
+      <a href="codes.html" class="navlink">Codes &amp; standards</a>
+      <select id="runPick" aria-label="Run"></select>
+      <span id="state" class="live mono"></span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <div class="hero-l">
+      <p id="kicker" class="kicker mono"></p>
+      <h1 id="headline"></h1>
+      <p id="summary" class="summary"></p>
+    </div>
+    <dl id="kpis" class="kpis"></dl>
+  </section>
+
+  <section class="phases-sec">
+    <div class="sec-head"><h2>The incident, step by step</h2><span id="clock" class="mono muted"></span></div>
+    <div id="phases" class="phases" role="group" aria-label="Phases"></div>
+  </section>
+
+  <section class="scene">
+    <div class="scene-l">
+      <div class="sec-head"><h2 id="plantAt">Plant</h2><span id="health" class="mono muted"></span></div>
+      <div class="twin">
+        <div id="view" class="view"></div>
+        <div class="twin-tl">
+          <div id="pass" class="pass"></div>
+          <div id="drones" class="drones"></div>
+        </div>
+        <div class="twin-bl seg">
+          <button id="mRgb" class="on">RGB</button><button id="mThermal">Thermal</button><button id="mFly">Fly-through</button>
+        </div>
+        <div id="pins" class="pins"></div>
+        <div id="scale" class="scale" hidden><b>42,0 °C</b><i></i><b>20,0 °C</b></div>
+        <figure id="cam" class="cam" hidden><img alt=""><figcaption></figcaption></figure>
+      </div>
+      <div id="assets" class="assets"></div>
+      <div class="legend"><span><i class="lg bad"></i>Fault</span><span><i class="lg iso"></i>Isolated</span><span><i class="lg work"></i>Being worked on</span><span><i class="lg ok"></i>Healthy</span></div>
+    </div>
+
+    <div class="scene-r">
+      <div>
+        <p id="phaseKicker" class="kicker mono"></p>
+        <h3 id="phaseHead"></h3>
+      </div>
+      <div id="graph" class="graph"></div>
+      <div id="incident" class="checks-wrap" hidden>
+        <div class="sub-head"><span>Definition of done</span><span id="incState" class="mono muted"></span></div>
+        <ul id="reqs" class="checks"></ul>
+      </div>
+      <div class="nav">
+        <button id="prev" type="button" class="btn-sq" aria-label="Previous phase"><svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg></button>
+        <button id="next" type="button" class="btn-main"><span id="nextLabel">Replay from the start</span><svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="ledger">
+    <div>
+      <div class="lbl">Infrastructure</div>
+      <div class="big">Crusoe Managed Inference</div>
+      <div class="muted">per-role model routing · prefix caching</div>
+      <div id="roles" class="roles"></div>
+    </div>
+    <div>
+      <div class="lbl">Lesson kept</div>
+      <div id="lesson" class="quote"></div>
+    </div>
+    <div>
+      <div class="lbl">Bench</div>
+      <div class="big">Deterministic judge</div>
+      <div id="bench" class="muted"></div>
+    </div>
+  </section>
+</main>
+<script type="module" src="dashboard.js"></script>
+</body>
+</html>

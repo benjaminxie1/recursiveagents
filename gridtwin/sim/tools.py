@@ -132,9 +132,11 @@ class Toolbox:
             return True
         return False
 
-    def call(self, name: str, args: dict | None = None) -> dict:
+    def call(self, name: str, args: dict | None = None, actor: str | None = None) -> dict:
         args = dict(args or {})
-        self.log.emit("sim", "tool_call", {"name": name, "args": args})
+        by = actor if isinstance(actor, str) else getattr(self, "actor", None)  # the calling agent (agents.common.ActorToolbox)
+        who = by if isinstance(by, str) else "sim"
+        self.log.emit(who, "tool_call", {"name": name, "args": args, **({"by": by} if isinstance(by, str) else {})})
         if self._exhausted():
             result = {"error": "budget_exhausted"}
         else:
@@ -144,7 +146,7 @@ class Toolbox:
             except Exception as e:  # never raise into the agent loop
                 result = {"error": f"{type(e).__name__}: {e}"}
         result = json.loads(json.dumps(result, default=str))
-        self.log.emit("sim", "tool_result", {"name": name, "result": result})
+        self.log.emit(who, "tool_result", {"name": name, "result": result})
         return result
 
     def _dispatch(self, name, args):
@@ -198,7 +200,10 @@ class Toolbox:
         except Exception as e:
             d = {"route": "confirm", "unsafe": 0.0, "reason": f"gate error: {e}"}
         route, unsafe, reason = d.get("route", "confirm"), float(d.get("unsafe", 0.0)), d.get("reason", "")
-        self.log.emit("gate", "gate", {"proposed": proposed, "route": route, "unsafe": unsafe, "reason": reason})
+        # Which part decided, additive (C2): "policy" for the hard-coded interlock rules, else the decision model's backend.
+        src = "policy" if str(reason).startswith("policy rule") else getattr(self.gate, "backend", None)
+        self.log.emit("gate", "gate", {"proposed": proposed, "route": route, "unsafe": unsafe, "reason": reason,
+                                       **({"source": src} if isinstance(src, str) else {})})
         if route == "reject" or unsafe > 0.5:
             return {"error": f"refused by safety gate: {reason}", "route": route, "unsafe": unsafe}
         if route == "confirm":

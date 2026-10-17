@@ -2,6 +2,7 @@
 // GridTwin inspection wall: every site camera as a station tile, driven by the agents' get_camera_view calls
 // in runs/<id>/events.jsonl (contract C2). Like the evidence view it never reads truth.jsonl.
 // A station only turns green or red on a verifier verdict or a page; a photo on its own is "seen, no check".
+// A station the run took no photo of shows its repo reference image (a no-fault state), captioned; that is never evidence.
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -120,9 +121,14 @@ function renderTiles(S) {
     const st = S.st[s.id];
     const [cls, badge, why] = statusOf(st, S);
     const last = st.shots[st.shots.length - 1];
-    const img = last
-      ? `<a href="/${esc(last.image_path)}" target="_blank"><img src="/${esc(last.image_path)}" alt="${esc(s.id)} ${esc(last.mode)}"></a>`
-      : '<div class="noimg">no photo yet</div>';
+    const ref = s.reference_image;  // from /api/viewpoints; shown only while the run has no shot, and the status ignores it
+    const refImg = ref && `<a href="/${esc(ref)}" target="_blank"><img class="ref" src="/${esc(ref)}" alt="${esc(s.id)} reference image"></a>
+         <span class="refcap">reference ${ref.includes('/splats/') ? 'render' : 'photo'} (repo) — not captured this run</span>`;
+    // With a splat render, the tile shows the twin's view of the station and the camera photo as an inset.
+    const img = !last ? refImg || '<div class="noimg">no photo yet</div>' : last.render_path
+      ? `<a href="/${esc(last.render_path)}" target="_blank"><img src="/${esc(last.render_path)}" alt="${esc(s.id)} splat view"></a>
+         <a href="/${esc(last.image_path)}" target="_blank"><img class="inset" src="/${esc(last.image_path)}" alt="${esc(s.id)} ${esc(last.mode)} photo"></a>`
+      : `<a href="/${esc(last.image_path)}" target="_blank"><img src="/${esc(last.image_path)}" alt="${esc(s.id)} ${esc(last.mode)}"></a>`;
     const dots = (s.modes || ['rgb']).map((m) => {
       const n = st.shots.filter((x) => x.mode === m).length;
       return `<i class="dot ${n ? cls : 'empty'}" title="${esc(m)}: ${n} photo${n === 1 ? '' : 's'}"></i>`;
@@ -165,6 +171,8 @@ function renderMap(S) {
 function render() {
   const S = derive(events.slice(0, cursor));
   renderTiles(S); renderMap(S);
+  window.wallTwin = { stations, S, status: (s) => statusOf(S.st[s.id], S)[0], flash: (vp) => window.wallFlash?.(vp) };
+  window.dispatchEvent(new Event('wall:render'));
   const n = S.captured.size, total = totalViews();
   $('#views').textContent = `Run ${runId || '—'} · ${n} of ${total} views`;
   $('#progressBar').style.width = `${total ? (100 * n) / total : 0}%`;
@@ -232,7 +240,8 @@ async function main() {
     el.classList.add('flash');
     setTimeout(() => el.classList.remove('flash'), 1200);
   };
-  $('#map').onclick = (e) => { const g = e.target.closest('.stn'); if (g) flash(g.dataset.vp); };
+  window.wallFlash = flash;
+  $('#map').onclick = (e) => { const g = e.target.closest('.stn'); if (g) { flash(g.dataset.vp); window.twinFocus?.(g.dataset.vp); } };
   render();
   if (!runId) {
     $('#summary').innerHTML = '<span class="muted">No runs yet. Start one, for example <code>python -m gridtwin.bench --agent scripted_correct --scenario s03_fan_relapse</code>, then reload.</span>';

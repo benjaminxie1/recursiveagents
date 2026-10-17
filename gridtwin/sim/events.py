@@ -6,7 +6,7 @@ from pathlib import Path
 ACTORS_FIXED = {"operator", "planner", "verifier", "supervisor", "gate", "sim", "judge"}
 TYPES = {
     "goal", "dod", "tool_call", "tool_result", "gate", "claim", "verdict",
-    "supervisor", "page", "lesson", "final", "judge", "usage",
+    "supervisor", "page", "lesson", "final", "judge", "usage", "finding",
 }
 
 

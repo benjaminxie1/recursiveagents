@@ -39,6 +39,9 @@ a { color: inherit; }
 .shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .tile.idle .shot { opacity: .55; }
 .noimg { height: 100%; display: grid; place-items: center; color: var(--muted); font-size: 12px; }
+/* repo reference image for a station the run took no photo of: desaturated and captioned, never evidence */
+.shot img.ref { filter: saturate(.35); }
+.refcap { position: absolute; left: 0; right: 0; bottom: 0; padding: 2px 7px; font: 10px var(--mono); color: var(--ink); background: rgba(0, 0, 0, .78); }
 .badge { position: absolute; top: 6px; left: 6px; font-size: 11px; padding: 1px 7px; border-radius: 5px;
   background: rgba(0, 0, 0, .72); color: var(--ink); border: 1px solid var(--line); display: inline-flex; gap: 5px; align-items: center; }
 .badge.verified { color: var(--verified); } .badge.failed { color: var(--failed); } .badge.analyzing { color: var(--analyzing); }
@@ -75,3 +78,18 @@ a { color: inherit; }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--muted); margin-top: 6px; }
 .final { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
 .final b { color: var(--ink); }
+
+/* 3D plant twin (viewer/wall-splat.js); hidden when the splat can't load, so the wall falls back to the 2D map */
+.twin { position: relative; margin: 12px 16px 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #000; }
+.twin-view { height: 42vh; min-height: 280px; }
+.twin-view canvas { display: block; cursor: grab; }
+.twin-cap { position: absolute; left: 0; right: 0; top: 0; padding: 6px 10px; font-size: 12px; color: var(--ink);
+  background: linear-gradient(rgba(0, 0, 0, .7), transparent); display: flex; gap: 10px; align-items: center; pointer-events: none; }
+.twin-btns { margin-left: auto; display: flex; gap: 6px; pointer-events: auto; }
+.twin-btns button, .twin-show { font: 11px var(--mono); padding: 2px 8px; background: rgba(0, 0, 0, .6); color: var(--ink); border: 1px solid var(--line); border-radius: 5px; cursor: pointer; }
+.twin-shot { position: absolute; right: 10px; bottom: 10px; width: 260px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: #000; font-size: 11px; }
+.twin-shot img { width: 100%; display: block; }
+.twin-shot div { padding: 4px 6px; color: var(--muted); }
+.shot .inset { position: absolute; left: 6px; bottom: 6px; width: 34%; border: 1px solid rgba(255, 255, 255, .5); border-radius: 4px; box-shadow: 0 2px 8px rgba(0, 0, 0, .6); }
+@media (max-width: 700px) { .twin-shot { width: 150px; } }
+.twin-btns button.on { color: #ffb43c; border-color: #ffb43c; }

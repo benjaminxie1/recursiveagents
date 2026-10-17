@@ -79,7 +79,11 @@ def _correct_steps(tb, faults):
         t, a = f["type"], f.get("asset")
         if t == "F3_fan_failure":
             tb.call("get_camera_view", {"viewpoint": "inv1_cabinet", "mode": "thermal"})
-            _lockout_work(tb, a, "replace_fan_filter", 60)
+            for _ in range(2):  # the ticket saying "complete" is not proof: re-check the fan, redo once if dead
+                _lockout_work(tb, a, "replace_fan_filter", 60)
+                rpm = tb.call("read_telemetry", {"asset": a, "points": ["fan_rpm"], "window_min": 1})["points"]["fan_rpm"][-1][1]
+                if rpm > 0:
+                    break
             st = tb.call("read_telemetry", {"asset": a, "points": ["status"], "window_min": 1})["points"]["status"][-1][1]
             if st == "derated":
                 tb.call("operate", {"asset": a, "action": "reset_alarm"})

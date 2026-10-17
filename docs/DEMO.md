@@ -37,8 +37,8 @@ Inverter 3's comms card has failed, so its telemetry is frozen at perfect-lookin
    Line: "Only verified outcomes become memory, so the team learns the fix and never the fake fix."
 7. **2:30 The number (20 s).**
    Show the held-out results table from `results.md`: baseline, self-verify baseline and the full loop, with verified success, false-done rate, needless pages, safety violations and cost per run.
-   The baselines' failure is under-acting, not over-claiming: they escalate fixable faults to a human (4 of 5 on held-out) and call a cracked module "nothing wrong".
-   Line, only if the full arm's numbers support it: "Without a definition of done, agents either quit to a human or say nothing's wrong. With one, they fix it and prove it."
+   The baselines' failure is stopping, not over-claiming: on held-out the baseline fixed none of the six fixable faults, ended 7 runs `ESCALATED` without paging anyone, and called a cracked module "nothing wrong".
+   Line, only if the full arm's numbers support it: "Without a definition of done, agents either quit without telling anyone or say nothing's wrong. With one, they fix it and prove it."
    Use only numbers from `results.md`.
 8. **2:50 Close (10 s).**
    "Done means done: proven by a different model, against the plant, on Nemotron on Crusoe."
@@ -47,6 +47,7 @@ If judges pick the scenario, offer these pre-tested ones: `s06_stale_scada` (sen
 
 ## Before going on stage
 
+- Run `python -m scripts.demo_check` first (no key needed, a few seconds): it must print ALL PASS.
 - Warm the prefix cache: `.venv/bin/python -m gridtwin.run --warm`.
 - Start the viewer: `.venv/bin/python -m gridtwin.serve --port 8000`, then open `http://localhost:8000/?run=<id>` and `http://localhost:8000/wall.html?run=<id>`.
 - Have a finished run of each pre-tested scenario ready to show with `&replay=1` if the live run stalls.
