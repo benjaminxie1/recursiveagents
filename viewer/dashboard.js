@@ -2,7 +2,6 @@
 // agent's thinking and context, an operator reprompt box, then four drone feeds, the interactive 3D model, assets and
 // checks. Reads runs/<id>/events.jsonl (contract C2) only; the reprompt box posts to /api/reprompt.
 // ?run=<id> picks a run (default: newest), &replay=1 plays it back on its own, &speed=2 speeds playback up.
-import { PlantView, loadScene } from './splat.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -216,7 +215,7 @@ function renderAssets(S) {
   $('#health').textContent = `${TILES.length - off}/${TILES.length} healthy`;
   $('#assets').innerHTML = TILES.map((t) => {
     const a = S.assets[t];
-    return `<div class="asset ${a?.cls || ''}" data-asset="${t}"><span class="id">${t}</span><span class="bar"></span><span class="st">${esc(a?.st || 'running')}</span></div>`;
+    return `<div class="asset ${a?.cls || ''} ${picked === t ? 'picked' : ''}" data-asset="${t}"><span class="id">${t}</span><span class="bar"></span><span class="st">${esc(a?.st || 'running')}</span></div>`;
   }).join('');
 }
 
@@ -467,65 +466,45 @@ async function initDrones() {
   }, 1000);
 }
 
-let view, scene, S0 = null, thermal = false;
+// the fifth view: the walkable twin (viewer/twin-embed.html), plant outside and the equipment room inside;
+// asset selection syncs both ways and the twin colours assets by their state here
+let S0 = null, twinReady = false, twinStatus = '', picked = null;
+const twin = () => $('#twin')?.contentWindow;
 function flyTo(asset) {
-  if (!view || !scene) return;
-  const st = Object.values(scene.stations).find((s) => s.asset === asset);
-  const a = scene.anchors[asset] || scene.anchors[`INV-${asset.match(/\d/)?.[0]}`];
-  if (!a) return;
-  const from = st ? st.position : [a[0] - 10, 6, a[2] + 10];
-  view.look([from[0] + (from[0] - a[0]) * 0.4, from[1] + 2.5, from[2] + (from[2] - a[2]) * 0.4], a, 50);
-  showCam(asset);
+  picked = asset;
+  twin()?.postMessage({ type: 'focus', asset }, '*');
+  document.querySelectorAll('.asset.picked').forEach((el) => el.classList.remove('picked'));
+  document.querySelector(`.asset[data-asset="${CSS.escape(asset)}"]`)?.classList.add('picked');
   $('.twin').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
-
-function showCam(asset) {
-  const shot = (S0?.shots[asset] || []).filter((s) => (thermal ? s.mode === 'thermal' : true)).pop() || (S0?.shots[asset] || []).pop();
-  const fig = $('#cam');
-  fig.hidden = !shot;
-  if (!shot) return;
-  fig.querySelector('img').src = `/${shot.render_path || shot.image_path}`;
-  fig.querySelector('figcaption').innerHTML = `<span>${esc(shot.viewpoint)}</span><span>${esc(shot.mode)} · ${esc((shot.captured_at || '').slice(11))}</span>`;
-}
-
-function placePins() {
-  if (!view || !scene || !S0) return;
-  const W = view.renderer.domElement.clientWidth / view.renderer.domElement.width;
-  const H = view.renderer.domElement.clientHeight / view.renderer.domElement.height;
-  const show = Object.entries(S0.assets).filter(([, a]) => a.cls !== 'verified' || S0.final).map(([id, a]) => [id, a.cls]);
-  if (S0.focus && !show.some(([id]) => id === S0.focus)) show.push([S0.focus, 'work']);
-  $('#pins').innerHTML = show.map(([id, cls]) => {
-    const p = scene.anchors[id];
-    if (!p) return '';
-    const [x, y, z] = view.project([p[0], p[1] + 2.4, p[2]]);
-    if (z > 1 || x < 0 || y < 0 || x > view.renderer.domElement.width || y > view.renderer.domElement.height) return '';
-    return `<div class="pin ${cls === 'warn' ? 'work' : cls}" data-asset="${id}" style="left:${x * W}px;top:${y * H}px">${id}</div>`;
-  }).join('');
-}
-
-async function initTwin() {
-  scene = await loadScene();
-  view = new PlantView($('#view'));
-  await view.load(undefined, scene.sky);
-  const draw = view.draw.bind(view);
-  view.draw = () => { draw(); placePins(); };
-  view.overview();
-  view.start();
-}
-
-function setMode(t) {
-  thermal = t;
-  $('#mRgb').classList.toggle('on', !t);
-  $('#mThermal').classList.toggle('on', t);
-  $('#scale').hidden = !t;
-  $('#cam').hidden = true;
-  syncTwin();
-}
-
 function syncTwin() {
-  if (!view || !S0) return;
-  const hot = Object.entries(S0.assets).filter(([, a]) => a.cls === 'bad').map(([id, a]) => scene.anchors[a.raw] || scene.anchors[id]).filter(Boolean);
-  view.setThermal(thermal, hot);
+  if (!twinReady || !S0) return;
+  const assets = {};
+  for (const [id, a] of Object.entries(S0.assets)) assets[a.raw || id] = a.cls === 'bad' ? 'bad' : a.cls === 'verified' ? 'ok' : 'work';
+  const key = JSON.stringify(assets);
+  if (key !== twinStatus) { twinStatus = key; twin()?.postMessage({ type: 'status', assets }, '*'); }
+}
+// once the agents name the faulted asset, jump to the twin and open it there, no clicks (demo: the asset's data panel)
+let focused = null, pendingFocus = null;
+function autoFocus(S) {
+  const diagnosed = S.dfocus || (S.findings.length && S.focus);
+  if (!diagnosed || diagnosed === focused || (!replay && S.final && !focused && cursor === events.length && params.get('focus') !== '1')) return;
+  focused = diagnosed;
+  if (twinReady) flyTo(diagnosed); else pendingFocus = diagnosed;
+}
+
+function initTwin() {
+  $('#twin').src = `twin-embed.html?mode=orbit${runId ? `&run=${encodeURIComponent(runId)}` : ''}`;
+  addEventListener('message', (e) => {
+    const m = e.data;
+    if (!m || m.source !== 'gridtwin-twin') return;
+    if (m.type === 'ready') { twinReady = true; twinStatus = ''; syncTwin(); if (pendingFocus) { flyTo(pendingFocus); pendingFocus = null; } }
+    if (m.type === 'select' && m.asset) {
+      picked = tileOf(m.asset) || m.asset;
+      document.querySelectorAll('.asset.picked').forEach((el) => el.classList.remove('picked'));
+      document.querySelector(`.asset[data-asset="${CSS.escape(tileOf(m.asset) || m.asset)}"]`)?.classList.add('picked');
+    }
+  });
 }
 
 // ---------- data ----------
@@ -535,8 +514,8 @@ function render() {
   const st = $('#state');
   st.className = `live mono ${S.final ? (S.final.status === 'DONE' ? 'ok' : 'warn') : events.length ? 'work' : ''}`;
   st.textContent = `${replay ? 'Replay' : S.final ? 'Closed' : events.length ? 'Live' : 'Idle'}${S.first ? ` · sim ${S.first.t_sim.slice(0, 10)}` : ''}`;
+  autoFocus(S);
   renderHero(S); renderPhases(S); renderFlow(S); renderMind(S); renderAssets(S); renderIncident(S); renderLedger(S); syncTwin();
-  view?.touch(2);
 }
 
 const runPath = (id) => id.split('/').map(encodeURIComponent).join('/');
@@ -573,7 +552,6 @@ async function main() {
   sel.onchange = () => { params.set('run', sel.value); location.search = params.toString(); };
   const pick = (e) => { const el = e.target.closest('[data-asset]'); if (el) flyTo(el.dataset.asset); };
   $('#assets').onclick = pick;
-  $('#pins').onclick = pick;
   $('#flow').onclick = (e) => { const n = e.target.closest('[data-lane]'); if (n) { selLane = selLane === n.dataset.lane ? null : n.dataset.lane; render(); } };
   $('#crumb').ondblclick = () => runId && window.open(`/?run=${encodeURIComponent(runId).replace(/%2F/g, '/')}`, '_blank');  // operator view
   $('#cta').onclick = () => {
@@ -589,12 +567,9 @@ async function main() {
     $('#rpNote').textContent = res?.ok ? (S0?.final ? 'Saved. This run is closed, so it applies to the next run.' : 'Sent. The planner reads it next round.') : 'Could not send';
     if (res?.ok) $('#rpText').value = '';
   };
-  $('#mRgb').onclick = () => setMode(false);
-  $('#mThermal').onclick = () => setMode(true);
-  $('#mReset').onclick = () => { view?.overview(); $('#cam').hidden = true; };
   addEventListener('resize', () => S0 && render());
   initDrones();
-  initTwin().catch((err) => { console.warn('twin unavailable', err); $('#view').innerHTML = ''; });
+  initTwin();
   render();
   if (!runId) return;
   if (!replay) { poll(); return; }
