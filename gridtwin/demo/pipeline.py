@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -49,6 +51,38 @@ def _registration(scene: str):
         return {"views": {}}
 
 
+def _as_list(v) -> list[str]:
+    """Model JSON fields that should be lists of strings: a bare string is one item, anything else non-list is none."""
+    if isinstance(v, str):
+        return [v] if v.strip() else []
+    return [str(s) for s in v if s is not None and str(s).strip()] if isinstance(v, (list, tuple)) else []
+
+
+# Acceptance the plant cannot prove after a repair: power and temperature bands (they settle with sun and time), latencies,
+# percentages. Sub-agents invent these ("heatsink 40-41 C"); the email then demands what no judge checks.
+_UNPROVABLE = re.compile(r"(°|\bdeg|temperat|heatsink|\bkw\b|kilowatt|\bmw\b|power output|output power|ac power|dc power|"
+                         r"voltage|current\b|\bamps?\b|irradian|efficien|%|percent|latency|\bms\b|packet loss)", re.I)
+
+
+def verifier_acceptance(asset: str) -> list[str]:
+    """What the verification team actually checks (gridtwin/demo/recursion.py judges and veto grounds)."""
+    return [f"{asset} SCADA data_age_min at most {FRESH_MIN} and status running",
+            f"{asset} answers comms_ping (its comms card is back on the network)",
+            f"{asset} display lit and showing readings in a camera view the verifier picks, not the contractor's photo",
+            "JEV verdict 'verified' from the registered camera stations and the sensor state"]
+
+
+def ground_acceptance(items, asset: str) -> tuple[list[str], list[str]]:
+    """(acceptance, dropped): the verifier's bars first, then the planner's items the plant can prove."""
+    kept, dropped = [], []
+    for s in _as_list(items):
+        (dropped if _UNPROVABLE.search(s) else kept).append(s.strip())
+    return list(dict.fromkeys(verifier_acceptance(asset) + kept)), dropped
+
+
+_JEV_SWAP = threading.Lock()  # the stub swap patches module functions; two stub runs in one process take turns
+
+
 def jev_step(registration, asset, telemetry, visual, log=None, stub=False) -> tuple[dict, dict]:
     """(interpreted JSON state, decision). Uses gridtwin.demo.jev when present; stub mode never calls out."""
     try:
@@ -56,15 +90,16 @@ def jev_step(registration, asset, telemetry, visual, log=None, stub=False) -> tu
         state = jev.interpret(registration, asset, telemetry, visual)
         if not stub:
             return state, jev.decide(state, log=log)
-        ask_model = jev._ask_model  # stub: keep decide() (and its vetoes) but never call a model
+        saved = jev._ask_jev, jev._ask_model  # stub: keep decide() (and its vetoes) but never call Jev or a model
 
         def offline(*_a, **_k):
-            raise RuntimeError("stub mode: no model call")
-        jev._ask_model = offline
-        try:
-            return state, jev.decide(state, log=log)
-        finally:
-            jev._ask_model = ask_model
+            raise RuntimeError("stub mode: no network call")
+        with _JEV_SWAP:
+            jev._ask_jev = jev._ask_model = offline
+            try:
+                return state, jev.decide(state, log=log)
+            finally:
+                jev._ask_jev, jev._ask_model = saved
     except Exception as e:  # noqa: BLE001 - fallback keeps the demo running
         age = _age(telemetry)
         state = {"asset": asset, "sensors": {"data_age_min": age, "stale": age is None or age > FRESH_MIN},
@@ -257,9 +292,11 @@ class Demo:
             wo, _ = self.memory.apply_to_work_order(wo, lessons, contractor_for(dx["asset"])["name"])
         except Exception:  # noqa: BLE001 - the work order above already carries the lessons' forbid items
             pass
+        # the planner checks its acceptance sub-agent too: the email demands only what the verifier can prove
+        wo["acceptance"], dropped = ground_acceptance(wo.get("acceptance"), wo["asset"])
         self.emit("planner", "demo.agent", root.event("done", {"briefs": briefs, "rationale": plan.get("rationale"),
                                                               "depth_cap_enforced": capped, "work_order": wo["wo_id"],
-                                                              "override": self.override}))
+                                                              "override": self.override, "acceptance_dropped": dropped}))
         self.emit("planner", "demo.workorder", wo)
         self.stage("plan", "end")
         return wo
@@ -271,7 +308,7 @@ class Demo:
         safety = outs.get("safety") or {}
         repair = outs.get("repair") or {}
         acc = outs.get("acceptance") or {}
-        wo_type = repair.get("work_order")
+        wo_type = repair.get("work_order") if isinstance(repair.get("work_order"), str) else None
         expected = B.expected_work_order(f"{dx['fault']} {dx['summary']}")
         self.override = None
         if wo_type not in WORK_ORDERS or wo_type == "inspect" or (expected and wo_type != expected):
@@ -282,11 +319,11 @@ class Demo:
         else:
             steps_repair = None
         brk = BREAKER_FOR.get(asset, f"52-I{n}")
-        before = [str(s) for s in (safety.get("before") or [f"Open feeder breaker {brk} and apply lockout/tagout"])]
-        after = [str(s) for s in (safety.get("after") or [f"Close {brk} after the work is complete and confirm the unit restarts"])]
-        steps = before + (steps_repair or [str(s) for s in (repair.get("steps") or [wo_type.replace("_", " ")])]) + after
-        forbid = list(dict.fromkeys([str(s) for s in (repair.get("do_not") or [])] + forbid_mem))
-        acceptance = [str(s) for s in (acc.get("acceptance") or [])] or [
+        before = _as_list(safety.get("before")) or [f"Open feeder breaker {brk} and apply lockout/tagout"]
+        after = _as_list(safety.get("after")) or [f"Close {brk} after the work is complete and confirm the unit restarts"]
+        steps = before + (steps_repair or _as_list(repair.get("steps")) or [wo_type.replace("_", " ")]) + after
+        forbid = list(dict.fromkeys(_as_list(repair.get("do_not")) + forbid_mem))
+        acceptance = _as_list(acc.get("acceptance")) or [
             f"{asset} SCADA data_age_min under {FRESH_MIN}", f"{asset} display lit in a camera view the verifier picks"]
         return {"wo_id": "WO-1", "asset": asset, "work_order": wo_type, "steps": steps, "forbid": forbid,
                 "acceptance": acceptance, "lessons_applied": [l["id"] for l in lessons], "round": 1}
@@ -366,14 +403,14 @@ class Demo:
                 if not any(alt.replace("_", " ") in s for s in new["steps"]):
                     new["steps"] = new["steps"][:1] + [f"{alt.replace('_', ' ')} on {wo['asset']}"] + new["steps"][1:]
                 new["forbid"] = new["forbid"] + [f"Do not repeat {wo['work_order']}; it did not fix the fault."]
-                self.emit("planner", "demo.agent", {"id": f"planner.replan.r{rnd}", "parent": None, "depth": 0, "role": "planner",
-                                                    "model": "rule", "task": "Replan after a faithful visit failed verification",
-                                                    "status": "done", "team": "plan", "round": rnd,
-                                                    "output": {"from": wo["work_order"], "to": alt}})
+                replan = {"id": f"planner.replan.r{rnd}", "parent": None, "depth": 0, "role": "planner", "model": "rule",
+                          "task": "Replan after a faithful visit failed verification", "team": "plan", "round": rnd}
+                self.emit("planner", "demo.agent", {**replan, "status": "spawned", "output": None})
+                self.emit("planner", "demo.agent", {**replan, "status": "done", "output": {"from": wo["work_order"], "to": alt}})
         src = getattr(self, "_last_image", None)
         prompt = f"the same {wo['asset']} inverter cabinet, repaired: its display lit and showing live readings, photo-realistic"
         img = expected_image(wo["asset"], src, prompt, self.run_dir / "img" / f"expected-r{rnd}.png")
-        self.emit("verifier", "demo.diffusion", {"wo_id": wo["wo_id"], "round": rnd, **img})
+        self.emit("verifier", "demo.diffusion", {"wo_id": wo["wo_id"], "round": rnd, **img, "seen": src})
         try:
             body = self.brains.email_back(new, [{k: c[k] for k in ("name", "detail")} for c in failed])
         except Exception as e:  # noqa: BLE001
@@ -402,8 +439,14 @@ class Demo:
         saved = None
         if verified:
             saved = self.memory.learn(self.run_id, dx, wo, verdicts, visits)
-            effect = ("next time the first work order forbids the shortcut, so the first visit is the real fix"
-                      if shortcut_failed else "confirmed: the recalled lesson made the first visit pass")
+            if shortcut_failed:
+                effect = "next time the first work order forbids the shortcut, so the first visit is the real fix"
+            elif getattr(self, "applied", None) and len(verdicts) == 1:
+                effect = "confirmed: the recalled lesson made the first visit pass"
+            elif len(verdicts) == 1:
+                effect = "first visit passed; the lesson records the fix and the proof for next time"
+            else:
+                effect = f"verified in round {len(verdicts)}; the lesson records what finally worked"
             self.emit("memory", "demo.memory", {"op": "write", "lessons": [{"id": saved["id"], "text": M.summary(saved)}],
                                                 "effect": effect})
         scored = self.memory.record_outcome(getattr(self, "applied", []), self.run_id, len(verdicts), verified,
@@ -418,6 +461,21 @@ class Demo:
         return saved
 
     def run(self, goal=None) -> dict:
+        """The whole loop. Any crash still ends the log with demo.final FAILED and a result.json, so no page waits forever."""
+        try:
+            return self._run(goal)
+        except Exception as e:
+            err = f"{type(e).__name__}: {e}"[:300]
+            final = {"status": "FAILED", "rounds": 0, "summary": f"the run crashed: {err}", "usd": None,
+                     "wall_s": round(time.time() - self.t0, 1), "stub": self.stub, "error": err}
+            try:
+                self.emit("orchestrator", "demo.final", final)
+                (self.run_dir / "result.json").write_text(json.dumps({"run_id": self.run_id, **final}, indent=2))
+            except Exception:  # noqa: BLE001 - the original error matters more
+                pass
+            raise
+
+    def _run(self, goal=None) -> dict:
         goal = goal or self.sc["goal"]
         self.emit("operator", "goal", {"text": goal, "scenario_id": self.sc["id"]})
         dx = self.diagnose()

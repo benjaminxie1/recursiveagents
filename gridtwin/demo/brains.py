@@ -99,7 +99,8 @@ Then write the field steps a contractor follows. If a lesson says a cheap visit 
 Reply with JSON only: {"work_order": "<one of the list>", "steps": ["<step>"], "do_not": ["<item>"]}""" % "\n".join(
         f"- {w}: {WO_FIXES.get(w, '')}" for w in WORK_ORDERS),
     "acceptance": """You are the acceptance sub-agent. Write 2-4 acceptance criteria that a verifier can check against the plant itself,
-never against the contractor's word: SCADA freshness (data_age_min under 5), live values, and a camera view that shows the healthy state.
+never against the contractor's word: SCADA freshness (data_age_min under 5, status running), the unit answering comms_ping,
+and a camera view that shows the healthy state. No power, temperature or latency ranges: they move with sun, load and time.
 Reply with JSON only: {"acceptance": ["<criterion>"]}""",
 }
 
@@ -108,10 +109,13 @@ but your checks against the plant failed. Write a short, firm, polite email back
 what failed (with the numbers), what they must do now, and what proof you will check next. No greeting fluff. Plain text only."""
 
 
+LLM_TIMEOUT_S = 60.0  # per request; a stalled Crusoe call is retried instead of hanging the run (client default is 300 s)
+
+
 def _ask(role: str, system: str, user: str, log=None, actor: str | None = None, thinking: bool = False,
-         max_tokens: int = 2048, max_tries: int = 8) -> dict:
+         max_tokens: int = 2048, max_tries: int = 8, timeout: float = LLM_TIMEOUT_S) -> dict:
     resp = llm.chat(role, [{"role": "system", "content": system}, {"role": "user", "content": user}],
-                    max_tokens=max_tokens, log=log, actor=actor, thinking=thinking, max_tries=max_tries)
+                    max_tokens=max_tokens, log=log, actor=actor, thinking=thinking, max_tries=max_tries, timeout=timeout)
     txt = llm.text(resp) or llm.reasoning(resp)
     out = extract_json(txt)
     if not isinstance(out, dict):
@@ -140,7 +144,7 @@ class LiveBrains:
         user = json.dumps({"work_order": {k: wo[k] for k in ("wo_id", "asset", "work_order", "steps", "forbid", "acceptance")},
                            "failed_checks": failed}, default=str)
         resp = llm.chat("verifier", [{"role": "system", "content": EMAIL_BACK_SYS}, {"role": "user", "content": user}],
-                        max_tokens=2048, log=self.log, actor="verifier", max_tries=8)
+                        max_tokens=2048, log=self.log, actor="verifier", max_tries=8, timeout=LLM_TIMEOUT_S)
         return (llm.text(resp) or "").strip()
 
 
