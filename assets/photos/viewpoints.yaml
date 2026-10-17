@@ -1,0 +1,13 @@
+# Contract C5. Workstream 3 owns this file after the first push (poses get filled in from the splat).
+viewpoints:
+  inv1_cabinet: {asset: INV-1, modes: [rgb, thermal], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  inv2_cabinet: {asset: INV-2, modes: [rgb], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  inv3_cabinet: {asset: INV-3, modes: [rgb], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  xfmr1_yard: {asset: XFMR-1, modes: [rgb], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+
+# MVP photo states per asset (folders under assets/photos/<ASSET>/<state>/)
+states:
+  INV-1: [healthy, filter_clogged, thermal_normal, thermal_hot]
+  INV-2: [healthy, display_off]
+  INV-3: [healthy, display_off]
+  XFMR-1: [normal, oil_leak]

@@ -1,0 +1,53 @@
+# 5 MWac solar plant + BESS + substation (docs/SIMULATOR.md §1)
+plant:
+  name: GridTwin Demo Solar
+  rating_kwac: 5000
+  revenue_usd_per_mwh: 45
+  latitude_note: "summer day, solar noon 13:00 local"
+
+inverters:
+  rating_kwac: 1250
+  dc_rating_kw: 1500        # DC/AC ratio 1.2 per block
+  peak_efficiency: 0.983
+  derate_start_c: 50
+  trip_c: 60
+  derate_latch_c: 55
+  derate_release_c: 45
+  derate_limit_frac: 0.6
+  ids: [INV-1, INV-2, INV-3, INV-4]
+
+blocks: {B1: INV-1, B2: INV-2, B3: INV-3, B4: INV-4}
+combiners_per_block: 6
+strings_per_combiner: 12
+
+breakers:
+  52-I1: INV-1
+  52-I2: INV-2
+  52-I3: INV-3
+  52-I4: INV-4
+  52-B1: BESS-1
+  52-M: XFMR-1
+
+bess: {id: BESS-1, power_kw: 2000, energy_kwh: 4000, soc_pct: 60}
+
+transformer:
+  id: XFMR-1
+  rating_kva: 5500
+  oil_rise_full_load_c: 40
+  oil_tau_min: 30
+
+work_orders:          # minutes, usd, needs_deenergized
+  inspect: [30, 400, false]
+  replace_fan_filter: [60, 1800, true]
+  reseat_comms_card: [45, 900, true]
+  replace_mc4_connector: [60, 1200, true]
+  clean_modules: [120, 2500, false]
+  mow_vegetation: [90, 1500, false]
+  replace_module: [90, 2200, true]
+  transformer_oil_service: [120, 6000, true]
+
+diagnostics:          # minutes
+  comms_ping: 10
+  insulation_resistance: 20
+  iv_curve: 30
+  dga_sample: 30

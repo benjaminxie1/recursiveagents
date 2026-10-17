@@ -26,6 +26,17 @@ Read it at the start of a session, after `docs/HACKATHON.md`.
 - 10:05 Will: team memory lives in this file plus `docs/HACKATHON.md`, mirrored to Alike; `AGENTS.md` links to `CLAUDE.md` so Codex and Claude read the same notes.
 - 10:18 Benjamin: Benjamin's own context and research notes live in `docs/BENJAMINXIE_MEMORY.md`, standing in for Alike until his cloud sessions can sign in to it.
 - 10:25 Benjamin: branches: `main` is the shared, demo-ready branch (created at e6c8dd5). Everyone works on their own branch cut from `main` (`will/...`, `jonathan/...`; Benjamin's sessions use `claude/sweet-faraday-yssuo9`) and merges into `main` about hourly. Stop pushing straight to `claude/sweet-faraday-yssuo9`.
+- 10:30 Jonathan: the splat is a static 3D stage with pins; visual state comes from a bank of real photos (`get_camera_view` returns the photo matching the hidden state); the splat is never re-rendered.
+- 10:30 Jonathan: MVP faults are F3 fan relapse (trap), F6 stale SCADA (sensor lies), F5 transformer (page a human) and a nothing-wrong control; F1, F2, F4, F7, F8 only after the loop runs end to end.
+- 10:30 Jonathan: the live demo is F6 stale SCADA on INV-3; a second F6 incident on INV-2 is the memory moment.
+- 10:30 Jonathan: the safety gate is one `DecisionClient` interface; a Crusoe model answers typed questions by default, Jev or OpenAI Decisions switch on only if a key turns up.
+- 10:30 Jonathan: the runtime knowledge base lives in `kb/` (plant facts, cited OEM and standards excerpts cached with URLs, lessons from verified runs); no per-fault playbooks; benchmark runs use a frozen snapshot and lessons come only from the dev split.
+- 10:30 Jonathan: Alike is for development only; product code has no Alike or MCP dependency (`mcp` leaves `requirements.txt`, `ALIKE_MCP_URL` leaves `.env.example`).
+- 10:30 Jonathan: `page_human` sends a real phone push via ntfy.sh to `NTFY_TOPIC`, on live runs only, never in benchmark runs.
+- 10:30 Jonathan: all LLM calls go through `gridtwin/llm.py`; model IDs come only from `ROLES` in `gridtwin/config.py`.
+- 10:30 Jonathan: the autonomous loop is the main feature; the viewer only shows the loop's evidence ("dashboard as main feature" is banned).
+- 10:30 Jonathan: one codebase, settled: this repo (closes the 10:05 question about Jonathan's local `recursive-agents-hackathon` folder).
+- 10:30 Jonathan: all three workstreams work on `claude/sweet-faraday-yssuo9` with `git pull --rebase` before every push (supersedes the 10:25 per-person-branch note).
 
 ## Open questions
 

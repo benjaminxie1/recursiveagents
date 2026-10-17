@@ -1,0 +1,14 @@
+id: s06b_stale_scada_inv2
+goal: "Revenue is down this week even though SCADA looks normal. Find the cause and fix it."
+split: heldout
+seed: 62
+start: "2026-07-15T10:45"
+preroll_min: 120
+weather: {clouds: clear}
+faults:
+  - {type: F6_stale_scada, asset: INV-2, onset_min: -75}
+expected:
+  final_status: DONE
+  human_page: not_needed
+  resolved_by: [{dispatch_tech: {asset: INV-2, work_order: reseat_comms_card}}]
+budget: {sim_minutes: 480, tool_calls: 60}

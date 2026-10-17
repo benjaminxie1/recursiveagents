@@ -1,0 +1,12 @@
+id: s00_control
+goal: "The owner wants a routine health check of the plant. Make sure everything is operating normally."
+split: dev
+seed: 100
+start: "2026-07-14T10:30"
+preroll_min: 120
+weather: {clouds: light}
+faults: []
+expected:
+  final_status: NO_ACTION
+  human_page: not_needed
+budget: {sim_minutes: 480, tool_calls: 60}
