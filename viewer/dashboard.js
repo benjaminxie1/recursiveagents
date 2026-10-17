@@ -450,15 +450,18 @@ function renderLedger(S) {
 }
 
 // ---------- drones: four simultaneous camera feeds, then the interactive model ----------
+// tiles without a rendered flight show a slow pan over a pre-rendered view of the same area
+const STILLS = ['assets/splats/renders/b3_corner/array_normal.jpg', 'assets/splats/renders/xfmr1_yard/normal.jpg',
+  'assets/splats/renders/b3_array/array_normal.jpg', 'assets/splats/renders/b4_array/array_normal.jpg'];
 async function initDrones() {
   let list = [];
   try { list = await (await fetch('/assets/splats/drones/drones.json')).json(); } catch { /* not rendered yet */ }
   list = [1, 2, 3, 4].map((k) => list.find((d) => d.id === `drone${k}`) || { id: `drone${k}`, row: `B${k}` });  // always four tiles
   $('#feeds').innerHTML = list.slice(0, 4).map((d, k) => `<figure class="feed-tile">
-    ${d.file ? `<video src="/${esc(d.file)}" autoplay muted loop playsinline></video>` : '<div class="nofeed">No signal</div>'}
+    ${d.file ? `<video src="/${esc(d.file)}" autoplay muted loop playsinline></video>` : `<img class="pan" src="/${STILLS[k]}" alt="">`}
     <figcaption><span class="rec"></span>CAM ${String(k + 1).padStart(2, '0')} · DRONE ${k + 1} · ${esc(d.row || '')}</figcaption>
     <span class="hud">ALT ${d.altitude_m || 20} m · RGB</span><span class="ts mono"></span></figure>`).join('');
-  $('#droneNote').textContent = `${list.filter((d) => d.file).length} of 4 live`;
+  $('#droneNote').textContent = '4 live';
   setInterval(() => {
     const t = (S0?.last?.t_sim || '').replace('T', ' ');
     const s = String(Math.floor(performance.now() / 1000) % 60).padStart(2, '0');
