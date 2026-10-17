@@ -9,6 +9,11 @@ const short = (v, n = 140) => {
   const s = typeof v === 'string' ? v : JSON.stringify(v);
   return s && s.length > n ? s.slice(0, n - 1) + '…' : s ?? '';
 };
+// The planner's dod groups checks by outcome ({DONE: [...], ...}); older scripted logs carry one flat list.
+const dodChecks = (dod) => {
+  const c = dod?.data?.checks;
+  return !c ? [] : Array.isArray(c) ? c : Object.values(c).flat();
+};
 
 const params = new URLSearchParams(location.search);
 const replay = params.get('replay') === '1';
@@ -84,7 +89,7 @@ function derive(evs) {
         break;
       }
       case 'verdict': {
-        const check = (S.dod?.data?.checks || []).find((c) => (c.id ?? c.check_id) === d.check_id);
+        const check = dodChecks(S.dod).find((c) => (c.id ?? c.check_id) === d.check_id);
         hit(mentions([check, d.evidence, d.requirement, d.requirements])).forEach((st) => { st.verdict = e; });
         break;
       }
