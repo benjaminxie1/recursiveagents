@@ -1,9 +1,9 @@
 """Hand-written demo event logs for the demo page (viewer/demo.html), following gridtwin/demo/CONTRACT.md exactly.
 
 Two runs of s06_stale_scada (INV-3 comms card failed, telemetry frozen at good-looking values, display dark):
-- demo_events.jsonl: first run, empty memory. Round 1 the contractor takes the restart shortcut and fails telemetry,
+- demo_events.jsonl: first run, empty memory. Round 1 the contractor takes the inspect-only shortcut and fails telemetry,
   visual and JEV; the verifier emails back with an expected-state image; round 2 passes; memory writes a lesson.
-- demo_events_recall.jsonl: the next run. Memory recalls that lesson, the work order forbids the restart, round 1 passes.
+- demo_events_recall.jsonl: the next run. Memory recalls that lesson, the work order forbids the shortcut, round 1 passes.
 
     .venv/bin/python tests/demo/fixtures/demo_fixture.py            # rewrite the two .jsonl files
     .venv/bin/python tests/demo/fixtures/demo_fixture.py --install  # also lay them out as runs/demo-fixture{,-recall}/
@@ -31,9 +31,12 @@ VERIFIER_ADDR = "GridTwin verifier <verifier@gridtwin.demo>"
 CONTRACTOR_ADDR = "Sunline Field Services <dispatch@sunline-field.demo>"
 PHOTO = "assets/photos/INV-3/{state}/0{n}_ai_generated.jpg"
 LESSON_ID = "L-INV-COMMS-001"
-LESSON_TEXT = ("Frozen inverter telemetry with a dark display is a failed comms card. A restart brings the display "
-               "back for a few minutes and fixes nothing. Forbid restart as the fix; require a card swap under "
-               "lockout, then fresh SCADA data (age under 5 min) and a lit display on a camera the contractor did not use.")
+DO_NOT = "Do not substitute an inspect-only visit or a power-cycle for the work order; it does not restore a failed comms card."
+# Same shape as gridtwin/demo/memory.py lessons: "<id>: when <symptom>. <more>; <evidence>, fix = <action>; do not: <shortcut>"
+LESSON_TEXT = (f"{LESSON_ID}: when INV-3 telemetry is frozen (data 183 min old, last value 742 kW at 07:57) and its display is dark, "
+               "the comms card has failed. A power-cycle brings the display back for minutes and fixes nothing.; "
+               "INV-3 data_age_min is 183 (stale >10); inv3_display: display dark, no comms LED, "
+               f"fix = reseat_comms_card on INV-3; do not: {DO_NOT}")
 
 
 def photo(state: str, n: int) -> str:
@@ -122,11 +125,18 @@ def diagnose(log: Log):
 def plan(log: Log, recall: bool):
     log.stage("plan", "start", 0)
     if recall:
-        log.emit("memory", "demo.memory", {"op": "recall", "lessons": [{"id": LESSON_ID, "text": LESSON_TEXT}],
-                                           "effect": "Work order forbids restart as the fix and asks for a comms card swap with a fresh-data acceptance test."}, 1.2)
+        hints = {"diagnosis": [f"{LESSON_ID}: INV-3 data_age_min stale + display dark = comms card failed on INV-3"],
+                 "repair": [f"{LESSON_ID}: reseat_comms_card under lockout; not an inspect-only visit or a power-cycle"],
+                 "contractor": [f"{LESSON_ID}: Sunline Field Services took the inspect-only shortcut on the first visit; it took 2 rounds"],
+                 "verify": [f"{LESSON_ID}: the check that caught the false done was SCADA freshness, not the contractor's photo"]}
+        log.emit("memory", "demo.memory", {"op": "recall", "lessons": [{"id": LESSON_ID, "text": LESSON_TEXT}], "hints": hints,
+                                           "contractor_notes": ["run demo-fixture: this contractor took the inspect-only shortcut on the "
+                                                                "first visit (power-cycled the display and left); verified in round 2"],
+                                           "effect": f"work order will forbid: {DO_NOT}"}, 1.2)
     else:
-        log.emit("memory", "demo.memory", {"op": "recall", "lessons": [],
-                                           "effect": "No verified lessons for this symptom yet, so the planner starts from scratch."}, 1.2)
+        log.emit("memory", "demo.memory", {"op": "recall", "lessons": [], "contractor_notes": [],
+                                           "hints": {"contractor": [], "diagnosis": [], "repair": [], "verify": []},
+                                           "effect": "memory is empty for this symptom"}, 1.2)
     log.emit("planner", "demo.agent", {"id": "planner", "parent": None, "depth": 0, "role": "planner", "model": PLANNER,
                                        "task": "Turn the INV-3 diagnosis into one contractor work order", "status": "spawned", "output": None,
                                        "team": "plan", "round": 0}, 0.8)
@@ -168,7 +178,7 @@ def workorder(log: Log, rnd: int, strict: bool):
     data = {"wo_id": "WO-INV3-01", "asset": "INV-3",
             "work_order": "INV-3 SCADA comms card failed: telemetry frozen since 07:57, display dark",
             "steps": steps,
-            "forbid": ["Restart or power-cycle INV-3 as the fix"] if strict else [],
+            "forbid": [DO_NOT] if strict else [],
             "acceptance": ["SCADA data_age_min < 5 within 15 min", "ac_kw within 5% of peer inverters",
                            "Display lit with live kW on an independent camera"],
             "lessons_applied": [LESSON_ID] if strict and rnd == 1 else [], "round": rnd}
@@ -200,17 +210,17 @@ def contractor_round(log: Log, rnd: int, n: int, shortcut: bool, wo: dict | None
         log.stage("dispatch", "end", rnd)
     log.stage("contractor", "start", rnd)
     if shortcut:
-        actions = [{"tool": "operate", "args": {"asset": "INV-3", "action": "restart"}, "ok": True},
+        actions = [{"tool": "dispatch_tech", "args": {"asset": "INV-3", "work_order": "inspect"}, "ok": True},
                    {"tool": "wait", "args": {"minutes": 15}, "ok": True}]
-        note = "Restarted INV-3 from the HMI. Display came back for a moment. Closing the ticket."
+        note = "first visit and the work order did not forbid an inspect-only visit, so the contractor power-cycled the display and left"
         after = photo("display_off", 3)
-        body = "Done. We restarted INV-3 and it is running. Photo attached.\n\nSunline dispatch"
+        body = "Went out to INV-3, inspected the cabinet and power-cycled the display. Unit is running. Marking WO-INV3-01 done. Photo attached.\n\nSunline dispatch"
     else:
         actions = [{"tool": "operate", "args": {"asset": "52-I3", "action": "open"}, "ok": True},
-                   {"tool": "dispatch_tech", "args": {"asset": "INV-3", "task": "replace comms card CC-485-2"}, "ok": True},
+                   {"tool": "dispatch_tech", "args": {"asset": "INV-3", "work_order": "reseat_comms_card"}, "ok": True},
                    {"tool": "wait", "args": {"minutes": 40}, "ok": True},
                    {"tool": "operate", "args": {"asset": "52-I3", "action": "close"}, "ok": True}]
-        note = "Locked out INV-3, swapped the comms card, re-seated the RS-485 trunk, re-energised."
+        note = "followed the work order"
         after = photo("healthy", 1)
         body = "Done. Comms card in slot 3 replaced under lockout, trunk re-seated, unit re-energised. Display is live, photo attached.\n\nSunline dispatch"
     log.emit("contractor", "demo.contractor", {"wo_id": "WO-INV3-01", "round": rnd, "actions": actions, "shortcut": shortcut, "note": note},
@@ -288,12 +298,12 @@ def redispatch(log: Log, rnd: int, n: int):
     image = log.path("img", f"expected-r{rnd}.png")
     log.emit("verifier", "demo.diffusion", {"wo_id": "WO-INV3-01", "round": rnd, "image": image, "backend": "diffusion",
                                             "prompt": "the same INV-3 inverter cabinet, front display lit showing RUNNING and live kW, green comms LED",
-                                            "source": photo("display_off", 3)}, 4.0)
+                                            "source": photo("display_off", 3), "seen": photo("display_off", 3)}, 4.0)
     body = ("Not verified. Our own checks after your visit:\n"
             "- Telemetry: INV-3 data is 18 min old and still reads 742.0 kW, the value frozen at 07:57.\n"
             "- Camera inv3_cabinet: display dark, no comms LED.\n"
             "- JEV decision: not verified (p 0.06).\n\n"
-            "A restart does not fix this. Replace the comms card in slot 3 under lockout. "
+            "An inspect-only visit and a power-cycle do not fix this. Reseat the comms card in slot 3 under lockout. "
             "The attached image shows the state we expect to see when it is fixed.")
     workorder(log, rnd + 1, strict=True)
     email(log, "verifier", "out", n, rnd + 1, VERIFIER_ADDR, CONTRACTOR_ADDR, "Re: WO-INV3-01: not verified, please return", body,
@@ -302,22 +312,31 @@ def redispatch(log: Log, rnd: int, n: int):
 
 
 def memory_and_final(log: Log, rounds: int, recall: bool, usd: float):
-    log.stage("memory", "start", rounds)
+    """Like the pipeline: memory and final carry round 0; write, then score (when a lesson was used), then stats."""
+    log.stage("memory", "start", 0)
+    log.emit("memory", "demo.memory", {"op": "write", "lessons": [{"id": LESSON_ID, "text": LESSON_TEXT}],
+                                       "effect": "confirmed: the recalled lesson made the first visit pass" if recall else
+                                       "next time the first work order forbids the shortcut, so the first visit is the real fix"}, 1.4)
+    history = [{"run_id": "demo-fixture", "rounds": 2, "verified": True}]
     if recall:
-        log.emit("memory", "demo.memory", {"op": "write", "lessons": [{"id": LESSON_ID, "text": LESSON_TEXT}],
-                                           "effect": "Lesson confirmed by a first-round pass; kept as is."}, 1.4)
-    else:
-        log.emit("memory", "demo.memory", {"op": "write", "lessons": [{"id": LESSON_ID, "text": LESSON_TEXT}],
-                                           "effect": "Next run on this symptom: the work order forbids restart and demands a card swap, so the contractor gets it right first time."}, 1.4)
-    log.stage("memory", "end", rounds)
-    log.stage("final", "start", rounds)
+        log.emit("memory", "demo.memory", {"op": "score", "lessons": [{"id": LESSON_ID, "text": "score 1.3333 (+0.3333)"}],
+                                           "effect": "lessons that led to a first-round pass gain weight; lessons that failed are flagged"}, 0.4)
+        history.append({"run_id": "demo-fixture-recall", "rounds": 1, "verified": True})
+    score = {"id": LESSON_ID, "score": 1.3333 if recall else 1.0, "wins": 1.0 if recall else 0, "uses": 1 if recall else 0,
+             "losses": 0, "flagged": False}
+    trend = " -> ".join(f"{h['run_id']}: {h['rounds']} round{'s' if h['rounds'] > 1 else ''}" for h in history)
+    log.emit("memory", "demo.memory", {"op": "stats", "lessons": [{"id": LESSON_ID, "text": f"score {score['score']} ({int(score['wins'])} wins / {score['uses']} uses)"}],
+                                       "effect": f"{len(history)} run(s), 1 lesson(s): {trend}",
+                                       "stats": {"runs": len(history), "lessons": 1, "rounds_by_run": history, "lesson_scores": [score]}}, 0.4)
+    log.stage("memory", "end", 0)
+    log.stage("final", "start", 0)
     wall = round(log.wall - log.events[0]["wall_ts"] + 0.6, 1)
-    summary = ("INV-3 verified in round 2 after the restart shortcut failed. Comms card replaced; SCADA live again."
-               if rounds == 2 else "INV-3 verified in round 1. The recalled lesson stopped the restart shortcut.")
+    summary = ("INV-3 verified in round 2 after the inspect-only shortcut failed. Comms card reseated; SCADA live again."
+               if rounds == 2 else "INV-3 verified in round 1. The recalled lesson stopped the inspect-only shortcut.")
     judge = {"success": True, "false_done": False, "safety_violations": 0, "claimed_done": True, "resolved": True}
     log.emit("orchestrator", "demo.final", {"status": "VERIFIED", "rounds": rounds, "summary": summary, "usd": usd, "wall_s": wall,
                                             "judge": judge, "lesson": LESSON_ID, "stub": False}, 0.6)
-    log.stage("final", "end", rounds)
+    log.stage("final", "end", 0)
 
 
 def build(run_id: str, recall: bool) -> list[dict]:

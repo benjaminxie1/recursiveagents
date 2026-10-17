@@ -39,7 +39,7 @@ const teamOf = (a) => a.team || 'plan';  // logs from before teams carry only th
 // ---------- fold the event log into what each section shows ----------
 function derive(evs) {
   const S = { goal: null, stages: {}, current: null, sensors: new Map(), cameras: [], diagnosis: null, agents: new Map(),
-    workorders: [], thread: [], checks: [], jev: [], diffusion: [], verdicts: new Map(), recall: null, writes: [],
+    workorders: [], thread: [], checks: [], jev: [], diffusion: [], verdicts: new Map(), recall: null, writes: [], scores: [], stats: null,
     final: null, rounds: new Set(), t0: null, t1: null, twinUrl: null };
   for (const e of evs) {
     const d = e.data || {};
@@ -70,7 +70,12 @@ function derive(evs) {
       case 'demo.check': S.checks.push({ ...d, seq: e.seq }); break;
       case 'demo.jev': S.jev.push({ ...d, seq: e.seq }); break;
       case 'demo.verdict': S.verdicts.set(d.round, d); break;
-      case 'demo.memory': if (d.op === 'recall') S.recall = d; else S.writes.push(d); break;
+      case 'demo.memory': // recall before planning; write, score and stats after the verdict
+        if (d.op === 'recall') S.recall = d;
+        else if (d.op === 'write') S.writes.push(d);
+        else if (d.op === 'score') S.scores.push(d);
+        else if (d.op === 'stats') S.stats = d;
+        break;
       case 'demo.final': S.final = d; break;
     }
   }
@@ -113,9 +118,12 @@ function railChips(S, name) {
     case 'contractor': return roundsOf(S, name).map((r) => {
       const visit = S.thread.find((t) => t.kind === 'visit' && t.round === r);
       return chip(visit?.shortcut ? 'warn' : st.rounds.get(r) === 'start' ? 'live' : '', `R${r}${visit?.shortcut ? ' shortcut' : ''}`,
-        visit?.shortcut ? 'Took the cheap shortcut' : '');
+        visit?.shortcut ? 'Took the shortcut: an inspect-only visit instead of the work order' : '');
     }).join('');
-    case 'memory': return S.writes.length ? chip('pass', `${S.writes.reduce((n, w) => n + (w.lessons?.length || 0), 0)} written`) : '';
+    case 'memory': {
+      const n = S.writes.reduce((k, w) => k + (w.lessons?.length || 0), 0);
+      return n ? chip('pass', `${n} written`) : st && !isActive(S, 'memory') ? chip('', 'none written') : '';
+    }
     case 'final': return S.final ? chip(S.final.status === 'VERIFIED' ? 'pass' : 'fail', human(S.final.status).toLowerCase()) : '';
     default: return roundsOf(S, name).map((r) => chip(st.rounds.get(r) === 'start' ? 'live' : '', `R${r}`)).join('');
   }
@@ -150,13 +158,17 @@ function renderFinal(S) {
   el.hidden = !f;
   if (!f) return;
   const ok = f.status === 'VERIFIED';
+  const crashed = f.status === 'FAILED';  // the run itself crashed; error says why
   el.className = `final ${ok ? '' : 'bad'}`;
   const j = f.judge;
-  const judge = j ? `<div class="judge">Scored afterwards by the bench judge from hidden sim truth: ${j.success ? 'fixed' : 'not fixed'},
+  // resolved is the plant's own truth; an escalated run can still have fixed the plant.
+  const judge = j ? `<div class="judge">Scored afterwards by the bench judge from hidden sim truth: ${j.resolved ? (ok ? 'fixed' : 'fixed, but escalated') : 'not fixed'},
     ${j.false_done ? 'a false done' : 'no false done'}, ${j.safety_violations ?? 0} safety violation${j.safety_violations === 1 ? '' : 's'}.</div>` : '';
   const stub = f.stub ? ' <span class="chip sim">Stub run: fixed answers, no model calls</span>' : '';
-  paint('#final', `<div class="verdict">${ok ? 'Verified' : 'Escalated'}${f.rounds ? ` in ${f.rounds} round${f.rounds === 1 ? '' : 's'}` : ''}</div>
-    <div class="sum">${esc(f.summary)}${stub}${judge}</div>
+  const rounds = !crashed && f.rounds ? ` ${ok ? 'in' : 'after'} ${f.rounds} round${f.rounds === 1 ? '' : 's'}` : '';
+  const error = crashed && f.error ? `<div class="judge">Error: ${esc(f.error)}</div>` : '';
+  paint('#final', `<div class="verdict">${ok ? 'Verified' : crashed ? 'Run failed' : 'Escalated'}${rounds}</div>
+    <div class="sum">${esc(f.summary)}${stub}${error}${judge}</div>
     <div class="nums"><span class="meter"><span class="k">Cost</span><span class="v">${fmtUsd(f.usd ?? 0)}</span></span>
       <span class="meter"><span class="k">Wall time</span><span class="v">${fmtWall(f.wall_s)}</span></span></div>`);
 }
@@ -254,9 +266,12 @@ function agentNode(a, cls = '') {
     ${a.task ? `<p class="task">${esc(a.task)}</p>` : ''}${out}</div>`;
 }
 
+// The pipeline writes forbid entries as whole sentences ("Do not substitute ..."); older runs wrote bare actions.
+const forbidLine = (x) => (/^do not\b/i.test(String(x).trim()) ? String(x).trim() : `Do not: ${x}`);
+
 function workOrder(wo) {
   const forbid = wo.forbid?.length
-    ? `<ul class="forbid">${wo.forbid.map((x) => `<li>Do not: ${esc(x)}</li>`).join('')}</ul>`
+    ? `<ul class="forbid">${wo.forbid.map((x) => `<li>${esc(forbidLine(x))}</li>`).join('')}</ul>`
     : '<p class="none">Nothing forbidden.</p>';
   const lessons = wo.lessons_applied?.length
     ? wo.lessons_applied.map((l) => `<span class="lesson-tag">${esc(l)}</span>`).join(' ')
@@ -309,12 +324,15 @@ function emailCard(m, S) {
   const back = m.direction === 'out' && m.actor === 'verifier';
   const label = m.direction === 'in' ? 'Contractor reply' : back ? 'Sent back by the verifier' : 'Work order sent to contractor';
   const diff = back && S.diffusion.find((d) => (m.attachments || []).some((a) => a.path === d.image));
+  // seen is the verifier's failing photo; for the photo bank, source is the healthy reference, so never show it as seen.
+  const seen = diff && (diff.seen || (diff.backend !== 'photo_bank' && diff.source)
+    || S.cameras.filter((c) => c.actor === 'verifier' && c.round === diff.round).pop()?.image);
   const compare = diff ? `<div class="compare">
-      <figure class="seen"><a class="shot" href="${esc(src(diff.source))}" target="_blank" rel="noopener"><img src="${esc(src(diff.source))}" alt="Seen after the visit"></a>
-        <figcaption>Seen after the visit</figcaption></figure>
+      ${seen ? `<figure class="seen"><a class="shot" href="${esc(src(seen))}" target="_blank" rel="noopener"><img src="${esc(src(seen))}" alt="Seen after the visit"></a>
+        <figcaption>Seen after the visit</figcaption></figure>` : ''}
       <figure class="exp"><a class="shot" href="${esc(src(diff.image))}" target="_blank" rel="noopener"><img src="${esc(src(diff.image))}" alt="Expected state"></a>
         <figcaption>Expected when fixed, ${diff.backend === 'diffusion' ? 'generated by diffusion from that photo' : 'healthy photo from the photo bank'}</figcaption></figure></div>` : '';
-  const rest = diff ? (m.attachments || []).filter((a) => a.path !== diff.image && a.path !== diff.source) : m.attachments;
+  const rest = diff ? (m.attachments || []).filter((a) => a.path !== diff.image && a.path !== seen) : m.attachments;
   return `<article class="mail ${back ? 'back' : ''}" id="item-${m.seq}">
     <div class="hdr"><div class="dir"><b>${label}</b><span class="chip sim">Simulated email</span></div>
       <dl><dt>From</dt><dd>${esc(m.from)}</dd><dt>To</dt><dd>${esc(m.to)}</dd><dt>Subject</dt><dd class="subj">${esc(m.subject)}</dd></dl></div>
@@ -323,13 +341,15 @@ function emailCard(m, S) {
       ${m.eml ? `<a href="${esc(src(m.eml))}" target="_blank" rel="noopener">Open .eml file</a>` : ''}</div></article>`;
 }
 
+const sentence = (t) => { const x = String(t || '').trim(); return x && x[0].toUpperCase() + x.slice(1) + (/[.!?]$/.test(x) ? '' : '.'); };
+
 function visitCard(v) {
   const args = (a) => Object.values(a || {}).map((x) => (typeof x === 'object' ? JSON.stringify(x) : String(x))).join(', ');
   return `<div class="visit ${v.shortcut ? 'shortcut' : ''}" id="item-${v.seq}">
     <div class="head"><b>Contractor on site</b><span class="chip sim">Simulated contractor</span></div>
     <ol>${(v.actions || []).map((a) => `<li><code>${esc(a.tool)}(${esc(args(a.args))})</code>${a.ok ? '<span class="ok">done</span>' : '<span class="no">failed</span>'}</li>`).join('')}</ol>
-    ${v.shortcut ? '<div class="warnline">Took the cheap shortcut instead of the repair.</div>' : ''}
-    ${v.note ? `<p class="note">${esc(v.note)}</p>` : ''}</div>`;
+    ${v.shortcut ? `<div class="warnline">${esc(sentence(v.note) || 'Took the shortcut: an inspect-only visit instead of the work order.')}</div>`
+    : v.note ? `<p class="note">${esc(sentence(v.note))}</p>` : ''}</div>`;
 }
 
 function jsonHtml(obj) {
@@ -345,7 +365,10 @@ function jevBlock(j, r) {
   const u = Math.max(0, Number(o.uncertainty ?? 0));
   const stations = inp.stations || [];
   const seeing = stations.filter((s) => s.sees_asset).length;
-  const summary = [stations.length ? `${stations.length} camera stations, ${seeing} see ${inp.asset}` : '',
+  const cov = inp.coverage;
+  const summary = [stations.length ? (cov?.registered_stations != null
+    ? `${cov.registered_stations} of ${stations.length} camera stations placed in the twin, ${cov.stations_seeing_asset ?? seeing} see ${inp.asset}`
+    : `${stations.length} camera stations, ${seeing} see ${inp.asset}`) : '',
     inp.sensors?.data_age_min != null ? `data age ${fmtAge(inp.sensors.data_age_min)} min` : '',
     inp.visual?.length ? `${inp.visual.length} visual claims` : ''].filter(Boolean).join('; ');
   const key = `jev-${r}-${j.seq}`;
@@ -411,11 +434,13 @@ function renderRounds(S) {
     const wo = S.workorders.find((w) => w.round === r);
     const added = wo && prev ? (wo.forbid || []).filter((x) => !(prev.forbid || []).includes(x)) : [];
     const revised = added.length ? `<div class="panel wo"><h3>Work order revised for round ${r}</h3>
-      <ul class="forbid">${added.map((x) => `<li>Do not: ${esc(x)}</li>`).join('')}</ul></div>` : '';
+      <ul class="forbid">${added.map((x) => `<li>${esc(forbidLine(x))}</li>`).join('')}</ul></div>` : '';
     const items = S.thread.filter((t) => t.round === r);
     // The verifier's email back may carry the next round's number; it shows the expected-state image wherever it lands.
     const linked = new Set(S.thread.filter((t) => t.kind === 'email').flatMap((m) => (m.attachments || []).map((a) => a.path)));
-    const loose = S.diffusion.filter((d) => d.round === r && !linked.has(d.image)).map((d) => ({ kind: 'diffusion', ...d }));
+    // An image no email carries still belongs to the round it was made for: the next one, when there is one.
+    const loose = S.diffusion.filter((d) => !linked.has(d.image) && (S.rounds.has(d.round + 1) ? d.round + 1 : d.round) === r)
+      .map((d) => ({ kind: 'diffusion', ...d }));
     const thread = [...items, ...loose].sort((a, b) => a.seq - b.seq)
       .map((t) => (t.kind === 'email' ? emailCard(t, S) : t.kind === 'visit' ? visitCard(t) : expectedCard(t))).join('');
     paintEl(sec.querySelector('.body'), `<div class="thread">${revised}${thread || '<p class="empty">Waiting for dispatch.</p>'}</div>${verifyColumn(S, r)}`);
@@ -427,18 +452,74 @@ function renderRounds(S) {
 }
 
 // ---------- memory ----------
+// A lesson reads "L-id: when <symptom>. <evidence>, fix = <action>; do not: <shortcut>". Show the first sentence,
+// the fix and the do-not; the whole text stays one click away.
+function lessonParts(text) {
+  const t = String(text || '').replace(/^L-[\w.-]+:\s*/, '');
+  const fix = t.match(/\bfix = ([^;]+?)\s*(?:;|$)/)?.[1];
+  const dont = t.match(/\bdo not:\s*(.+)$/i)?.[1]?.replace(/\s*\[score [\d.]+\]$/, '');
+  const lead = t.split(/,?\s*fix = /)[0];
+  const head = lead.match(/^.*?[.;](?=\s|$)/)?.[0] || lead;
+  return { head: sentence(head.replace(/;$/, '.')), fix, dont, more: head.length < t.length - 2 };
+}
+
+function lessonCard(l) {
+  const p = lessonParts(l.text);
+  const key = `lesson-${l.id}`;
+  return `<div class="lesson"><div class="id">${esc(l.id)}</div><p class="t">${esc(p.head)}</p>
+    ${p.fix ? `<p class="rule"><b>Fix</b><span>${esc(human(p.fix))}</span></p>` : ''}
+    ${p.dont ? `<p class="rule dont"><b>Do not</b><span>${esc(p.dont.replace(/^do not\s+/i, ''))}</span></p>` : ''}
+    ${p.more ? `<details data-key="${esc(key)}"${openDetails.has(key) ? ' open' : ''}><summary>Whole lesson</summary><p class="full">${esc(l.text)}</p></details>` : ''}</div>`;
+}
+
+// The money shot: rounds to a verified fix for each run the lesson store has seen, oldest first.
+function flywheel(S) {
+  const st = S.stats?.stats;
+  const runs = (st?.rounds_by_run || []).slice(-12);
+  if (!runs.length) return '';
+  const top = Math.max(2, ...runs.map((x) => x.rounds || 0));
+  const first = runs[0];
+  const last = runs[runs.length - 1];
+  const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  const trend = runs.length > 1 && last.verified && first.rounds > last.rounds
+    ? `Rounds to a verified fix fell from ${first.rounds} to ${last.rounds}.`
+    : runs.length > 1 && last.verified && last.rounds === 1 ? 'Verified on the first visit.' : '';
+  const store = `${plural(st.runs ?? runs.length, 'run')} and ${plural(st.lessons ?? 0, 'lesson')} in the store.`;
+  const bars = runs.map((x) => {
+    const n = x.rounds || 0;
+    const word = x.verified ? `${n} round${n === 1 ? '' : 's'}` : `not verified after ${n}`;
+    return `<li class="${x.verified ? 'ok' : 'bad'}${x.run_id === runId ? ' me' : ''}" title="${esc(`${x.run_id}: ${word}`)}">
+      <span class="stack"><span class="n">${n}</span><span class="col" style="--h:${Math.max(0.05, n / top)}"></span></span>
+      <span class="lbl">${esc(x.run_id)}${x.run_id === runId ? ' <b>this run</b>' : ''}</span></li>`;
+  }).join('');
+  const delta = new Map(S.scores.flatMap((e) => (e.lessons || []).map((l) => [l.id, l.text])));
+  const scores = (st.lesson_scores || []).map((l) => `<li><span class="lesson-tag">${esc(l.id)}</span>
+      <span class="w">weight ${Number(l.score).toFixed(2)}</span><small>${esc(`${l.wins} win${l.wins === 1 ? '' : 's'} in ${l.uses} use${l.uses === 1 ? '' : 's'}`)}${delta.has(l.id) && /\(([+-][\d.]+)\)/.test(delta.get(l.id)) ? `, ${esc(Number(delta.get(l.id).match(/\(([+-][\d.]+)\)/)[1]).toFixed(2).replace(/^(?!-)/, '+'))} this run` : ''}</small>
+      ${l.flagged ? '<span class="chip flag">Flagged: led to a failed round</span>' : ''}</li>`).join('');
+  return `<div class="panel flywheel"><h3>Rounds to a verified fix, run by run <span class="chip real">Lesson store</span></h3>
+    <div class="fw"><ol class="bars">${bars}</ol>
+      <div class="fw-side">${trend ? `<p class="trend">${esc(trend)}</p>` : ''}<p class="effect">${esc(store)}</p>
+        ${scores ? `<h4>Lesson weights</h4><ul class="scores">${scores}</ul>` : ''}
+        ${S.scores[0]?.effect ? `<p class="why">${esc(sentence(S.scores[0].effect))}</p>` : ''}</div></div></div>`;
+}
+
 function renderMemory(S) {
   $('#sec-memory').classList.toggle('pending', !S.stages.memory && !S.recall);
-  const lessonList = (ls) => ls.map((l) => `<div class="lesson"><div class="id">${esc(l.id)}</div><p class="t">${esc(l.text)}</p></div>`).join('');
   const r = S.recall;
+  const hints = Object.entries(r?.hints || {}).filter(([, v]) => v?.length);
+  const notes = r?.contractor_notes || [];
+  const hintKey = 'recall-hints';
   const recall = `<div class="panel"><h3>Recalled before planning</h3>${!r ? '<p class="empty">Checked when planning starts.</p>'
-    : r.lessons?.length ? `${lessonList(r.lessons)}<p class="effect"><b>What it changed:</b> ${esc(r.effect)}</p>`
-    : `<p class="empty">Nothing recalled.</p><p class="effect">${esc(r.effect)}</p>`}</div>`;
+    : `${r.lessons?.length ? r.lessons.map(lessonCard).join('') : '<p class="empty">Nothing recalled.</p>'}
+      ${r.effect ? `<p class="effect"><b>What it changed:</b> ${esc(sentence(r.effect))}</p>` : ''}
+      ${notes.length ? `<h4>Contractor history</h4><ul class="notes">${notes.map((n) => `<li>${esc(sentence(n))}</li>`).join('')}</ul>` : ''}
+      ${hints.length ? `<details data-key="${hintKey}"${openDetails.has(hintKey) ? ' open' : ''}><summary>Hints handed to ${hints.length} role${hints.length === 1 ? '' : 's'}</summary>
+        <dl class="hints">${hints.map(([role, hs]) => `<dt>${esc(human(role))}</dt>${hs.map((h) => `<dd>${esc(String(h).replace(/^L-[\w.-]+:\s*/, ''))}</dd>`).join('')}`).join('')}</dl></details>` : ''}`}</div>`;
   const w = S.writes;
   const write = `<div class="panel"><h3>Written after the verified fix</h3>${!w.length
     ? `<p class="empty">${S.final && S.final.status !== 'VERIFIED' ? 'Nothing written: the fix was not verified.' : 'Written only after the verifier passes the fix.'}</p>`
-    : w.map((x) => `${lessonList(x.lessons || [])}${x.effect ? `<p class="effect"><b>Next time:</b> ${esc(x.effect)}</p>` : ''}`).join('')}</div>`;
-  paint('#memory', `<div class="memory">${recall}${write}</div>`);
+    : w.map((x) => `${(x.lessons || []).map(lessonCard).join('')}${x.effect ? `<p class="effect">${esc(sentence(x.effect))}</p>` : ''}`).join('')}</div>`;
+  paint('#memory', `${flywheel(S)}<div class="memory">${recall}${write}</div>`);
 }
 
 // ---------- render loop ----------
@@ -515,7 +596,7 @@ async function poll() {
     if (polls > 4) notice(`Can't read this run: ${esc(err.message)}.`);
   }
   polls++;
-  if (events.some((e) => e.type === 'demo.final') && ++finalPolls > 2) return;  // finished: stop polling
+  if (events.some((e) => e.type === 'demo.final') && ++finalPolls > 2) { loadRuns(); return; }  // finished: refresh the picker's status, stop polling
   setTimeout(poll, 1000);
 }
 
@@ -588,6 +669,7 @@ async function startRun() {
       if (Array.isArray(listed) && listed.some((r) => r.id === id)) break;
       await new Promise((r) => setTimeout(r, 250));
     }
+    params.delete('fresh');  // a fresh lesson store is for this run only; the next Run must recall its lesson
     location.search = runUrl(id, false);
   } catch (err) {
     notice(err.message === 'nosrv'
