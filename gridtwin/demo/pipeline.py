@@ -20,7 +20,8 @@ from gridtwin.agents.common import minutes_between, tel_latest
 from gridtwin.demo import brains as B
 from gridtwin.demo import memory as M
 from gridtwin.demo import recursion as R
-from gridtwin.demo.contractors import OPS_ADDR, Contractor, Mailbox, contractor_for, rel, work_order_email
+from gridtwin.demo.contractors import (OPS_ADDR, SHORTCUT_FORBID, Contractor, Mailbox, contractor_for, rel,
+                                       work_order_email)
 from gridtwin.demo.events import SUBAGENT_ROLES, LockedLog
 from gridtwin.sim import episode
 from gridtwin.sim.camera import REPO
@@ -34,7 +35,6 @@ VISUAL_CONF = 0.7       # the verifier's bar for a camera check (same as the ful
 MAX_ROUNDS = 3
 POINTS = ["ac_kw", "dc_kw", "status", "heatsink_c"]
 HEALTHY_CLAIM = "The inverter's front display or touchscreen is lit and showing live readings; it is not dark or blank."
-SHORTCUT_FORBID = "Do not substitute an inspect-only visit or a power-cycle for the work order; it does not restore a failed comms card."
 TWIN_SCENE = os.environ.get("GRIDTWIN_TWIN_SCENE", "_dev")
 
 

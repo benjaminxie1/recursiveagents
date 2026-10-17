@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from gridtwin.demo import brains as B
-from gridtwin.demo.contractors import SHORTCUT_WORDS, forbids_shortcut
+from gridtwin.demo.contractors import SHORTCUT_FORBID, SHORTCUT_FORBID_PREFIX, SHORTCUT_WORDS, forbids_shortcut
 from gridtwin.demo.pipeline import run_demo
 
 
@@ -114,8 +114,11 @@ def test_verifier_picks_a_camera_the_contractor_did_not_use(two_runs):
 
 def test_shortcut_rule():
     assert not forbids_shortcut({"forbid": ["Do not work energized"]})
-    for w in SHORTCUT_WORDS:
-        assert forbids_shortcut({"forbid": [f"no {w} visits"]})
+    for w in SHORTCUT_WORDS:  # the planner's free text never bans the shortcut, whatever words it uses
+        assert not forbids_shortcut({"forbid": [f"no {w} visits"]})
+    assert not forbids_shortcut({"forbid": ["Do not skip the power cycle; comms will not restore until the module reinitializes."]})
+    assert forbids_shortcut({"forbid": [SHORTCUT_FORBID]})
+    assert forbids_shortcut({"forbid": [f"{SHORTCUT_FORBID_PREFIX} (Mesa Electrical Field Services did on run r1)."]})
 
 
 def test_server_rejects_bad_scenario():
@@ -191,3 +194,20 @@ def test_redispatch_image_says_which_photo_the_verifier_saw(two_runs):
     runs, _, _ = two_runs
     diff = of(events(runs / "r1"), "demo.diffusion")
     assert diff and "seen" in diff[0]
+
+
+def test_planner_text_about_power_cycles_does_not_cancel_the_shortcut(tmp_path, monkeypatch):
+    """Golden run at 0980751: the planner wrote 'Do not skip the power cycle', keyword matching read it as a ban on the
+    shortcut, and a fresh run passed in round 1 with no catch. Only the system's own sentence forbids the shortcut."""
+    real = B.StubBrains.subagent
+
+    def wordy(self, role, task, diagnosis, lessons, model_role="worker"):
+        out = real(self, role, task, diagnosis, lessons, model_role)
+        if role == "repair":
+            out = {**out, "do_not": ["Do not skip the power cycle; comms will not restore until the module reinitializes."]}
+        return out
+
+    monkeypatch.setattr(B.StubBrains, "subagent", wordy)
+    res = run_demo(stub=True, memory_dir=tmp_path / "kb", run_id="wordy", runs_dir=tmp_path / "runs")
+    visits = of(events(tmp_path / "runs" / "wordy"), "demo.contractor")
+    assert visits[0]["shortcut"] is True and res["rounds"] == 2 and res["status"] == "VERIFIED"
