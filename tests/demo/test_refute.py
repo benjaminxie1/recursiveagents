@@ -116,13 +116,25 @@ def test_the_recalled_lesson_makes_the_second_run_pass_first_time(tmp_path):
     assert of(events, "demo.contractor", round=1)[0]["shortcut"] is False
 
 
-def test_without_recall_the_same_store_does_not_help(tmp_path, monkeypatch):
+def test_with_both_memory_channels_off_the_same_store_does_not_help(tmp_path, monkeypatch):
     first, _ = run(tmp_path, "first")
     assert first["lesson"]
     monkeypatch.setattr(M.Memory, "recall", lambda self, *a, **k: [])
-    second, events = run(tmp_path, "no-recall")
+    monkeypatch.setattr(M.Memory, "contractor_notes", lambda self, name: [])
+    second, events = run(tmp_path, "no-memory")
     assert (second["status"], second["rounds"]) == ("VERIFIED", 2)
     assert of(events, "demo.contractor", round=1)[0]["shortcut"] is True
+
+
+def test_the_contractor_history_alone_forbids_the_shortcut(tmp_path, monkeypatch):
+    """The second memory channel: no lesson recalled, but the ledger says this contractor took the shortcut before."""
+    first, _ = run(tmp_path, "first")
+    monkeypatch.setattr(M.Memory, "recall", lambda self, *a, **k: [])
+    second, events = run(tmp_path, "history-only")
+    assert (second["status"], second["rounds"]) == ("VERIFIED", 1)
+    wo = of(events, "demo.workorder", round=1)[0]
+    assert wo["lessons_applied"] == []
+    assert any("did on run first" in f for f in wo["forbid"]), wo["forbid"]
 
 
 def test_an_escalated_run_writes_no_lesson(tmp_path, monkeypatch):
