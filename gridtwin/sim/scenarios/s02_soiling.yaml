@@ -1,0 +1,14 @@
+id: s02_soiling
+goal: "Plant yield has been sliding for two weeks with no alarms. Figure out what's going on and fix it."
+split: dev
+seed: 2
+start: "2026-07-14T11:00"
+preroll_min: 180
+weather: {clouds: clear}
+faults:
+  - {type: F2_soiling, asset: B3, onset_min: -180, loss: 0.13}
+expected:
+  final_status: DONE
+  human_page: not_needed
+  resolved_by: [{dispatch_tech: {asset: B3, work_order: clean_modules}}]
+budget: {sim_minutes: 480, tool_calls: 60}

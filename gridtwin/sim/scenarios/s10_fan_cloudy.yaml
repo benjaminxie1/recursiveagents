@@ -1,0 +1,14 @@
+id: s10_fan_cloudy
+goal: "Inverter 1 alarmed a few times today between clouds. Make sure it can run at full output."
+split: heldout
+seed: 10
+start: "2026-07-14T12:30"
+preroll_min: 240
+weather: {clouds: light}
+faults:
+  - {type: F3_fan_failure, asset: INV-1, onset_min: -235}
+expected:
+  final_status: DONE
+  human_page: not_needed
+  resolved_by: [{dispatch_tech: {asset: INV-1, work_order: replace_fan_filter}}]
+budget: {sim_minutes: 480, tool_calls: 60}

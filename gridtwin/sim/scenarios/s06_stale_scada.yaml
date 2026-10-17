@@ -1,0 +1,14 @@
+id: s06_stale_scada
+goal: "Plant output looks fine on the dashboard but the owner says revenue is down. Find out why and fix it."
+split: dev
+seed: 6
+start: "2026-07-14T11:00"
+preroll_min: 120
+weather: {clouds: light}
+faults:
+  - {type: F6_stale_scada, asset: INV-3, onset_min: -90}
+expected:
+  final_status: DONE
+  human_page: not_needed
+  resolved_by: [{dispatch_tech: {asset: INV-3, work_order: reseat_comms_card}}]
+budget: {sim_minutes: 480, tool_calls: 60}

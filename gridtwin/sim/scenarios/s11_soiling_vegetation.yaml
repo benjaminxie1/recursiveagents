@@ -1,0 +1,14 @@
+id: s11_soiling_vegetation
+goal: "Blocks 3 and 4 both lag the rest of the plant. Bring the plant back to expected yield."
+split: heldout
+seed: 11
+start: "2026-07-14T14:45"
+preroll_min: 180
+weather: {clouds: clear}
+faults:
+  - {type: F2_soiling, asset: B3, onset_min: -180, loss: 0.11}
+  - {type: F7_vegetation, asset: B4, onset_min: -180, depth: 0.35}
+expected:
+  final_status: DONE
+  human_page: not_needed
+budget: {sim_minutes: 480, tool_calls: 60}

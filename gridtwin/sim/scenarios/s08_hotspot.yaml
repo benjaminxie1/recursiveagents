@@ -1,0 +1,14 @@
+id: s08_hotspot
+goal: "The O&M contractor says block 1 is a little low. Check it and fix whatever is wrong."
+split: heldout
+seed: 8
+start: "2026-07-14T11:30"
+preroll_min: 120
+weather: {clouds: clear}
+faults:
+  - {type: F8_hotspot, asset: CB-1.5, onset_min: -120, string: 7, loss: 0.3}
+expected:
+  final_status: DONE
+  human_page: not_needed
+  resolved_by: [{operate: {asset: CB-1.5, action: isolate}}, {dispatch_tech: {asset: CB-1.5, work_order: replace_module}}]
+budget: {sim_minutes: 480, tool_calls: 60}

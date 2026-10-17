@@ -1,0 +1,14 @@
+id: s04_breaker_trip
+goal: "Block 4 went dark about an hour ago. Restore it."
+split: dev
+seed: 4
+start: "2026-07-14T10:30"
+preroll_min: 120
+weather: {clouds: light}
+faults:
+  - {type: F4_breaker_trip, asset: 52-I4, onset_min: -55}
+expected:
+  final_status: DONE
+  human_page: not_needed
+  resolved_by: [{operate: {asset: 52-I4, action: close}}]
+budget: {sim_minutes: 480, tool_calls: 60}

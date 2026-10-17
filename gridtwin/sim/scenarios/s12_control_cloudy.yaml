@@ -1,0 +1,12 @@
+id: s12_control_cloudy
+goal: "Output has been jumping around all morning. Is something wrong with the plant?"
+split: heldout
+seed: 12
+start: "2026-07-14T11:00"
+preroll_min: 120
+weather: {clouds: heavy}
+faults: []
+expected:
+  final_status: NO_ACTION
+  human_page: not_needed
+budget: {sim_minutes: 480, tool_calls: 60}

@@ -1,0 +1,14 @@
+id: s07_vegetation
+goal: "Block 4 underperforms every afternoon but looks fine in the morning. Find the cause and fix it."
+split: dev
+seed: 7
+start: "2026-07-14T15:00"
+preroll_min: 180
+weather: {clouds: clear}
+faults:
+  - {type: F7_vegetation, asset: B4, onset_min: -180, depth: 0.4}
+expected:
+  final_status: DONE
+  human_page: not_needed
+  resolved_by: [{dispatch_tech: {asset: B4, work_order: mow_vegetation}}]
+budget: {sim_minutes: 480, tool_calls: 60}

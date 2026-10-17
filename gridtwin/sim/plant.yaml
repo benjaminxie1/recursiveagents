@@ -1,0 +1,91 @@
+# 5 MWac solar plant + BESS + substation (docs/SIMULATOR.md §1)
+plant:
+  name: GridTwin Demo Solar
+  rating_kwac: 5000
+  revenue_usd_per_mwh: 45
+  latitude_note: "summer day, solar noon 13:00 local"
+
+inverters:
+  rating_kwac: 1250
+  dc_rating_kw: 1500        # DC/AC ratio 1.2 per block
+  peak_efficiency: 0.983
+  derate_start_c: 50
+  trip_c: 60
+  derate_latch_c: 55
+  derate_release_c: 45
+  derate_limit_frac: 0.6
+  ids: [INV-1, INV-2, INV-3, INV-4]
+
+blocks: {B1: INV-1, B2: INV-2, B3: INV-3, B4: INV-4}
+combiners_per_block: 6
+strings_per_combiner: 12
+
+breakers:
+  52-I1: INV-1
+  52-I2: INV-2
+  52-I3: INV-3
+  52-I4: INV-4
+  52-B1: BESS-1
+  52-M: XFMR-1
+
+bess: {id: BESS-1, power_kw: 2000, energy_kwh: 4000, soc_pct: 60}
+
+transformer:
+  id: XFMR-1
+  rating_kva: 5500
+  oil_rise_full_load_c: 40
+  oil_tau_min: 30
+
+work_orders:          # minutes, usd, needs_deenergized
+  inspect: [30, 400, false]
+  replace_fan_filter: [60, 1800, true]
+  reseat_comms_card: [45, 900, true]
+  replace_mc4_connector: [60, 1200, true]
+  clean_modules: [120, 2500, false]
+  mow_vegetation: [90, 1500, false]
+  replace_module: [90, 2200, true]
+  transformer_oil_service: [120, 6000, true]
+
+diagnostics:          # minutes
+  comms_ping: 10
+  insulation_resistance: 20
+  iv_curve: 30
+  dga_sample: 30
+
+# System > subsystem > component taxonomy plus applicable codes and standards, mirroring the reference
+# demo's classify-then-link-to-codes flow. These are seed references for the KB; workstream 2's researcher
+# fetches and cites the actual clause text via You.com before any agent relies on it.
+taxonomy:
+  INV-:  {system: power_conversion, subsystem: central_inverters, component: inverter,
+          standards: [NEC-690.41, UL-1741, IEEE-1547, NFPA-70E-120, NFPA-70B, OEM-INV-MANUAL]}
+  CB-:   {system: pv_generation, subsystem: dc_collection, component: combiner_box,
+          standards: [NEC-690.41, NEC-690.11, NFPA-70E-120, OEM-CB-MANUAL]}
+  B:     {system: pv_generation, subsystem: pv_array, component: pv_block,
+          standards: [CFC-1205, CFC-1205.5.1, NEC-691, OEM-MODULE-MANUAL]}
+  52-:   {system: mv_collection, subsystem: switchgear, component: breaker,
+          standards: [NFPA-70E-120, NFPA-70B]}
+  XFMR-: {system: substation, subsystem: step_up_transformer, component: transformer,
+          standards: [IEEE-C57.104, IEEE-C57.91, NFPA-70B]}
+  BESS-: {system: energy_storage, subsystem: bess, component: battery_system,
+          standards: [CFC-1207, NFPA-855]}
+  POI-:  {system: interconnection, subsystem: revenue_metering, component: revenue_meter,
+          standards: [IEEE-1547]}
+  MET-:  {system: monitoring, subsystem: weather, component: met_station, standards: []}
+
+standards:
+  NEC-690.41: "NFPA 70 (NEC) 690.41: PV system grounding and DC ground-fault detection"
+  NEC-690.11: "NFPA 70 (NEC) 690.11: DC arc-fault circuit protection"
+  NEC-691: "NFPA 70 (NEC) Article 691: large-scale PV electric supply stations (5 MW and up)"
+  NFPA-70E-120: "NFPA 70E Article 120: establishing an electrically safe work condition (lockout/tagout)"
+  NFPA-70B: "NFPA 70B: standard for electrical equipment maintenance"
+  UL-1741: "UL 1741: inverters, converters and interconnection equipment"
+  IEEE-1547: "IEEE 1547-2018: interconnection of distributed energy resources"
+  IEEE-C57.104: "IEEE C57.104: interpretation of gases generated in mineral-oil-immersed transformers (DGA)"
+  IEEE-C57.91: "IEEE C57.91: loading guide for mineral-oil-immersed transformers"
+  CFC-1205: "California Fire Code section 1205: solar photovoltaic power systems"
+  CFC-1205.5.1: "California Fire Code 1205.5.1: vegetation control around ground-mounted PV arrays"
+  CFC-1207: "California Fire Code section 1207: electrical energy storage systems"
+  NFPA-855: "NFPA 855: installation of stationary energy storage systems"
+  OEM-INV-MANUAL: "Inverter OEM installation and O&M manual (cooling, comms card, GFDI reset procedure)"
+  OEM-CB-MANUAL: "Combiner box OEM manual (string fusing, connector replacement)"
+  OEM-MODULE-MANUAL: "PV module OEM manual (cleaning, hot spots, replacement)"
