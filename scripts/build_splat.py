@@ -292,6 +292,9 @@ HORIZON = SOURCES / "topaz_maint.jpg"
 SOIL_BOX = (0.0, 0.86, 0.3, 1.0)
 COMBINER = SOURCES / "combiner.jpg"
 COMBINER_BOX = (0.16, 0.18, 0.36, 0.43)
+SWITCHGEAR = SOURCES / "switchgear.jpg"             # Siemens MV panel front
+CONTAINER = SOURCES / "container.jpg"               # BESS container long side
+METAL_WALL = SOURCES / "metal_building.jpg"         # corrugated steel wall
 
 
 # ---------- layout: where every asset sits (world x, y, z) ----------
@@ -360,8 +363,8 @@ def ground(g):
     # far plain out to the horizon ring, then the near soil, then the graded site inside the fence
     ground_patch(g, -440, 760, -475, 725, 6.0, dirt, y=-0.05, thick=0.02, jitter=0.2, hole=(-56, 376, -66, 316))
     for x0, x1, z0, z1 in ((-60, 380, -70, -8), (-60, 380, 250, 320), (-60, 2, -8, 250), (318, 380, -8, 250)):
-        ground_patch(g, x0, x1, z0, z1, 0.9, dirt, y=-0.02, thick=0.04)
-    ground_patch(g, 2, 318, -8, 250, 0.5, site_ground, y=0.0, thick=0.02)
+        ground_patch(g, x0, x1, z0, z1, 1.1, dirt, y=-0.02, thick=0.04)
+    ground_patch(g, 2, 318, -8, 250, 0.62, site_ground, y=0.0, thick=0.02)
     ground_patch(g, 148, 172, 250, 262, 0.42, site_ground, y=0.005, thick=0.02)
     # cable trenches: fresh backfill strips from each block to its inverter and along the collector bus
     for z in ROW_Z:
@@ -410,12 +413,12 @@ def pv_block(g, b):
         return base
     for dz in PANEL_ROWS:
         c = np.array([(x0 + x1) / 2, 1.3, z0 + dz])
-        g.face(c, u, v, (0.1, 0.14, 0.28), 0.17, thick=0.015, jitter=0.15, noise=0.02,
+        g.face(c, u, v, (0.1, 0.14, 0.28), 0.2, thick=0.015, jitter=0.15, noise=0.02,
                color_fn=lambda s, t: 0.4 * tex(PANELS, PANELS_BOX, (length / 9, 1), mirror=True)(s, t) + 0.6 * cells(s, t))
         g.face(c - np.array([0, 0.18, 0]), u * 0.98, v * 0.9, (0.3, 0.3, 0.32), 0.6, thick=0.015, noise=0.02)  # rear sheet
         for px in np.arange(x0 + 2, x1, 6):  # posts and torque tube
-            g.box((px, 0.6, z0 + dz + 0.4), (0.1, 1.2, 0.1), (0.62, 0.62, 0.64), step=0.1, shade=True)
-            g.box((px, 0.5, z0 + dz - 0.4), (0.1, 1.0, 0.1), (0.62, 0.62, 0.64), step=0.1, shade=True)
+            g.box((px, 0.6, z0 + dz + 0.4), (0.1, 1.2, 0.1), (0.62, 0.62, 0.64), step=0.2, shade=True)
+            g.box((px, 0.5, z0 + dz - 0.4), (0.1, 1.0, 0.1), (0.62, 0.62, 0.64), step=0.2, shade=True)
         g.cylinder((x0, 1.2, z0 + dz), 0.06, length, (0.6, 0.6, 0.62), step=0.35, axis="x")
         caster((x0 + x1) / 2, z0 + dz, length, depth * math.cos(TILT) * 0.9, 1.45)
 
@@ -549,10 +552,8 @@ def switchgear(g, name):
     g.box((x, 0.1, z), (4.4, 0.2, 2.4), CONCRETE, step=0.15, grime=0.1)
     for dx in (-1.25, 1.25):
         g.box((x + dx, 1.1, z), (1.2, 1.8, 1.0), (0.7, 0.72, 0.72), step=0.05)
-        g.face((x + dx, 1.1, z - 0.504), (-0.02, 0, 0), (0, 1.6, 0), (0.25, 0.26, 0.26), 0.02, thick=0.003)   # door seam
-        g.face((x + dx - 0.35, 1.15, z - 0.505), (-0.06, 0, 0), (0, 0.18, 0), (0.15, 0.15, 0.15), 0.02, thick=0.01)  # latch
-        for k in range(4):                                                          # louvres near the top
-            g.face((x + dx, 1.65 - 0.05 * k, z - 0.505), (-0.6, 0, 0), (0, 0.018, 0), (0.3, 0.31, 0.31), 0.02, thick=0.003)
+        g.face((x + dx, 1.1, z - 0.504), (-1.16, 0, 0), (0, 1.76, 0), (0.7, 0.72, 0.72), 0.02, thick=0.003, noise=0.01,
+               color_fn=tex(SWITCHGEAR, gain=1.05), overlap=1.3)                                     # panel front, from the photo
         label(g, (x + dx + 0.25, 1.35, z - 0.506), "z", 0.22, 0.14, WARN, sign=-1)
     g.box((x, 2.05, z - 0.05), (3.8, 0.1, 1.2), (0.62, 0.64, 0.64), step=0.06, cast=False)       # drip roof over the lineup
     caster(x, z, 3.8, 1.2, 2.1)
@@ -638,8 +639,8 @@ def control_house(g):
     bx, bz = 112.0, 233.0
     g.box((bx, 0.1, bz), (13, 0.2, 6.5), CONCRETE, step=0.15, grime=0.1)
     g.box((bx, 0.2 + 1.5, bz), (12, 3.0, 5.0), (0.86, 0.85, 0.8), step=0.08, grime=0.3)
-    for k in range(24):                                                     # standing-seam ribs on the south wall
-        g.face((bx - 5.75 + 0.5 * k, 1.7, bz + 2.505), (0.04, 0, 0), (0, 2.9, 0), (0.72, 0.71, 0.66), 0.03, thick=0.003)
+    g.face((bx, 1.7, bz + 2.505), (12, 0, 0), (0, 3.0, 0), (0.86, 0.85, 0.8), 0.06, thick=0.003, noise=0.01,
+           color_fn=tex(METAL_WALL, tile=(4, 1), gain=1.1), overlap=1.3)                         # corrugated steel south wall
     g.box((bx, 3.3, bz), (12.6, 0.2, 5.6), (0.5, 0.52, 0.5), step=0.1, cast=False)
     caster(bx, bz, 12.6, 5.6, 3.4)
     g.face((bx - 3.0, 1.25, bz + 2.51), (1.0, 0, 0), (0, 2.1, 0), (0.45, 0.5, 0.55), 0.03, thick=0.004)    # door
@@ -699,8 +700,10 @@ def site(g):
     x, _, z = ANCHORS["BESS-1"]
     for dz in (-1.6, 1.6):                                                          # two battery containers
         g.box((x - 2, 1.4, z + dz), (12.0, 2.6, 2.4), (0.9, 0.9, 0.88), step=0.12)
-        for k in range(5):
-            g.face((x - 7 + 2.4 * k + 1.2, 1.4, z + dz + 1.206), (0.04, 0, 0), (0, 2.4, 0), (0.6, 0.6, 0.6), 0.02, thick=0.004)
+        for sgn in (-1, 1):                                                         # long sides, from the BESS photo
+            g.face((x - 2, 1.4, z + dz + sgn * 1.206), (11.9 * sgn, 0, 0), (0, 2.55, 0), (0.9, 0.9, 0.88), 0.06, thick=0.004,
+                   noise=0.01, color_fn=tex(CONTAINER, tile=(2, 1)), overlap=1.3)
+        g.box((x + 4.4, 1.6, z + dz), (0.8, 1.4, 1.6), (0.82, 0.83, 0.82), step=0.05)                           # HVAC unit on the end
     x, _, z = ANCHORS["MET-1"]
     g.cylinder((x, 0, z), 0.05, 3.0, (0.6, 0.6, 0.6), step=0.04)
     g.face((x, 2.8, z), (0.6, 0, 0), (0, 0.3, -0.3), (0.1, 0.13, 0.25), 0.04, thick=0.005)
