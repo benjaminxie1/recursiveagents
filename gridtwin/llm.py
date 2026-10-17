@@ -267,7 +267,7 @@ def chat(role: str, messages: list, max_tokens: int = 2048, *, log=None, actor=N
         rec = USAGE.add(role, model, getattr(resp, "usage", None), latency)
         if log is not None:
             try:
-                log.emit(actor, "usage", rec)
+                log.emit(actor, "usage", {**rec, **_glimpse(resp)})
             except Exception as e:  # never let logging break a model call
                 _logger.warning("usage event emit failed: %s", e)
         if not _ran_out_of_tokens(resp):
@@ -306,6 +306,20 @@ def text(resp) -> str:
 
 def tool_calls(resp) -> list:
     return list(getattr(_message(resp), "tool_calls", None) or [])
+
+
+def _glimpse(resp) -> dict:
+    """The start of what the model thought and said, for the dashboard's live agent view (additive usage fields)."""
+    try:
+        out = {}
+        if think := reasoning(resp).strip():
+            out["thinking"] = think[:600]
+        m = _message(resp)
+        if isinstance(said := getattr(m, "content", None), str) and said.strip():
+            out["said"] = said.strip()[:300]
+        return out
+    except Exception:
+        return {}
 
 
 def reasoning(resp) -> str:

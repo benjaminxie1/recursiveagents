@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from gridtwin.demo import brains as B
-from gridtwin.demo.contractors import SHORTCUT_WORDS, forbids_shortcut
+from gridtwin.demo.contractors import SHORTCUT_FORBID, SHORTCUT_FORBID_PREFIX, SHORTCUT_WORDS, forbids_shortcut
 from gridtwin.demo.pipeline import run_demo
 
 
@@ -114,8 +114,11 @@ def test_verifier_picks_a_camera_the_contractor_did_not_use(two_runs):
 
 def test_shortcut_rule():
     assert not forbids_shortcut({"forbid": ["Do not work energized"]})
-    for w in SHORTCUT_WORDS:
-        assert forbids_shortcut({"forbid": [f"no {w} visits"]})
+    for w in SHORTCUT_WORDS:  # the planner's free text never bans the shortcut, whatever words it uses
+        assert not forbids_shortcut({"forbid": [f"no {w} visits"]})
+    assert not forbids_shortcut({"forbid": ["Do not skip the power cycle; comms will not restore until the module reinitializes."]})
+    assert forbids_shortcut({"forbid": [SHORTCUT_FORBID]})
+    assert forbids_shortcut({"forbid": [f"{SHORTCUT_FORBID_PREFIX} (Mesa Electrical Field Services did on run r1)."]})
 
 
 def test_server_rejects_bad_scenario():
@@ -147,12 +150,13 @@ def test_planner_overrides_a_repair_subagent_that_picks_the_wrong_fix(tmp_path, 
 def test_work_order_acceptance_demands_only_what_the_verifier_proves():
     from gridtwin.demo.pipeline import ground_acceptance, verifier_acceptance
     invented = ["Heatsink temperature for INV-3 reads between 40.0 C and 41.0 C", "AC power output at least 1150 kW",
-                "Ping latency under 10 ms", "INV-3 display shows live readings after the visit"]
+                "Ping latency under 10 ms", "INV-3 display shows live readings after the visit",
+                "INV-3 SCADA data_age_min under 5", "Cabinet doors closed and latched after the visit"]
     acc, dropped = ground_acceptance(invented, "INV-3")
     assert acc[:4] == verifier_acceptance("INV-3")
-    assert "INV-3 display shows live readings after the visit" in acc
+    assert acc[4:] == ["Cabinet doors closed and latched after the visit"]  # restatements of the bars are not repeated
     assert set(dropped) == set(invented[:3])
-    assert ground_acceptance("INV-3 answers comms_ping", "INV-3")[0][-1] == "INV-3 answers comms_ping"
+    assert ground_acceptance("INV-3 answers comms_ping", "INV-3")[0] == verifier_acceptance("INV-3")
 
 
 def test_model_fields_given_as_strings_stay_whole_steps():
@@ -191,3 +195,32 @@ def test_redispatch_image_says_which_photo_the_verifier_saw(two_runs):
     runs, _, _ = two_runs
     diff = of(events(runs / "r1"), "demo.diffusion")
     assert diff and "seen" in diff[0]
+
+
+def test_planner_text_about_power_cycles_does_not_cancel_the_shortcut(tmp_path, monkeypatch):
+    """Golden run at 0980751: the planner wrote 'Do not skip the power cycle', keyword matching read it as a ban on the
+    shortcut, and a fresh run passed in round 1 with no catch. Only the system's own sentence forbids the shortcut."""
+    real = B.StubBrains.subagent
+
+    def wordy(self, role, task, diagnosis, lessons, model_role="worker"):
+        out = real(self, role, task, diagnosis, lessons, model_role)
+        if role == "repair":
+            out = {**out, "do_not": ["Do not skip the power cycle; comms will not restore until the module reinitializes."]}
+        return out
+
+    monkeypatch.setattr(B.StubBrains, "subagent", wordy)
+    res = run_demo(stub=True, memory_dir=tmp_path / "kb", run_id="wordy", runs_dir=tmp_path / "runs")
+    visits = of(events(tmp_path / "runs" / "wordy"), "demo.contractor")
+    assert visits[0]["shortcut"] is True and res["rounds"] == 2 and res["status"] == "VERIFIED"
+
+
+def test_the_diagnoser_opens_the_stale_suspect_in_the_twin_before_diagnosing(two_runs):
+    from tests.demo.contract import validate_run
+    runs, _, _ = two_runs
+    evs = events(runs / "r1")
+    twin = [e for e in evs if e["type"] == "demo.twin"]
+    dx = next(e for e in evs if e["type"] == "demo.diagnosis")
+    assert len(twin) == 1 and twin[0]["data"]["asset"] == "INV-3" and twin[0]["data"]["action"] == "open"
+    assert twin[0]["seq"] < dx["seq"] and twin[0]["data"]["twin_url"].startswith("twin.html?scene=")
+    # (runs in a temp folder have absolute image paths, which the validator flags separately)
+    assert not [p for p in validate_run(runs / "r1") if "demo.twin" in p or "unknown demo event" in p]

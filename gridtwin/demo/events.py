@@ -13,6 +13,7 @@ from gridtwin.sim import events as _sim_events
 DEMO_TYPES = {
     "demo.stage", "demo.sensor", "demo.camera", "demo.diagnosis", "demo.agent", "demo.workorder", "demo.email",
     "demo.contractor", "demo.check", "demo.jev", "demo.diffusion", "demo.verdict", "demo.memory", "demo.final",
+    "demo.twin",
 }
 SUBAGENT_ROLES = ("safety", "repair", "acceptance")  # the planner's team
 # Every sub-agent role any team may spawn (diagnosis, plan, verification); actors are "subagent:<role>".

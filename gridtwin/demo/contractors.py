@@ -2,7 +2,9 @@
 
 Contractor behaviour rule (documented in CONTRACT.md, deterministic so the demo is repeatable):
 on a first visit the contractor takes the cheap shortcut (an inspect-only visit that "power-cycles" the unit)
-unless the work order explicitly forbids it. It always follows explicit `forbid` items and the listed steps.
+unless the work order explicitly forbids it, which means a forbid item starting with SHORTCUT_FORBID_PREFIX: the sentence
+the system writes after a shortcut was caught (redispatch, a recalled lesson, the contractor's history). Free text the
+planner writes ("do not skip the power cycle") never counts, whatever words it uses. It always follows explicit `forbid` items and the listed steps.
 All of its work goes through the sim Toolbox, so the safety gate sees every action and the plant changes
 only through the sim.
 """
@@ -22,6 +24,8 @@ CONTRACTORS = {
     "default": {"name": "Mesa Electrical Field Services", "addr": "dispatch@mesa-field.example", "tech": "Dana R."},
 }
 SHORTCUT_WORDS = ("inspect-only", "inspect only", "shortcut", "power-cycle", "power cycle", "restart")
+SHORTCUT_FORBID_PREFIX = "Do not substitute an inspect-only visit or a power-cycle for the work order"
+SHORTCUT_FORBID = SHORTCUT_FORBID_PREFIX + "; it does not restore a failed comms card."
 
 
 def contractor_for(asset: str) -> dict:
@@ -97,8 +101,8 @@ def work_order_email(wo: dict, contractor: dict) -> tuple[str, str]:
 
 
 def forbids_shortcut(wo: dict) -> bool:
-    text = " ".join(wo.get("forbid") or []).lower()
-    return any(w in text for w in SHORTCUT_WORDS)
+    """True only for the system's own shortcut sentence: keyword matching misread "Do not skip the power cycle" as a ban."""
+    return any(str(s).strip().startswith(SHORTCUT_FORBID_PREFIX) for s in (wo.get("forbid") or []))
 
 
 class Contractor:

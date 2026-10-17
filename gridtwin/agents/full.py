@@ -175,7 +175,17 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
         if r["added"]:
             log.emit("planner", "dod", {"checks": dod["branches"], "tasks": tasks, "added": r["added"]})
 
+    inbox = run_dir / "reprompt.jsonl"  # the dashboard's operator box appends here
+    read_prompts = 0
+
     for rnd in range(1, max_rounds + 1):
+        lines = inbox.read_text().splitlines() if inbox.exists() else []
+        for line in lines[read_prompts:]:
+            text = (json.loads(line).get("text") or "").strip()[:500]
+            if text:
+                log.emit("operator", "goal", {"text": text, "reprompt": True})
+                replan(rnd, f"the operator says: {text}")
+        read_prompts = len(lines)
         for t in tasks:
             left = sup.calls_left()
             if left is not None and left < VERIFY_RESERVE + 3:

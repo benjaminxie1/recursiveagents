@@ -302,3 +302,33 @@ body.nostations .station, body.nopins .pin { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .pin.st-analyzing .hs::after, .cube { animation: none; }
 }
+
+/* the failed object: its tag stays up, red, with a pulse on the hotspot */
+.pin.failed .tag, .pin.failed .stem { opacity: 1 !important; visibility: visible !important; }
+.pin.failed .tag { border-color: color-mix(in srgb, var(--failed) 70%, transparent); }
+.pin.failed .more { display: flex; }
+.pin.failed .hs { animation: failpulse 1.6s ease-out infinite; }
+@keyframes failpulse { 0% { box-shadow: 0 0 0 0 rgba(255, 90, 95, 0.75); } 100% { box-shadow: 0 0 0 14px rgba(255, 90, 95, 0); } }
+@media (prefers-reduced-motion: reduce) { .pin.failed .hs { animation: none; box-shadow: 0 0 0 4px rgba(255, 90, 95, 0.45); } }
+
+/* case data in the drawer: SCADA table, camera and infrared frames, data files */
+.drawer .failnote { margin: 10px 0 2px; padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.45;
+  background: rgba(255, 90, 95, 0.12); border: 1px solid rgba(255, 90, 95, 0.42); }
+.drawer .failnote b { color: var(--failed); margin-right: 6px; }
+.drawer .failnote div { margin-top: 4px; color: var(--ink-dim); }
+.drawer table.kv { width: 100%; border-collapse: collapse; font-size: 12px; }
+.drawer .kv td { padding: 4px 0; border-bottom: 1px solid var(--line); }
+.drawer .kv td:first-child { color: var(--ink-dim); }
+.drawer .kv td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.drawer .kv + .cap { margin-top: 6px; }
+.drawer .stale { margin-left: 4px; color: var(--failed); font-weight: 600; }
+.drawer ul.spots { margin-top: 6px; gap: 3px; }
+.drawer ul.spots li { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.drawer ul.spots li span:first-child { color: var(--ink-dim); }
+.drawer .files { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.drawer .files a { color: var(--analyzing); text-decoration: none; }
+.drawer .files a:hover { text-decoration: underline; }
+
+/* twin-embed.html sends you in here with ?back=: the chip that walks you back out to the site */
+.chip.back { width: auto; padding: 0 12px 0 8px; gap: 4px; display: inline-flex; align-items: center; font: 500 13px/1 system-ui, sans-serif; }
+.chip.back svg { width: 18px; height: 18px; }

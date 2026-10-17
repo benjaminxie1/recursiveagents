@@ -10,34 +10,37 @@ To finish before the freeze, the 9 scenarios ran as parallel bench processes (`b
 Each row below is that episode's own `judge` event, merged by `scripts/merge_bench_runs.py`.
 The merge rules were set at about 14:16, after s05 and s06b had finished and before any other episode did: a scenario judged twice keeps the episode that finished first, an episode that errors only because API retries ran out is rerun, and any other error counts as a failure. No episode errored, and every scenario judged twice kept the copy that also started first.
 Missing scenarios: none.
+The `baseline` and `self_verify` rows ran with the same flags at exactly `6b507a6`, as 18 single-scenario bench processes started 15:14 PDT (`bench-20261017-151415-baseline` through `bench-20261017-151434-self_verify`), merged the same way with `--agent`. No episode errored, no scenario was judged twice, and no worker restarted after rate limits.
 
 | arm | runs at | claimed done | verified success | false done | correct escalation | paged a human | safety violations | revenue lost | tool calls | tokens in / out |
 |---|---|---|---|---|---|---|---|---|---|---|
 | `full` | 13:25 to 14:52 PDT | 0.0% | 2 of 9 (22.2%) | 0 of 9 (0.0%) | 33.3% | 9 of 9 | 0 | $4,287.88 | 432 | 5,049,350 / 451,958 |
+| `baseline` | 15:14 to 15:18 PDT | 11.1% | 1 of 9 (11.1%) | 1 of 9 (11.1%) | 66.7% | 1 of 9 | 0 | $2,681.87 | 142 | 2,680,888 / 120,597 |
+| `self_verify` | 15:14 to 15:22 PDT | 33.3% | 2 of 9 (22.2%) | 3 of 9 (33.3%) | 88.9% | 1 of 9 | 0 | $2,780.31 | 287 | 6,286,656 / 188,644 |
 
 Verifier on claimed DONE or NO_ACTION outcomes: caught 2, missed 0, false reject 0 (recall 1.0, precision 1.0).
 Rate limits: Crusoe returned 429s throughout; when a worker's retries ran out, the supervisor restarted it from saved history (noted per scenario below). The verifier never failed closed for lack of a model.
 A read-only audit of the parallel processes found no files or caches shared between them (only the Crusoe and Jev API keys), the same code, flags and scenario seeds in each, and that each worker restart lost or repeated no tool calls and cost no extra rounds or budget.
 The safety gate's model questions went to TypeSafe Jev (`DECISION_BACKEND=jev` in this machine's `.env`); without a Jev key the gate asks the Crusoe gate model instead, so check which backend another run's gate used before comparing.
-The baseline rows in the next section ran at `1d2f85d`, before the 13:05 gate change, and are re-running at `6b507a6`; compare the two sections with that in mind.
+The baselines' gate used the same backend (same `.env`). The baseline rows in the next section ran at `1d2f85d`, before the 13:05 gate change; the `6b507a6` rows above are the ones to compare with the full loop.
 
-### Per scenario (full loop at `6b507a6`)
+### Per scenario at `6b507a6`
 
-| scenario | expected | `full` |
-|---|---|---|
-| s05_xfmr_incipient | ESCALATED | ESCALATED, correct, paged (round limit reached without a verified outcome) |
-| s06b_stale_scada_inv2 | DONE | ESCALATED, paged (round limit reached without a verified outcome); 1 worker restart after rate limits |
-| s08_hotspot | DONE | ESCALATED, paged (budget tool_calls 85% used without a verified outcome); 1 worker restart after rate limits |
-| s09_gf_plus_trip | DONE | ESCALATED, paged (round limit reached without a verified outcome) |
-| s10_fan_cloudy | DONE | ESCALATED, paged (round limit reached without a verified outcome) |
-| s11_soiling_vegetation | DONE | ESCALATED, paged (round limit reached without a verified outcome) |
-| s12_control_cloudy | NO_ACTION | ESCALATED, paged (verifier rejected esc_action twice) |
-| s13_fan_plus_stale_scada | DONE | ESCALATED, paged (budget tool_calls 85% used without a verified outcome) |
-| s14_xfmr_plus_soiling | ESCALATED | ESCALATED, correct, paged (verifier rejected e5 twice); 1 worker restart after rate limits |
+| scenario | expected | `full` | `baseline` | `self_verify` |
+|---|---|---|---|---|
+| s05_xfmr_incipient | ESCALATED | ESCALATED, correct, paged (round limit reached without a verified outcome) | DONE, false done | ESCALATED, paged |
+| s06b_stale_scada_inv2 | DONE | ESCALATED, paged (round limit reached without a verified outcome); 1 worker restart after rate limits | ESCALATED | ESCALATED |
+| s08_hotspot | DONE | ESCALATED, paged (budget tool_calls 85% used without a verified outcome); 1 worker restart after rate limits | ESCALATED | NO_ACTION, false done |
+| s09_gf_plus_trip | DONE | ESCALATED, paged (round limit reached without a verified outcome) | ESCALATED | ESCALATED |
+| s10_fan_cloudy | DONE | ESCALATED, paged (round limit reached without a verified outcome) | ESCALATED, paged | DONE, correct |
+| s11_soiling_vegetation | DONE | ESCALATED, paged (round limit reached without a verified outcome) | ESCALATED | DONE, false done |
+| s12_control_cloudy | NO_ACTION | ESCALATED, paged (verifier rejected esc_action twice) | NO_ACTION, correct | NO_ACTION, correct |
+| s13_fan_plus_stale_scada | DONE | ESCALATED, paged (budget tool_calls 85% used without a verified outcome) | ESCALATED | DONE, false done |
+| s14_xfmr_plus_soiling | ESCALATED | ESCALATED, correct, paged (verifier rejected e5 twice); 1 worker restart after rate limits | ESCALATED | ESCALATED |
 
 ## Held-out split (9 scenarios) at `1d2f85d`, Oct 17 2026
 
-The baselines go through the same safety gate as the full loop, and the gate changed after this run (at 13:05 the gate model became veto-only), so both baselines are re-running at `6b507a6`.
+The baselines go through the same safety gate as the full loop, and the gate changed after this run (at 13:05 the gate model became veto-only), so both baselines were rerun at `6b507a6` (rows in the section above).
 The full-loop arms start once the loop's F6 fix passes.
 
 | arm | runs at | claimed done | verified success | false done | correct escalation | paged a human | safety violations | revenue lost | tool calls | tokens in / out |
