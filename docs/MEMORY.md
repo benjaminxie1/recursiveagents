@@ -37,6 +37,7 @@ Read it at the start of a session, after `docs/HACKATHON.md`.
 - 10:30 Jonathan: the autonomous loop is the main feature; the viewer only shows the loop's evidence ("dashboard as main feature" is banned).
 - 10:30 Jonathan: one codebase, settled: this repo (closes the 10:05 question about Jonathan's local `recursive-agents-hackathon` folder).
 - 10:30 Jonathan: all three workstreams work on `claude/sweet-faraday-yssuo9` with `git pull --rebase` before every push (supersedes the 10:25 per-person-branch note).
+- 11:29 Jonathan (ws3): viewer is in. `python -m gridtwin.serve` serves `viewer/`, `assets/` and `runs/` on localhost:8000 (stdlib only; refuses `truth.jsonl` and anything outside those three folders); `/api/runs` lists runs. Open `/?run=<id under runs/>` for live (polls every 1 s) or add `&replay=1` to step through at an adjustable speed. Bench runs nest, e.g. `?run=bench-<ts>-scripted_correct/s06_stale_scada-r0`. No splat yet, so the plant is the 2D one-line fallback with pins on INV-1..4, BESS-1, XFMR-1 and POI-1 (B*, CB-*, 52-* roll up to them). No hand-written sample: `bench --agent scripted_correct` logs are the fixture. Checked on them: pins, photos on pin click (s03, s10), page banner (s05), final banner, replay, live append. The DoD, verdict, board, memory and usage panels follow C2 but no real log has those events yet, so they're unverified.
 
 ## Open questions
 

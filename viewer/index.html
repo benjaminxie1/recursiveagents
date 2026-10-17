@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GridTwin evidence</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <strong>GridTwin</strong>
+    <span class="sub">Evidence from the autonomous loop: what the agents saw, did and proved</span>
+  </div>
+  <div class="controls">
+    <select id="runPick" aria-label="Run"></select>
+    <span id="modeTag" class="tag"></span>
+    <span id="replayCtl" hidden>
+      <button id="btnRestart" title="Restart">⏮</button>
+      <button id="btnPlay" title="Play or pause">⏸</button>
+      <button id="btnStep" title="Step one event">⏭</button>
+      <label class="speed">speed <input id="speed" type="range" min="0.25" max="8" step="0.25" value="1"> <span id="speedVal">1×</span></label>
+    </span>
+    <span id="cursor" class="muted"></span>
+  </div>
+</header>
+
+<div id="banners"></div>
+<section id="goal" class="goal"></section>
+
+<main class="grid">
+  <section class="card plant">
+    <h2>Plant <span class="muted">one-line view · click a pin for its evidence</span></h2>
+    <div id="plantSvg"></div>
+    <div class="legend">
+      <span><i class="dot idle"></i>untouched</span>
+      <span><i class="dot inspected"></i>inspected</span>
+      <span><i class="dot work"></i>work under way</span>
+      <span><i class="dot fault"></i>fault / paged / check failed</span>
+      <span><i class="dot verified"></i>check passed</span>
+      <span><i class="dot done"></i>closed out</span>
+    </div>
+    <div id="assetPanel" class="asset"></div>
+  </section>
+
+  <section class="card dod">
+    <h2>Definition of done</h2>
+    <div id="dod"></div>
+  </section>
+
+  <section class="card timeline">
+    <h2>Run timeline
+      <label class="muted filt"><input type="checkbox" id="showTools" checked> tool calls</label>
+    </h2>
+    <ol id="timeline"></ol>
+  </section>
+
+  <section class="card board">
+    <h2>Team board</h2>
+    <div id="board"></div>
+  </section>
+
+  <section class="card memory">
+    <h2>Memory</h2>
+    <div id="memory"></div>
+  </section>
+</main>
+
+<footer id="judge" class="judge"></footer>
+<script src="app.js"></script>
+</body>
+</html>
