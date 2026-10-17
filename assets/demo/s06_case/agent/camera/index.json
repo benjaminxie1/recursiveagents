@@ -1,0 +1,42 @@
+[
+  {
+    "asset": "INV-1",
+    "camera_id": "CAM-B1-DSP",
+    "captured": "2026-07-14T11:00:04",
+    "file": "agent/camera/INV-1_display.jpg",
+    "resolution": [
+      1024,
+      768
+    ]
+  },
+  {
+    "asset": "INV-2",
+    "camera_id": "CAM-B2-DSP",
+    "captured": "2026-07-14T11:00:04",
+    "file": "agent/camera/INV-2_display.jpg",
+    "resolution": [
+      1024,
+      768
+    ]
+  },
+  {
+    "asset": "INV-3",
+    "camera_id": "CAM-B3-DSP",
+    "captured": "2026-07-14T11:00:04",
+    "file": "agent/camera/INV-3_display.jpg",
+    "resolution": [
+      1024,
+      768
+    ]
+  },
+  {
+    "asset": "INV-4",
+    "camera_id": "CAM-B4-DSP",
+    "captured": "2026-07-14T11:00:04",
+    "file": "agent/camera/INV-4_display.jpg",
+    "resolution": [
+      1024,
+      768
+    ]
+  }
+]

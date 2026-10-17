@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from gridtwin.demo.pipeline import verifier_acceptance
 from tests.demo.contract import REPO_ROOT, has_demo_events, validate_run
 
 FIXTURE = REPO_ROOT / "tests" / "demo" / "fixtures" / "demo_events.jsonl"
@@ -79,9 +80,10 @@ class Run:
         return validate_run(self.dir)
 
 
-def demo_run(root, verdicts=(False, True), recall=(), memory_write=None) -> Run:
+def demo_run(root, verdicts=(False, True), recall=(), memory_write=None, meta_veto=()) -> Run:
     """A full run: one verify round per entry in `verdicts`; memory write on a final pass by default.
-    Like the pipeline, stages outside the contractor loop carry round 0."""
+    Like the pipeline, stages outside the contractor loop carry round 0. In a `meta_veto` round the plant checks
+    pass and the meta judge vetoes (its verdict must be False)."""
     r = Run(root)
     healthy = r.image("assets/photos/INV-3/healthy/01.jpg")
     dark = r.image("assets/photos/INV-3/display_off/01.jpg")
@@ -106,33 +108,39 @@ def demo_run(root, verdicts=(False, True), recall=(), memory_write=None) -> Run:
         r.emit("planner", "demo.agent", **planner, status="done", output="merged work order")
         r.emit("planner", "demo.workorder", wo_id=WO, asset="INV-3", work_order="Replace the INV-3 comms card.",
                steps=["Lock out INV-3", "Replace comms card"], forbid=["restart"] if recall else [],
-               acceptance=["fresh telemetry", "display on"], lessons_applied=list(recall), round=1)
+               acceptance=verifier_acceptance("INV-3") + ["INV-3 cabinet door closed"], lessons_applied=list(recall),
+               round=1)
     with r.stage("dispatch", 1):
         r.email("out", 1, "planner")
     for n, passed in enumerate(verdicts, 1):
+        vetoed = n in meta_veto
+        plant_ok = passed or vetoed
         with r.stage("contractor", n):
             r.emit("contractor", "demo.contractor", wo_id=WO, round=n, shortcut=not passed, note="Done.",
                    actions=[{"tool": "operate", "args": {"asset": "INV-3", "action": "restart"}, "ok": True}])
             r.email("in", n, "contractor")
         with r.stage("verify", n):
             r.emit("verifier", "demo.camera", viewpoint="inv3_front", asset="INV-3", mode="rgb",
-                   image=healthy if passed else dark, description="Display on." if passed else "Display dark.",
+                   image=healthy if plant_ok else dark, description="Display on." if plant_ok else "Display dark.",
                    round=n)
             for kind, name in (("telemetry", "telemetry_fresh"), ("visual", "display_on")):
                 r.emit("verifier", "demo.check", wo_id=WO, round=n, kind=kind, name=name, detail="", evidence={},
-                       **{"pass": passed})
+                       **{"pass": plant_ok})
             r.emit("verifier", "demo.jev", wo_id=WO, round=n, input={"asset": "INV-3"},
-                   output={"verdict": "verified" if passed else "not_verified", "p_verified": 0.9 if passed else 0.1,
+                   output={"verdict": "verified" if plant_ok else "not_verified", "p_verified": 0.9 if plant_ok else 0.1,
                            "uncertainty": 0.1, "backend": "local", "reason": "stations agree"})
             r.emit("verifier", "demo.check", wo_id=WO, round=n, kind="jev", name="jev_verified", detail="",
-                   evidence={}, **{"pass": passed})
-            r.emit("verifier", "demo.verdict", wo_id=WO, round=n, **{"pass": passed},
-                   failed=[] if passed else ["telemetry_fresh", "display_on", "jev_verified"])
+                   evidence={}, **{"pass": plant_ok})
+            if vetoed:
+                r.emit("verifier", "demo.check", wo_id=WO, round=n, kind="meta", name="meta_judge", detail="veto",
+                       evidence={}, **{"pass": False})
+            failed = ["meta_judge"] if vetoed else [] if passed else ["telemetry_fresh", "display_on", "jev_verified"]
+            r.emit("verifier", "demo.verdict", wo_id=WO, round=n, **{"pass": passed and not vetoed}, failed=failed)
         if not passed and n < len(verdicts):
             with r.stage("redispatch", n + 1):
                 img = r.image(f"runs/{r.run_id}/img/expected-r{n}.png")
                 r.emit("verifier", "demo.diffusion", wo_id=WO, round=n, image=img, backend="photo_bank",
-                       prompt="INV-3 with the display on", source=healthy)
+                       prompt="INV-3 with the display on", source=healthy, seen=dark)
                 r.email("out", n + 1, "verifier", attachments=[{"name": f"expected-r{n}.png", "path": img}])
     last = verdicts[-1]
     if memory_write if memory_write is not None else last:
@@ -163,6 +171,31 @@ def test_first_time_pass_with_a_recalled_lesson_is_valid(tmp_path):
 
 def test_three_failures_then_escalation_is_valid(tmp_path):
     assert demo_run(tmp_path, verdicts=(False, False, False)).problems() == []
+
+
+def test_a_meta_veto_of_a_fix_the_plant_checks_passed_is_valid(tmp_path):
+    assert demo_run(tmp_path, verdicts=(False, False, True), meta_veto=(2,)).problems() == []
+
+
+def crash_during_round_one(r: Run):
+    """Cut the log inside round 1's contractor stage and end it the way the pipeline's crash guard does."""
+    start = r.events.index(r.find("demo.stage", stage="contractor", status="start", round=1)[0])
+    r.events = r.events[:start + 2]
+    r.emit("orchestrator", "demo.final", status="FAILED", rounds=0, summary="the run crashed: KeyError: 'x'",
+           usd=None, wall_s=3.0, stub=True, error="KeyError: 'x'")
+
+
+def test_a_crashed_run_that_says_so_is_valid(tmp_path):
+    r = demo_run(tmp_path)
+    crash_during_round_one(r)
+    assert r.problems() == []
+
+
+def test_a_crashed_run_needs_its_error(tmp_path):
+    r = demo_run(tmp_path)
+    crash_during_round_one(r)
+    del r.find("demo.final")[0]["data"]["error"]
+    assert_names(r.problems(), "FAILED without an error")
 
 
 # depth cap and sub-agents ---------------------------------------------------------------------------------
@@ -280,6 +313,18 @@ def test_a_passing_verdict_must_agree_with_its_checks(tmp_path):
     assert_names(r.problems(), "check(s) say pass=False", "failed=[] but the failing checks are ['telemetry_fresh']")
 
 
+def test_a_meta_check_never_passes(tmp_path):
+    r = demo_run(tmp_path, verdicts=(False, False, True), meta_veto=(2,))
+    r.find("demo.check", kind="meta")[0]["data"]["pass"] = True
+    assert_names(r.problems(), "meta check that passes")
+
+
+def test_a_meta_veto_on_a_plant_that_already_failed(tmp_path):
+    r = demo_run(tmp_path, verdicts=(False, False, True), meta_veto=(2,))
+    r.find("demo.check", round=2, kind="telemetry")[0]["data"]["pass"] = False
+    assert_names(r.problems(), "meta veto although a plant check already failed")
+
+
 def test_a_passing_verdict_needs_jev(tmp_path):
     r = demo_run(tmp_path)
     r.drop(lambda e: e["type"] in ("demo.jev", "demo.check") and e["data"]["round"] == 2
@@ -371,6 +416,20 @@ def test_wrong_types_and_missing_keys(tmp_path):
     assert_names(r.problems(), "usd='free' is not num", "missing key 'failed'", "backend='cloud'")
 
 
+def test_acceptance_starts_with_the_verifier_bars(tmp_path):
+    r = demo_run(tmp_path)
+    r.find("demo.workorder", round=1)[0]["data"]["acceptance"] = ["display on"]
+    assert_names(r.problems(), "acceptance does not start with the verifier's 4 bars")
+
+
+def test_acceptance_cannot_carry_power_temperature_or_latency_bands(tmp_path):
+    r = demo_run(tmp_path)
+    r.find("demo.workorder", round=1)[0]["data"]["acceptance"] += [
+        "Heatsink temperature 40 +- 2 C", "AC output 1180-1220 kW", "comms_ping latency under 10 ms"]
+    problems = r.problems()
+    assert sum("the plant cannot prove" in p for p in problems) == 3, problems
+
+
 def test_an_applied_lesson_must_have_been_recalled(tmp_path):
     r = demo_run(tmp_path, verdicts=(True,))
     r.find("demo.workorder")[0]["data"]["lessons_applied"] = ["L9"]
@@ -386,10 +445,14 @@ def test_a_missing_camera_image(tmp_path):
 # the frontend fixture and real runs -------------------------------------------------------------------------
 
 
-def test_the_frontend_fixture_honours_the_contract():
-    if not FIXTURE.is_file():
-        pytest.skip("tests/demo/fixtures/demo_events.jsonl not written yet")
-    assert validate_run(FIXTURE) == []
+FIXTURES = sorted(FIXTURE.parent.glob("*.jsonl"))  # the first run and the recall run the page replays
+
+
+@pytest.mark.parametrize("fixture", FIXTURES or [None], ids=lambda p: p.stem if p else "none")
+def test_the_frontend_fixtures_honour_the_contract(fixture):
+    if fixture is None:
+        pytest.skip("tests/demo/fixtures/*.jsonl not written yet")
+    assert validate_run(fixture) == []
 
 
 VALIDATE_RUNS = os.environ.get("GRIDTWIN_VALIDATE_RUNS") == "1"

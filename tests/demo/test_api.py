@@ -139,7 +139,8 @@ def test_runs_list_and_memory_view(server, stub_run):
     rows = json.loads(call(base, "/api/demo/runs")[2])
     row = next(r for r in rows if r["id"] == started["run_id"])
     assert row["status"] == "VERIFIED" and row["rounds"] == 2 and row["stub"] is True
-    mem = json.loads(call(base, f"/api/demo/memory?kb=_nomem-{started['run_id']}")[2])
+    assert started["kb"] == f"_nomem-{started['run_id']}" and started["urls"]["memory"].endswith(started["kb"])
+    mem = json.loads(call(base, started["urls"]["memory"])[2])
     assert mem["exists"] and mem["lessons"] and mem["stats"]["runs"] == 1
     assert json.loads(call(base, "/api/demo/memory?kb=no-such-kb")[2])["exists"] is False
 
@@ -161,3 +162,65 @@ def test_a_run_that_dies_shows_failed_not_running(server, tmp_path):
         assert sse(raw)[-1][0] == "end" and sse(raw)[-1][1]["status"] == "FAILED"
     finally:
         S.PROCS.pop("dead-run", None)
+
+
+# ---------- from the independent frontend check (15:30) ----------
+
+def test_body_and_scenario_are_validated_before_anything_starts(server):
+    base, _ = server
+    for body, why in (({"Stub": True}, "unknown keys"), ({"stub": "false"}, "stub must be a boolean"),
+                      ({"scenario": "s01_ground_fault", "stub": True}, "not one the demo supports"),
+                      ({"scenario": "s99_nope", "stub": True}, "not one the demo supports")):
+        code, _, raw = call(base, "/api/demo/run", "POST", body)
+        assert code == 400 and why in json.loads(raw)["error"], (body, raw)
+    code, _, raw = call(base, "/api/demo/run", "POST", [1, 2])
+    assert code == 400 and "JSON object" in json.loads(raw)["error"]
+    assert "s06_stale_scada" in json.loads(call(base, "/api/demo/health")[2])["scenarios"]
+
+
+def test_two_posts_in_the_same_second_get_two_runs(server):
+    base, _ = server
+    ids = []
+
+    def post():
+        ids.append(json.loads(call(base, "/api/demo/run", "POST", {"stub": True, "memory": False})[2])["run_id"])
+    threads = [threading.Thread(target=post) for _ in range(3)]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+    assert len(set(ids)) == 3, ids
+    listed = {r["id"] for r in json.loads(call(base, "/api/demo/runs")[2])}
+    assert set(ids) <= listed  # a run is listed the moment it is started
+    for rid in ids:  # let them finish so the module's tmp dir is quiet
+        call(base, f"/api/demo/runs/{rid}/stream", timeout=120)
+
+
+def test_snapshot_memory_stats_is_flat_and_lists_carry_seq(server, stub_run):
+    base, _ = server
+    s = json.loads(call(base, stub_run[0]["urls"]["snapshot"])[2])
+    st = s["memory"]["stats"]
+    assert isinstance(st["lessons"], int) and st["rounds_by_run"] and "effect" in st and "seq" in st
+    assert all("seq" in r for r in s["stages"]) and all("seq" in t for t in s["teams"])
+
+
+def test_stream_reconnect_after_end_gets_204_and_junk_ids_start_over(server, stub_run):
+    base, _ = server
+    started, stream = stub_run
+    last = stream[-1][1]["last_seq"]
+    req = urllib.request.Request(base + started["urls"]["stream"], headers={"Origin": FRONTEND, "Last-Event-ID": str(last)})
+    with urllib.request.urlopen(req, timeout=10) as r:
+        assert r.status == 204
+    req = urllib.request.Request(base + started["urls"]["stream"], headers={"Origin": FRONTEND, "Last-Event-ID": "abc"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        frames = sse(r.read())
+    assert frames[0][0] == "demo" and frames[0][1]["seq"] == 1 and frames[-1][0] == "end"
+    assert call(base, f"/api/demo/runs/{started['run_id']}/events?after=abc")[0] == 400
+
+
+def test_a_run_whose_process_is_gone_after_a_restart_shows_failed(server):
+    base, runs = server
+    d = runs / "orphan-run"
+    (d / "mail").mkdir(parents=True)
+    (d / "events.jsonl").write_text(json.dumps({"seq": 1, "type": "goal", "actor": "operator", "data": {}}) + "\n")
+    (d / S.PID_FILE).write_text("999999")  # no such process; not in PROCS, as after a server restart
+    s = json.loads(call(base, "/api/demo/runs/orphan-run")[2])
+    assert s["status"] == "FAILED" and s["done"] and "ended without a result" in s["error"]
