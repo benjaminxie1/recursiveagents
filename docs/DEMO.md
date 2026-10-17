@@ -36,8 +36,10 @@ Inverter 3's comms card has failed, so its telemetry is frozen at perfect-lookin
    Show it reading the verified lesson and finishing in fewer steps.
    Line: "Only verified outcomes become memory, so the team learns the fix and never the fake fix."
 7. **2:30 The number (20 s).**
-   Show the held-out results table: baseline, self-verify baseline and the full loop, with false-done rate, verified success, safety violations and cost per run.
-   Use only numbers from `runs/bench-*/results.md`.
+   Show the held-out results table from `results.md`: baseline, self-verify baseline and the full loop, with verified success, false-done rate, needless pages, safety violations and cost per run.
+   The baselines' failure is under-acting, not over-claiming: they escalate fixable faults to a human (4 of 5 on held-out) and call a cracked module "nothing wrong".
+   Line, only if the full arm's numbers support it: "Without a definition of done, agents either quit to a human or say nothing's wrong. With one, they fix it and prove it."
+   Use only numbers from `results.md`.
 8. **2:50 Close (10 s).**
    "Done means done: proven by a different model, against the plant, on Nemotron on Crusoe."
 

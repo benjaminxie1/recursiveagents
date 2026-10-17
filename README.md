@@ -19,7 +19,7 @@ In Winter Storm Elliott, 90,500 MW of generation failed unexpectedly, and PJM as
 Solar sites lost 5.77% of their output to equipment problems in 2024, up from 5.00% ([Raptor Maps](https://pv-magazine-usa.com/2026/02/25/u-s-solar-assets-lose-average-5070-per-mw-from-power-losses/)), and the technicians and remote analysts who chase those faults are scarce.
 
 GridTwin targets that gap: the work between "something is off" and "provably fixed", done by agents that a remote operations analyst can leave running overnight.
-The headline metric is the **false-done rate**: how often a team claims success while the fault is still there.
+The headline metrics are **verified success** (the fault is fixed and stays fixed) and the **false-done rate** (how often a team claims success, or "nothing wrong", while the fault is still there).
 
 ## How it works
 
@@ -43,7 +43,14 @@ Measured on Crusoe against the held-out scenarios (faults and combinations the p
 Every row comes from `python -m gridtwin.bench`, and each run writes its table to `runs/bench-*/results.md`.
 
 <!-- RESULTS: filled in from the Crusoe bench runs; never edit numbers by hand. -->
-*Runs in progress.*
+| arm (held-out, 7 scenarios) | claimed done | verified success | false done | safety violations | tool calls |
+|---|---|---|---|---|---|
+| `baseline` | 0.0% | 0 of 7 | 14.3% | 0 | 141 |
+| `self_verify` | 0.0% | 0 of 7 | 14.3% | 0 | 234 |
+| `full` | pending | | | | |
+
+The baselines did not over-claim; they under-acted, handing 4 of 5 fixable faults to a human and reporting "nothing wrong" on a cracked module.
+Full tables, per-scenario outcomes and token counts are in [`results.md`](results.md).
 
 ## Run it
 
