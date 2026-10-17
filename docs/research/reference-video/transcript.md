@@ -1,0 +1,65 @@
+# Transcript
+
+Auto-generated with faster-whisper `small.en` (int8, CPU, VAD on). Speaker names come from the speech itself; speaker turns are not detected automatically.
+Each line: `[start–end]` in mm:ss.s, then the frames covering it.
+
+- `[00:00.8–00:05.5]` (frames 0001–0010) Hey judges, my name is Kaushik. My name is Charlie and today we built Filax
+- `[00:05.8–00:08.9]` (frames 0011–0017) So hopefully it's not a little too laggy on your guys side
+- `[00:08.9–00:12.6]` (frames 0017–0025) But I will try to get through this demo as best as we can so
+- `[00:13.2–00:20.1]` (frames 0026–0040) Filax is built for construction project owners to be able to verify that their project is being built to standards and codes
+- `[00:20.2–00:28.0]` (frames 0040–0056) So they can open on time and they're not delayed because of contractors not actually doing the inspections and passing inspections properly
+- `[00:28.3–00:34.5]` (frames 0056–0068) so how Filax works is we did a 3d Gaussian splat of a visual of a room and
+- `[00:34.8–00:40.7]` (frames 0069–0081) We would do this throughout the construction project at multiple different stages and then within this 3d Gaussian splat
+- `[00:40.7–00:45.3]` (frames 0081–0090) we have a VLM that's analyzing the space and then we have a
+- `[00:45.9–00:50.9]` (frames 0091–0101) Hermes or not Hermes. We have an open AI decisions model. That's actually creating
+- `[00:51.8–00:57.7]` (frames 0103–0115) Decisions on what are the object in the space so you can look here and you can see like a bunch of different
+- `[00:58.8–01:03.1]` (frames 0117–0126) Camera angles of the VLM here's on the right side like all of the different angles
+- `[01:03.2–01:08.0]` (frames 0126–0135) They're rotating through the space and they're analyzing the different objects that are in the space
+- `[01:08.5–01:11.1]` (frames 0137–0142) So we classify these objects at a system level
+- `[01:11.7–01:17.5]` (frames 0143–0155) Subsystem and component level and as we identify components we go to the next part of our product
+- `[01:18.2–01:25.0]` (frames 0156–0169) Which is the actual codes and standards that we're connecting these two so
+- `[01:25.6–01:31.5]` (frames 0171–0182) Construction projects have hundreds and thousands of codes and standards that they have to comply by to be open on time
+- `[01:31.6–01:38.2]` (frames 0183–0196) So these are the codes and standards for California for this specific project that we've scraped from online and we connect those directly
+- `[01:38.3–01:42.5]` (frames 0196–0205) To what's being identified in the video. So as the video identifies different
+- `[01:43.0–01:45.0]` (frames 0206–0210) systems and
+- `[01:45.0–01:51.4]` (frames 0210–0222) Components and subsystems as I talked about before it starts to classify everything and connect those directly to the
+- `[01:52.4–01:56.5]` (frames 0224–0232) Source library of the codes and standards that need to be met and
+- `[01:57.3–01:58.4]` (frames 0234–0236) then
+- `[01:58.4–02:04.6]` (frames 0236–0249) We go into the requirements. So requirements is from the codes and standards and the systems and components
+- `[02:05.2–02:07.2]` (frames 0250–0254) what's the combination of these two and
+- `[02:08.6–02:14.2]` (frames 0257–0268) That creates like all the requirements that need to be verified. So let me go into a little better view that I'll show
+- `[02:14.5–02:16.4]` (frames 0269–0272) What that looks like?
+- `[02:16.4–02:22.0]` (frames 0272–0284) So here in this view
+- `[02:22.0–02:24.0]` (frames 0284–0288) We could actually move through the space
+- `[02:24.2–02:29.4]` (frames 0288–0298) Kind of like an inspector would be moving through and we can see in live real-time
+- `[02:30.0–02:32.5]` (frames 0299–0304) Any codes and standards that aren't being met?
+- `[02:32.9–02:44.3]` (frames 0305–0328) So here we could click on the pump right here and we can see that there's evidence pending a final balancing report
+- `[02:44.4–02:49.6]` (frames 0328–0339) Before this actually could be open. So if an owner didn't know this and the contractor said that everything's been met
+- `[02:50.0–02:54.8]` (frames 0340–0349) Inspector comes through this would cause huge delays and this delays cost a lot of money
+- `[02:55.2–03:02.2]` (frames 0350–0364) on data center projects every single day of delay costs a hundred to two hundred thousand dollars and most projects actually end up getting
+- `[03:02.2–03:06.1]` (frames 0364–0372) Delayed so those are what we're trying to catch here through the inspection reports
+- `[03:06.5–03:10.6]` (frames 0372–0381) Maybe Charlie could talk a little bit more about the tech as we dive drive
+- `[03:11.5–03:15.8]` (frames 0383–0391) Yeah, so basically we do a full VLM
+- `[03:16.5–03:22.7]` (frames 0393–0405) Inspection of each frame all the cameras are looking around and they're separate sections using a VLM to understand the spatial space
+- `[03:22.7–03:30.3]` (frames 0405–0420) And then we go through and use open AI decisions model to be able to go through and classify from the system subsystems and components
+- `[03:30.3–03:36.6]` (frames 0420–0433) Of what that might actually be we're then able to link that up to filtered codes and standards
+- `[03:36.9–03:40.6]` (frames 0433–0441) Also using the decision API, which we found is doing a great job
+- `[03:41.5–03:47.9]` (frames 0443–0455) To do the actual object detection before this part. We use grounding dino object detection and we host that on modal
+- `[03:48.1–03:49.4]` (frames 0456–0458) From
+- `[03:49.4–03:53.9]` (frames 0458–0467) There where we were able to build an MCP that connects to Hermes
+- `[03:54.5–04:01.5]` (frames 0469–0483) Where we can build an actual bot you want to swipe that quick where we can actually set up scheduled tasks here
+- `[04:01.9–04:05.1]` (frames 0483–0490) for a construction person to look through and
+- `[04:05.4–04:10.5]` (frames 0490–0501) See what their daily like changes are like what what components were analyzed here
+- `[04:10.5–04:14.1]` (frames 0501–0508) What inspections are ready from the codes that were identified what was learned?
+- `[04:14.3–04:21.9]` (frames 0508–0523) you can ask any questions and the reason we create our Hermes bot and connect that via MCP is that it continuously learns about the
+- `[04:21.9–04:28.1]` (frames 0523–0536) Project itself the bot becomes smarter and smarter and smarter and more intelligent on your construction project as you go
+- `[04:28.1–04:32.0]` (frames 0536–0543) So you can learn anything about what's going on and ask it anything
+- `[04:33.3–04:40.5]` (frames 0546–0561) So the end goal of what we've built here at filex is to be able to do these Gaussian splats of the project at a daily
+- `[04:40.5–04:42.5]` (frames 0561–0565) basis, so
+- `[04:43.0–04:49.4]` (frames 0565–0578) flat like what's actually going on on the project and then owners can have full visibility as to all the requirements and
+- `[04:51.0–04:53.9]` (frames 0581–0587) evidence as to everything being met and being ready for
+- `[04:54.5–05:01.9]` (frames 0589–0603) Handover and opening up of the construction project. We want to make sure that owners such as AWS Google Cloud anyone that is
+- `[05:02.6–05:07.6]` (frames 0605–0615) creating a data center project or heavy infrastructure project to be able to open right away and
+- `[05:08.1–05:09.6]` (frames 0616–0619) Thank you
+- `[05:09.6–05:11.6]` (frames 0619–0623) Hope this explained it really well
+- `[05:11.6–05:13.8]` (frames 0623–0627) Thank you

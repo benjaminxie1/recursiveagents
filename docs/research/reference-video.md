@@ -2,7 +2,7 @@
 
 Source: `gaussian_refernece(1).mp4`, 5:14.8, 1920×1080 @ 30 fps, with narration by two presenters (Kaushik, then Charlie).
 Method: frames at 2 fps (630 total, in the local `video-context/` package), contact sheets every 3 s, full-resolution crops of eight key screens, and a faster-whisper transcript.
-Key frames are in [`reference-video/`](reference-video/). Quotes come from the transcript, and UI text was read off the frames.
+Key frames are in [`reference-video/`](reference-video/). Quotes come from the transcript ([`reference-video/transcript.md`](reference-video/transcript.md), with timestamps), and UI text was read off the frames.
 
 ## Summary
 
