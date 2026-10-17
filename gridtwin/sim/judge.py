@@ -94,7 +94,10 @@ def requirement_coverage(sim, log) -> dict:
     relevant = sorted({r["id"] for r in CFG["requirements"] for a in faulted if _applies(r["applies_to"], a)})
     cited, verified = set(), set()
     for e in log.of_type("dod"):
-        for c in e["data"].get("checks") or []:
+        checks = e["data"].get("checks") or []
+        if isinstance(checks, dict):  # the full loop emits {branch: [checks]}
+            checks = [c for lst in checks.values() if isinstance(lst, list) for c in lst]
+        for c in checks:
             if isinstance(c, dict):
                 cited.update(_ids(c.get("requirement")) + _ids(c.get("requirements")))
     for e in log.of_type("verdict"):

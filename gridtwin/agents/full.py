@@ -125,7 +125,8 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
     registry = ActorToolbox(toolbox, "planner").call("list_assets", {})
     registry = registry if ok(registry) else {}
     ltxt, rtxt, lessons = kb_context(kb, goal, "planner")
-    p = planner.plan(goal, registry, f"Lessons:\n{ltxt}\n\nReferences:\n{rtxt}")
+    reqs = ActorToolbox(toolbox, "planner").call("list_requirements", {})
+    p = planner.plan(goal, registry, f"Lessons:\n{ltxt}\n\nReferences:\n{rtxt}", reqs if ok(reqs) else None)
     dod, tasks = p["dod"], p["tasks"]
     if weak_dod:
         dod = {**dod, "branches": {**dod["branches"], "DONE": [dict(c) for c in WEAK_DONE_CHECKS]}}
