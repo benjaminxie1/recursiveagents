@@ -55,9 +55,11 @@ class Splat:
         col = np.broadcast_to(np.asarray(rgb, float), (len(pos), 3)) if color_fn is None else color_fn(s, t)
         self.add(pos, (overlap * lu / nu, overlap * lv / nv, thick), col, alpha, quat_from_axes(u / lu, v / lv), noise)
 
-    def box(self, center, size, rgb, step=0.15, shade=True, skip=("bottom",), alpha=1.0):
+    def box(self, center, size, rgb, step=0.15, shade=True, skip=("bottom",), alpha=1.0, grime=0.25, cast=True):
         cx, cy, cz = center
         sx, sy, sz = size
+        if cast and alpha > 0.5:
+            caster(cx, cz, sx, sz, cy + sy / 2)
         faces = {  # name: (centre offset, u, v, brightness)
             "top": ((0, sy / 2, 0), (sx, 0, 0), (0, 0, sz), 1.12),
             "bottom": ((0, -sy / 2, 0), (sx, 0, 0), (0, 0, -sz), 0.5),
@@ -69,7 +71,11 @@ class Splat:
         for name, (off, u, v, k) in faces.items():
             if name in skip:
                 continue
-            self.face((cx + off[0], cy + off[1], cz + off[2]), u, v, np.asarray(rgb) * (k if shade else 1), step, alpha)
+            col = np.asarray(rgb, float) * (k if shade else 1)
+            fn = None
+            if grime and name != "top" and sy > 0.3:
+                fn = weathered(col, grime, cy - sy / 2, sy, self.rng.integers(1 << 30))
+            self.face((cx + off[0], cy + off[1], cz + off[2]), u, v, col, step, alpha, color_fn=fn)
 
     def cylinder(self, base, radius, height, rgb, step=0.08, axis="y"):
         n_a = max(8, round(2 * math.pi * radius / step))
@@ -79,8 +85,34 @@ class Splat:
         ring = np.stack([radius * np.cos(a), h, radius * np.sin(a)], 1)
         if axis == "x":
             ring = ring[:, [1, 0, 2]]
+        elif axis == "z":
+            ring = ring[:, [0, 2, 1]]
         shade = 0.75 + 0.3 * np.clip(np.cos(a - 2.2), 0, 1)
         self.add(np.asarray(base) + ring, (step * 0.7, step * 0.7, step * 0.7), np.asarray(rgb)[None] * shade[:, None])
+
+    def rod(self, a, b, radius, rgb, step=None, alpha=1.0, noise=0.03):
+        """A thin straight member from a to b (conduit, conductor, brace, wire) as Gaussians stretched along it."""
+        a, b = np.asarray(a, float), np.asarray(b, float)
+        d = b - a
+        L = float(np.linalg.norm(d))
+        if L < 1e-6:
+            return
+        step = step or max(radius * 3, 0.05)
+        n = max(1, round(L / step))
+        u = d / L
+        ref = np.array([0, 1.0, 0]) if abs(u[1]) < 0.9 else np.array([1.0, 0, 0])
+        v = np.cross(u, ref)
+        v /= np.linalg.norm(v)
+        pos = a + ((np.arange(n) + 0.5) / n)[:, None] * d
+        self.add(pos, (0.75 * L / n, radius, radius), rgb, alpha, quat_from_axes(u, v), noise)
+
+    def wire(self, a, b, sag, radius, rgb, segs=24):
+        """A conductor hanging between a and b with a parabolic sag (metres at mid-span)."""
+        a, b = np.asarray(a, float), np.asarray(b, float)
+        f = np.linspace(0, 1, segs + 1)
+        pts = a + f[:, None] * (b - a) - np.outer(4 * sag * f * (1 - f), [0, 1, 0])
+        for p, q in zip(pts[:-1], pts[1:]):
+            self.rod(p, q, radius, rgb, step=0.25, noise=0.01)
 
     def write(self, path):
         pos, scale, rgb, alpha, rot = (np.concatenate(x) for x in zip(*self.parts))
@@ -111,6 +143,107 @@ def quat_from_axes(u, v):
     q[j + 1] = (m[j, i] + m[i, j]) / (4 * q[i + 1])
     q[k + 1] = (m[k, i] + m[i, k]) / (4 * q[i + 1])
     return q
+
+
+# ---------- realism: weathering, value noise and soft sun shadows baked into the ground ----------
+SUN = np.array([0.55, -0.42])        # ground offset of a shadow per metre of height: afternoon sun from the south-west
+SHADOW_RES, SHADOW_BOX = 0.25, (-60.0, -70.0, 380.0, 320.0)     # metres per cell; x0, z0, x1, z1
+CASTERS = []                          # (x, z, size x, size z, top height) footprints, filled while the site is built
+
+
+def caster(x, z, sx, sz, top):
+    CASTERS.append((x, z, sx, sz, top))
+
+
+def _noise_grid(seed):
+    return np.random.default_rng(seed).random((257, 257))
+
+
+_GRIDS = {}
+
+
+def vnoise(x, z, scale, seed=0):
+    """Smooth value noise in [0, 1] over world x, z with feature size `scale` metres."""
+    G = _GRIDS.setdefault(seed, _noise_grid(seed))
+    fx, fz = np.asarray(x, float) / scale + 37.1 * seed, np.asarray(z, float) / scale + 11.3 * seed
+    i0, j0 = np.floor(fx), np.floor(fz)
+    u, v = fx - i0, fz - j0
+    u, v = u * u * (3 - 2 * u), v * v * (3 - 2 * v)
+    i, j = i0.astype(int) % 256, j0.astype(int) % 256
+    return (G[i, j] * (1 - u) * (1 - v) + G[i + 1, j] * u * (1 - v) + G[i, j + 1] * (1 - u) * v + G[i + 1, j + 1] * u * v)
+
+
+def fbm(x, z, scale, octaves=4, seed=0):
+    out, amp, tot = 0.0, 1.0, 0.0
+    for k in range(octaves):
+        out = out + amp * vnoise(x, z, scale / 2 ** k, seed + k)
+        tot += amp
+        amp *= 0.5
+    return out / tot
+
+
+def weathered(col, amount, y0, h, seed):
+    """color_fn for a wall: darker toward the ground (dust and contact shadow) plus faint vertical rain streaks."""
+    rng = np.random.default_rng(seed)
+    phase = rng.uniform(0, 100)
+
+    def fn(s, t):
+        up = np.clip((t + 0.5) * h / 0.6, 0, 1)                       # 0 at the ground, 1 above 60 cm
+        streak = vnoise(s * 9 + phase, np.zeros_like(s) + phase, 1.0, 5) - 0.5
+        k = (1 - amount * 0.7 * (1 - up)) * (1 + amount * 0.25 * streak) * (1 - amount * 0.12 * (0.5 - t))
+        return np.clip(col[None, :] * k[:, None], 0, 1)
+    return fn
+
+
+def shadow_map():
+    """Soft sun shadow (0 = lit, 1 = full shade) rasterised from CASTERS on a SHADOW_RES grid, as an image."""
+    from PIL import Image, ImageDraw, ImageFilter
+    x0, z0, x1, z1 = SHADOW_BOX
+    W, H = int((x1 - x0) / SHADOW_RES), int((z1 - z0) / SHADOW_RES)
+    im = Image.new("L", (W, H), 0)
+    d = ImageDraw.Draw(im)
+    ao = Image.new("L", (W, H), 0)
+    da = ImageDraw.Draw(ao)
+    for x, z, sx, sz, top in CASTERS:
+        if top <= 0.05:
+            continue
+        for f in np.linspace(0, 1, max(2, int(top * 3))):
+            ox, oz = SUN * top * f
+            d.rectangle([(x - sx / 2 + ox - x0) / SHADOW_RES, (z - sz / 2 + oz - z0) / SHADOW_RES,
+                         (x + sx / 2 + ox - x0) / SHADOW_RES, (z + sz / 2 + oz - z0) / SHADOW_RES], fill=255)
+        pad = 0.25 + 0.1 * min(top, 3)
+        da.rectangle([(x - sx / 2 - pad - x0) / SHADOW_RES, (z - sz / 2 - pad - z0) / SHADOW_RES,
+                      (x + sx / 2 + pad - x0) / SHADOW_RES, (z + sz / 2 + pad - z0) / SHADOW_RES], fill=150)
+    im = im.filter(ImageFilter.GaussianBlur(1.2))
+    ao = ao.filter(ImageFilter.GaussianBlur(3))
+    return np.maximum(np.asarray(im, float), np.asarray(ao, float)) / 255
+
+
+def shade_at(sm, x, z):
+    x0, z0, _, _ = SHADOW_BOX
+    i = np.clip(((np.asarray(z) - z0) / SHADOW_RES).astype(int), 0, sm.shape[0] - 1)
+    j = np.clip(((np.asarray(x) - x0) / SHADOW_RES).astype(int), 0, sm.shape[1] - 1)
+    return sm[i, j]
+
+
+FLAT = None
+
+
+def ground_patch(g, x0, x1, z0, z1, step, color_at, y=0.0, alpha=1.0, thick=0.02, jitter=0.45, hole=None):
+    """A horizontal patch of Gaussians whose colour is a function of world (x, z)."""
+    global FLAT
+    if FLAT is None:
+        FLAT = quat_from_axes(np.array([1.0, 0, 0]), np.array([0, 0, -1.0]))
+    nx, nz = max(1, round((x1 - x0) / step)), max(1, round((z1 - z0) / step))
+    xs, zs = np.meshgrid(x0 + (np.arange(nx) + 0.5) * (x1 - x0) / nx, z0 + (np.arange(nz) + 0.5) * (z1 - z0) / nz, indexing="ij")
+    xs = xs.ravel() + g.rng.uniform(-jitter, jitter, xs.size) * step
+    zs = zs.ravel() + g.rng.uniform(-jitter, jitter, zs.size) * step
+    if hole is not None:                                    # (x0, x1, z0, z1) left empty, where a finer patch lies
+        keep = ~((xs > hole[0]) & (xs < hole[1]) & (zs > hole[2]) & (zs < hole[3]))
+        xs, zs = xs[keep], zs[keep]
+    pos = np.stack([xs, np.full(xs.size, y), zs], 1)
+    sc = step * g.rng.uniform(0.6, 0.95, (xs.size, 1)) * np.array([[1, 1, 0]]) + np.array([[0, 0, thick]])
+    g.add(pos, sc, color_at(xs, zs), alpha, FLAT, noise=0.02)
 
 
 # ---------- photo textures: every surface below takes its colours from a real photo ----------
@@ -173,24 +306,81 @@ ANCHORS |= {f"B{i + 1}": (sum(BLOCK_X) / 2, 1.2, z) for i, z in enumerate(ROW_Z)
 ANCHORS |= {f"CB-{b + 1}.{n}": (cb_x(n), 1.2, z - 14) for b, z in enumerate(ROW_Z) for n in range(1, 7)}
 ANCHORS |= {"XFMR-1": (XFMR[0], 1.1, XFMR[1]), "52-M": (XFMR[0] - 14, 1.0, XFMR[1]), "POI-1": (POI[0], 1.2, POI[1]),
             "BESS-1": (INV_X, 1.3, BESS_Z), "52-B1": (BRK_X, 1.0, BESS_Z), "MET-1": (300, 2.0, 232)}
-PANEL_ROWS = (-9.6, -4.8, 0.0, 4.8, 9.6)
+PANEL_ROWS = (-22.0, -17.0, -11.0, -6.0, -1.0, 4.0, 9.0, 14.0, 19.0)   # a lane at -14 for the combiner boxes
 TILT = math.radians(25)
 
 
+ROADS = [  # (x0, x1, z0, z1): compacted gravel access roads, wheel ruts along their long axis
+    (133.0, 139.0, -4.0, 246.0),        # spine between the arrays and the inverter row
+    (139.0, 300.0, 116.0, 121.0),       # spine to the substation gate
+    (10.0, 318.0, 242.5, 247.5),        # perimeter road inside the south fence
+    (148.0, 172.0, 247.5, 262.0),       # site entrance through the gate
+]
+
+
+def in_road(x, z):
+    m = np.zeros(np.shape(x), bool)
+    for x0, x1, z0, z1 in ROADS:
+        m |= (x >= x0) & (x <= x1) & (z >= z0) & (z <= z1)
+    return m
+
+
 def ground(g):
-    # outside the fence: dry soil from the Topaz Solar Farm photo, coarse, in four strips so it never sits under the gravel
-    for cx, cz, w, h in ((160, -29, 420, 42), (160, 271, 420, 42), (-24, 125, 52, 258), (344, 125, 52, 258)):
-        g.face((cx, 0, cz), (w, 0, 0), (0, 0, -h), (0.55, 0.5, 0.4), 1.4, thick=0.05, jitter=0.45, noise=0.02,
-               color_fn=tex(HORIZON, SOIL_BOX, (w / 12, h / 12), mirror=True, res=(24, 8)))
-    # inside the fence: crushed-rock pad, tiled from the gravel around the PSE transformer photo
-    g.face((160, 0.0, 121), (316, 0, 0), (0, 0, -258), (0.56, 0.54, 0.5), 0.75, thick=0.02, jitter=0.45, noise=0.025,
-           color_fn=lambda s, t: 0.55 * tex(GRAVEL, GRAVEL_BOX, (1, 1), res=(1, 1), gain=1.15)(s, t)
-           + 0.45 * tex(HORIZON, SOIL_BOX, (1, 1), res=(1, 1))(s, t))           # graded site: the photos' mean gravel and soil
-    # access road and cable trenches
-    g.face((160, 0.05, 245), (316, 0, 0), (0, 0, -5), (0.42, 0.4, 0.37), 0.6, thick=0.02)
-    g.face((BUS_X, 0.06, 126), (0.8, 0, 0), (0, 0, -200), (0.66, 0.66, 0.64), 0.4, thick=0.02)
+    sm = shadow_map()
+    soil = tex(HORIZON, SOIL_BOX, (1, 1), res=(1, 1))(np.zeros(1), np.zeros(1))[0]
+    rock = tex(GRAVEL, GRAVEL_BOX, (1, 1), res=(1, 1), gain=1.15)(np.zeros(1), np.zeros(1))[0]
+    pad = 0.55 * rock + 0.45 * soil
+
+    def dirt(x, z):
+        n = fbm(x, z, 40, 4, 1)
+        fine = vnoise(x, z, 0.9, 9)
+        col = soil[None] * (0.82 + 0.38 * n[:, None]) * (0.94 + 0.12 * fine[:, None])
+        dry = fbm(x, z, 14, 3, 21)[:, None]                             # patches of dry grass
+        col = col * (1 - 0.35 * np.clip(dry - 0.55, 0, 1)) + np.array([0.48, 0.44, 0.27]) * 0.35 * np.clip(dry - 0.55, 0, 1)
+        return np.clip(col * (1 - 0.5 * shade_at(sm, x, z))[:, None], 0, 1)
+
+    def site_ground(x, z):
+        n = fbm(x, z, 25, 4, 3)
+        speck = g.rng.random(x.size)                                    # individual stones
+        col = pad[None] * (0.86 + 0.26 * n[:, None]) * (0.9 + 0.2 * speck[:, None])
+        road = in_road(x, z)
+        if road.any():
+            rc = np.array([0.6, 0.56, 0.5]) * (0.9 + 0.2 * fbm(x[road], z[road], 6, 3, 4))[:, None]
+            col[road] = rc
+            for x0, x1, z0, z1 in ROADS:                                # two wheel ruts per road
+                m = road & (x >= x0) & (x <= x1) & (z >= z0) & (z <= z1)
+                along_x = (x1 - x0) > (z1 - z0)
+                c = (z0 + z1) / 2 if along_x else (x0 + x1) / 2
+                off = np.abs((z if along_x else x)[m] - c)
+                rut = np.exp(-((off - 0.95) / 0.28) ** 2)
+                col[m] *= (1 - 0.22 * rut)[:, None]
+        col *= (1 - 0.52 * shade_at(sm, x, z))[:, None]
+        return np.clip(col, 0, 1)
+
+    # far plain out to the horizon ring, then the near soil, then the graded site inside the fence
+    ground_patch(g, -440, 760, -475, 725, 6.0, dirt, y=-0.05, thick=0.02, jitter=0.2, hole=(-56, 376, -66, 316))
+    for x0, x1, z0, z1 in ((-60, 380, -70, -8), (-60, 380, 250, 320), (-60, 2, -8, 250), (318, 380, -8, 250)):
+        ground_patch(g, x0, x1, z0, z1, 0.9, dirt, y=-0.02, thick=0.04)
+    ground_patch(g, 2, 318, -8, 250, 0.5, site_ground, y=0.0, thick=0.02)
+    ground_patch(g, 148, 172, 250, 262, 0.42, site_ground, y=0.005, thick=0.02)
+    # cable trenches: fresh backfill strips from each block to its inverter and along the collector bus
     for z in ROW_Z:
-        g.face(((BLOCK_X[1] + BUS_X) / 2, 0.06, z + 3.5), (BUS_X - BLOCK_X[1], 0, 0), (0, 0, -0.6), (0.66, 0.66, 0.64), 0.4)
+        ground_patch(g, BLOCK_X[1], INV_X - 1.5, z + 3.2, z + 3.8, 0.2, lambda x, z: np.tile([0.7, 0.67, 0.62], (x.size, 1)), y=0.012)
+        ground_patch(g, INV_X + 1.5, BUS_X, z - 0.3, z + 0.3, 0.2, lambda x, z: np.tile([0.7, 0.67, 0.62], (x.size, 1)), y=0.012)
+    ground_patch(g, BUS_X - 0.4, BUS_X + 0.4, 26, 226, 0.2, lambda x, z: np.tile([0.7, 0.67, 0.62], (x.size, 1)), y=0.012)
+    # tufts of dry grass and weeds, thick outside the fence, sparse on the pad
+    rng = g.rng
+    for (x0, x1, z0, z1, n) in ((-60, 380, -70, -10, 3000), (-60, 380, 252, 320, 3000), (-60, 0, -10, 252, 1000),
+                                (320, 380, -10, 252, 1000), (2, 318, -8, 250, 3000)):
+        x, z = rng.uniform(x0, x1, n), rng.uniform(z0, z1, n)
+        keep = ~in_road(x, z)
+        x, z = x[keep], z[keep]
+        k = rng.integers(5, 10, x.size)
+        px = np.repeat(x, k) + rng.normal(0, 0.18, k.sum())
+        pz = np.repeat(z, k) + rng.normal(0, 0.18, k.sum())
+        py = rng.uniform(0.02, 0.32, k.sum()) ** 1.4
+        col = np.array([0.52, 0.47, 0.3])[None] * rng.uniform(0.7, 1.15, (k.sum(), 1)) + np.array([-0.08, 0.02, -0.04]) * rng.random((k.sum(), 1))
+        g.add(np.stack([px, py, pz], 1), (0.03, 0.12, 0.03), col, 0.85, noise=0.05)
     # horizon: the hills and sky behind the Topaz Solar Farm, on a ring of Gaussians 600 m out
     R, H, n_a, n_h = 600.0, 190.0, 1500, 60
     a, y = np.meshgrid(np.linspace(0, 2 * math.pi, n_a, endpoint=False), (np.arange(n_h) + 0.5) / n_h)
@@ -215,6 +405,7 @@ def pv_block(g, b):
         line = (np.abs(cx - np.round(cx)) < 0.035) | (np.abs(cy - np.round(cy)) < 0.03)
         grad = 0.75 + 0.45 * (t + 0.5)            # sky reflection brightens toward the top edge
         base = np.stack([0.07 * grad, 0.11 * grad, 0.23 * grad], 1)
+        base *= (0.85 + 0.3 * vnoise(np.floor(cx) * 3.7 + 0.5, np.floor(cy) * 5.3 + b * 17 + 0.5, 1.0, 12))[:, None]   # module to module
         base[line] = (0.62, 0.64, 0.68)
         return base
     for dz in PANEL_ROWS:
@@ -226,6 +417,7 @@ def pv_block(g, b):
             g.box((px, 0.6, z0 + dz + 0.4), (0.1, 1.2, 0.1), (0.62, 0.62, 0.64), step=0.1, shade=True)
             g.box((px, 0.5, z0 + dz - 0.4), (0.1, 1.0, 0.1), (0.62, 0.62, 0.64), step=0.1, shade=True)
         g.cylinder((x0, 1.2, z0 + dz), 0.06, length, (0.6, 0.6, 0.62), step=0.35, axis="x")
+        caster((x0 + x1) / 2, z0 + dz, length, depth * math.cos(TILT) * 0.9, 1.45)
 
 
 def combiner(g, b, n):
@@ -262,8 +454,7 @@ def on_inv_face(x, z, fs, ft):
 
 
 def breaker(g, name):
-    x, _, z = ANCHORS[name]
-    g.box((x, 0.1, z), (2.2, 0.2, 2.2), (0.7, 0.69, 0.66), step=0.15)
+    x, _, z = ANCHORS[name]                                    # its pad comes with the switchgear lineup around it
     g.box((x, 1.1, z), (1.2, 1.8, 1.0), (0.72, 0.74, 0.74), step=0.06)
     g.face((x, 1.25, z - 0.506), (-0.3, 0, 0), (0, 0.5, 0), (0.3, 0.3, 0.3), 0.02, thick=0.004)  # handle well, north face
 
@@ -295,8 +486,192 @@ def fence(g, x0, x1, z0, z1, h=2.2, gate=None):
         u = np.array([b[0] - a[0], 0, b[1] - a[1]])
         if gate and abs(a[1] - gate[0]) < 1e-6 and abs(b[1] - gate[0]) < 1e-6:
             continue
-        g.face((mid[0], h / 2, mid[1]), u, (0, h, 0), mesh, 0.3, alpha=0.2, thick=0.01, noise=0.02)
+        g.face((mid[0], h / 2, mid[1]), u, (0, h, 0), mesh, 0.3, alpha=0.13, thick=0.01, noise=0.04)
         g.face((mid[0], h, mid[1]), u, (0, 0.06, 0), (0.5, 0.5, 0.52), 0.08, thick=0.02)  # top rail
+        for k in range(3):                                                              # barbed wire strands above
+            g.rod((a[0], h + 0.12 + 0.12 * k, a[1]), (b[0], h + 0.12 + 0.12 * k, b[1]), 0.008, (0.4, 0.4, 0.42), step=0.3, alpha=0.8)
+
+
+# ---------- balance of plant: the equipment around the tagged assets, so the yard reads like a real substation and skids ----------
+STEEL, GALV, CONCRETE = (0.55, 0.56, 0.57), (0.66, 0.67, 0.68), (0.72, 0.71, 0.68)
+MV_GREEN, WARN = (0.29, 0.38, 0.31), (0.95, 0.75, 0.1)
+
+
+def label(g, center, normal_axis, w, h, rgb, sign=1):
+    """A small plate (nameplate, arc-flash label) on a wall facing +/- x or z."""
+    c = np.asarray(center, float)
+    if normal_axis == "x":
+        g.face(c, (0, 0, -w * sign), (0, h, 0), rgb, min(w, h) / 3, thick=0.003, noise=0.01, overlap=1.2)
+    else:
+        g.face(c, (w * sign, 0, 0), (0, h, 0), rgb, min(w, h) / 3, thick=0.003, noise=0.01, overlap=1.2)
+
+
+def bollard(g, x, z):
+    g.cylinder((x, 0, z), 0.08, 1.1, WARN, step=0.05)
+    caster(x, z, 0.16, 0.16, 1.1)
+
+
+def inverter_skid(g, i):
+    """The MV skid south of each inverter: step-up transformer with radiator fins, aux panel, conduits, bollards."""
+    x, _, z = ANCHORS[f"INV-{i + 1}"]
+    zc = z + 5.6
+    g.box((x + 0.3, 0.12, zc), (4.2, 0.24, 3.6), CONCRETE, step=0.12, grime=0.1)
+    # pad-mount MV transformer, doors facing west like the cabinet
+    tx, tz = x - 0.1, zc
+    g.box((tx, 0.24 + 0.9, tz), (1.8, 1.8, 2.0), MV_GREEN, step=0.05, grime=0.35)
+    g.box((tx + 0.15, 0.24 + 1.83, tz), (1.6, 0.06, 1.9), [c * 1.1 for c in MV_GREEN], step=0.06, cast=False)
+    for k in range(9):                                                              # radiator fins on the east side
+        fz = tz - 0.8 + 0.2 * k
+        g.box((tx + 1.05, 0.24 + 0.85, fz), (0.3, 1.3, 0.035), [c * 0.85 for c in MV_GREEN], step=0.04, grime=0.2, cast=False)
+    caster(tx + 1.05, tz, 0.3, 1.8, 1.3)
+    g.face((tx - 0.904, 0.24 + 0.9, tz), (0, 0, 0.02), (0, 1.6, 0), (0.12, 0.14, 0.12), 0.02, thick=0.003)   # door seam
+    label(g, (tx - 0.906, 1.55, tz - 0.45), "x", 0.32, 0.22, WARN, sign=-1)
+    label(g, (tx - 0.906, 1.55, tz + 0.45), "x", 0.25, 0.14, (0.92, 0.92, 0.9), sign=-1)
+    # auxiliary / SCADA panel on a unistrut frame
+    ax, az = x + 1.8, zc - 1.2
+    for dz in (-0.35, 0.35):
+        g.box((ax, 0.85, az + dz), (0.06, 1.7, 0.06), GALV, step=0.03, grime=0)
+    g.box((ax, 1.35, az), (0.3, 0.7, 0.6), (0.85, 0.86, 0.86), step=0.04)
+    label(g, (ax - 0.152, 1.5, az), "x", 0.2, 0.08, (0.15, 0.4, 0.75), sign=-1)
+    # conduits from the inverter to the transformer and down to the trench
+    for k in range(4):
+        cz = z + 1.25 + 0.15 * k
+        g.rod((x - 0.5 + 0.12 * k, 0.32, cz), (x - 0.5 + 0.12 * k, 0.32, zc - 1.0), 0.045, (0.35, 0.36, 0.36))
+    for k in range(3):
+        g.rod((x + 0.75 + 0.15 * k, 0.24, z - 1.2), (x + 0.75 + 0.15 * k, 1.0, z - 1.2), 0.04, (0.3, 0.3, 0.3))
+    for bx, bz in ((x - 1.9, zc - 2.0), (x - 1.9, zc + 2.0), (x + 2.6, zc + 2.0), (x - 1.9, z - 1.8)):
+        bollard(g, bx, bz)
+
+
+def switchgear(g, name):
+    """Turn a lone breaker into a three-section outdoor lineup; the middle section is the tagged breaker itself."""
+    x, _, z = ANCHORS[name]
+    g.box((x, 0.1, z), (4.4, 0.2, 2.4), CONCRETE, step=0.15, grime=0.1)
+    for dx in (-1.25, 1.25):
+        g.box((x + dx, 1.1, z), (1.2, 1.8, 1.0), (0.7, 0.72, 0.72), step=0.05)
+        g.face((x + dx, 1.1, z - 0.504), (-0.02, 0, 0), (0, 1.6, 0), (0.25, 0.26, 0.26), 0.02, thick=0.003)   # door seam
+        g.face((x + dx - 0.35, 1.15, z - 0.505), (-0.06, 0, 0), (0, 0.18, 0), (0.15, 0.15, 0.15), 0.02, thick=0.01)  # latch
+        for k in range(4):                                                          # louvres near the top
+            g.face((x + dx, 1.65 - 0.05 * k, z - 0.505), (-0.6, 0, 0), (0, 0.018, 0), (0.3, 0.31, 0.31), 0.02, thick=0.003)
+        label(g, (x + dx + 0.25, 1.35, z - 0.506), "z", 0.22, 0.14, WARN, sign=-1)
+    g.box((x, 2.05, z - 0.05), (3.8, 0.1, 1.2), (0.62, 0.64, 0.64), step=0.06, cast=False)       # drip roof over the lineup
+    caster(x, z, 3.8, 1.2, 2.1)
+    label(g, (x - 0.2, 1.75, z - 0.506), "z", 0.3, 0.1, (0.95, 0.95, 0.93), sign=-1)             # breaker nameplate
+    for k in range(3):                                                                            # cable risers out of the trench
+        g.rod((x + 1.25 + 0.2 * (k - 1), 0.2, z + 0.55), (x + 1.25 + 0.2 * (k - 1), 2.0, z + 0.55), 0.05, (0.3, 0.3, 0.3))
+
+
+def lattice(g, x, z, h, w=0.8):
+    """A galvanised lattice column: four angle legs and zig-zag bracing."""
+    for dx in (-w / 2, w / 2):
+        for dz in (-w / 2, w / 2):
+            g.rod((x + dx, 0, z + dz), (x + dx * 0.6, h, z + dz * 0.6), 0.05, GALV)
+    n = int(h / 0.8)
+    for k in range(n):
+        y0, y1 = h * k / n, h * (k + 1) / n
+        s0, s1 = 1 - 0.4 * k / n, 1 - 0.4 * (k + 1) / n
+        for (ax, az), (bx, bz) in ((((-1, -1), (1, -1))), (((1, -1), (1, 1))), (((1, 1), (-1, 1))), (((-1, 1), (-1, -1)))):
+            g.rod((x + ax * w / 2 * s0, y0, z + az * w / 2 * s0), (x + bx * w / 2 * s1, y1, z + bz * w / 2 * s1), 0.025, GALV)
+    caster(x, z, w, w, h * 0.5)
+
+
+def insulator(g, top, length=0.9, axis=(0, -1, 0)):
+    """A string of porcelain discs hanging from `top`; returns the attachment point at its end."""
+    top, d = np.asarray(top, float), np.asarray(axis, float)
+    n = int(length / 0.15)
+    for k in range(n):
+        c = top + d * (0.075 + 0.15 * k)
+        g.cylinder(c - np.array([0, 0.02, 0]), 0.13, 0.04, (0.55, 0.38, 0.28), step=0.04)
+    return top + d * length
+
+
+def substation(g):
+    """The plant's collector substation around XFMR-1: dead-end structure, bus, arresters, line to the POI and the grid."""
+    x, _, z = ANCHORS["XFMR-1"]
+    # bright substation rock inside the yard
+    ground_patch(g, x - 8.8, x + 8.8, z - 8.8, z + 8.8, 0.25,
+                 lambda px, pz: np.clip(np.array([0.7, 0.69, 0.66])[None] * (0.82 + 0.3 * g.rng.random((px.size, 1))), 0, 1), y=0.008)
+    # dead-end H-frame on the yard's east side
+    sx = x + 6.5
+    for cz in (z - 4.5, z + 4.5):
+        lattice(g, sx, cz, 10.0)
+    g.box((sx, 9.6, z), (0.5, 0.5, 9.8), GALV, step=0.08, grime=0, cast=False)
+    caster(sx, z, 0.5, 9.8, 9.6)
+    phases = [z - 2.5, z, z + 2.5]
+    ends = [insulator(g, (sx, 9.35, pz), 1.0) for pz in phases]
+    # riser pole beside the transformer with cable terminations and arresters
+    rx, rz = x + 3.2, z - 3.6
+    g.cylinder((rx, 0, rz), 0.17, 7.5, (0.45, 0.34, 0.24), step=0.08)
+    caster(rx, rz, 0.34, 0.34, 7.5)
+    g.box((rx, 7.2, rz), (0.15, 0.15, 3.0), (0.45, 0.34, 0.24), step=0.05, grime=0, cast=False)
+    for k, pz in enumerate(phases):
+        tz = rz - 1.2 + 1.2 * k
+        g.cylinder((rx + 0.15, 7.3, tz), 0.07, 0.6, (0.6, 0.45, 0.35), step=0.03)          # termination
+        g.cylinder((rx - 0.15, 6.6, tz), 0.05, 0.5, (0.5, 0.5, 0.52), step=0.03)            # arrester
+        g.wire((rx + 0.15, 7.9, tz), ends[k], 0.35, 0.02, (0.25, 0.25, 0.27))
+        g.rod((rx + 0.15, 7.3, tz), (rx + 0.15, 0.2, tz + 0.1), 0.04, (0.12, 0.12, 0.12))   # cable down the pole
+    g.rod((x + 1.1, 1.2, z - 0.6), (rx, 0.25, rz), 0.06, (0.12, 0.12, 0.12))
+    # lightning masts at two corners
+    for mx, mz in ((x - 8, z - 8), (x + 8, z + 8)):
+        g.rod((mx, 0, mz), (mx, 14, mz), 0.12, GALV, step=0.2)
+        caster(mx, mz, 0.25, 0.25, 14)
+    # shield wire and conductors east to the POI pole and on to the utility line
+    px, _, pz = ANCHORS["POI-1"]
+    pole_x = px + 1.2
+    arms = [insulator(g, (pole_x, 8.6, pz + d), 0.6, (0, 1, 0)) for d in (-1.1, 0, 1.1)]
+    for k in range(3):
+        g.wire(ends[k], arms[k], 0.9, 0.022, (0.25, 0.25, 0.27))
+    prev = arms
+    for k, lx in enumerate((340, 400, 470, 560)):                                           # off-site poles leaving to the grid
+        lz = pz + 6 * k
+        g.cylinder((lx, 0, lz), 0.18, 10.5, (0.42, 0.32, 0.22), step=0.12)
+        g.box((lx, 10.0, lz), (0.15, 0.18, 2.6), (0.42, 0.32, 0.22), step=0.08, grime=0)
+        caster(lx, lz, 0.36, 0.36, 10.5)
+        tops = [np.array([lx, 10.25, lz + d]) for d in (-1.1, 0, 1.1)]
+        for a, b in zip(prev, tops):
+            g.wire(a, b, 1.2, 0.025, (0.22, 0.22, 0.24), segs=30)
+        prev = tops
+
+
+def control_house(g):
+    """O&M building, parking and a pickup inside the gate."""
+    bx, bz = 112.0, 233.0
+    g.box((bx, 0.1, bz), (13, 0.2, 6.5), CONCRETE, step=0.15, grime=0.1)
+    g.box((bx, 0.2 + 1.5, bz), (12, 3.0, 5.0), (0.86, 0.85, 0.8), step=0.08, grime=0.3)
+    for k in range(24):                                                     # standing-seam ribs on the south wall
+        g.face((bx - 5.75 + 0.5 * k, 1.7, bz + 2.505), (0.04, 0, 0), (0, 2.9, 0), (0.72, 0.71, 0.66), 0.03, thick=0.003)
+    g.box((bx, 3.3, bz), (12.6, 0.2, 5.6), (0.5, 0.52, 0.5), step=0.1, cast=False)
+    caster(bx, bz, 12.6, 5.6, 3.4)
+    g.face((bx - 3.0, 1.25, bz + 2.51), (1.0, 0, 0), (0, 2.1, 0), (0.45, 0.5, 0.55), 0.03, thick=0.004)    # door
+    for wx in (bx + 0.5, bx + 3.5):
+        g.face((wx, 1.9, bz + 2.51), (1.4, 0, 0), (0, 0.9, 0), (0.16, 0.22, 0.28), 0.03, thick=0.004)      # windows
+    g.box((bx + 6.6, 0.7, bz + 0.8), (1.0, 1.0, 1.2), (0.8, 0.8, 0.78), step=0.05)                         # AC condenser
+    label(g, (bx - 1.6, 2.4, bz + 2.512), "z", 1.2, 0.35, (0.12, 0.25, 0.45))
+    pickup(g, 126.0, 236.0, (0.82, 0.83, 0.84))
+    pickup(g, 121.0, 238.5, (0.18, 0.22, 0.3))
+
+
+def pickup(g, x, z, rgb):
+    """A pickup truck facing east."""
+    g.box((x, 0.75, z), (5.4, 0.7, 1.9), rgb, step=0.06, grime=0.15)
+    g.box((x + 0.4, 1.45, z), (2.2, 0.75, 1.8), rgb, step=0.06, grime=0.05)
+    g.face((x + 1.53, 1.45, z), (0, 0, 1.6), (-0.25, 0.6, 0), (0.12, 0.15, 0.18), 0.03, thick=0.003)       # windscreen
+    for sz in (-1, 1):
+        g.face((x + 0.4, 1.5, z + sz * 0.905), (1.9 * sz, 0, 0), (0, 0.5, 0), (0.12, 0.15, 0.18), 0.03, thick=0.003)
+    g.box((x - 1.8, 1.25, z), (1.7, 0.3, 1.8), [c * 0.8 for c in rgb], step=0.06, skip=("bottom", "top"), cast=False)
+    for wx in (x - 1.7, x + 1.75):
+        for sz in (-0.85, 0.85):
+            g.cylinder((wx, 0.4, z + sz - 0.13), 0.4, 0.26, (0.08, 0.08, 0.08), step=0.05, axis="z")
+
+
+def poles(g):
+    """Light and security-camera poles along the roads and fence corners."""
+    for px, pz in ((140.5, 20), (140.5, 95), (140.5, 170), (140.5, 236), (210, 123), (300, 240), (10, 240), (10, 0), (310, 0)):
+        g.rod((px, 0, pz), (px, 7.5, pz), 0.07, GALV, step=0.15)
+        g.rod((px, 7.5, pz), (px + 0.9, 7.6, pz), 0.04, GALV)
+        g.box((px + 1.0, 7.5, pz), (0.45, 0.12, 0.25), (0.3, 0.3, 0.3), step=0.04, grime=0, cast=False)
+        g.box((px + 0.15, 6.4, pz), (0.3, 0.2, 0.18), (0.92, 0.92, 0.9), step=0.03, grime=0, cast=False)   # camera housing
+        caster(px, pz, 0.14, 0.14, 7.5)
 
 
 def site(g):
@@ -304,11 +679,18 @@ def site(g):
         pv_block(g, i)
         inverter(g, i)
         breaker(g, f"52-I{i + 1}")
+        switchgear(g, f"52-I{i + 1}")
+        inverter_skid(g, i)
         for n in range(1, 7):
             combiner(g, i, n)
     breaker(g, "52-M")
+    switchgear(g, "52-M")
     breaker(g, "52-B1")
+    switchgear(g, "52-B1")
     transformer(g)
+    substation(g)
+    control_house(g)
+    poles(g)
     x, _, z = ANCHORS["POI-1"]
     g.box((x, 0.1, z), (3, 0.2, 3), (0.7, 0.69, 0.66), step=0.15)
     g.box((x, 1.1, z), (1.0, 1.8, 0.6), (0.75, 0.77, 0.76), step=0.06)
@@ -457,8 +839,9 @@ def main(argv=None):
     ap.add_argument("--out", type=Path, default=OUT)
     a = ap.parse_args(argv)
     g = Splat(a.seed)
-    ground(g)
+    CASTERS.clear()
     site(g)
+    ground(g)
     n = g.write(a.out / "plant.splat")
     vps, states = load_viewpoints()
     written = {}
