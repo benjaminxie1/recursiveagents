@@ -70,7 +70,7 @@ class Verifier:
         self.registry = registry
         self.messages = [{"role": "system", "content": system_prompt()}]
         self.audited: set[str] = set()
-        self.own_camera_seqs: set = set()  # the sim logs every call as actor "sim", so own calls are told apart by seq
+        self.own_camera_seqs: set = set()  # own calls, by seq (tool calls carry the calling actor too)
 
     # ----- model -----
     def _ask(self, content: str, max_tokens: int = 4096) -> dict:

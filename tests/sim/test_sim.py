@@ -130,6 +130,18 @@ def test_toolbox_contract(tmp_path):
     assert len({json.dumps(TOOL_SCHEMAS)}) == 1 and TOOL_SCHEMAS is __import__("gridtwin.sim.tools", fromlist=["x"]).TOOL_SCHEMAS
 
 
+def test_toolbox_tags_calling_actor(tmp_path):
+    from gridtwin.agents.common import ActorToolbox
+    sim, tb, log, sc = episode.start("s00_control", run_id="a", runs_dir=tmp_path)
+    tb.call("list_alarms", {}, actor="worker:operator")
+    ActorToolbox(tb, "verifier").call("list_alarms", {})
+    tb.call("list_alarms", {})
+    calls = [(e["actor"], e["type"]) for e in log.events if e["type"] in ("tool_call", "tool_result")]
+    assert calls == [("worker:operator", "tool_call"), ("worker:operator", "tool_result"),
+                     ("verifier", "tool_call"), ("verifier", "tool_result"), ("sim", "tool_call"), ("sim", "tool_result")]
+    assert "by" not in log.events[-2]["data"]
+
+
 EXTENDED = ["s01_ground_fault", "s02_soiling", "s04_breaker_trip", "s07_vegetation", "s08_hotspot",
             "s09_gf_plus_trip", "s10_fan_cloudy", "s11_soiling_vegetation", "s12_control_cloudy",
             "s13_fan_plus_stale_scada", "s14_xfmr_plus_soiling", "s15_contractor_botch"]

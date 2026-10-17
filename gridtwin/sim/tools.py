@@ -132,10 +132,11 @@ class Toolbox:
             return True
         return False
 
-    def call(self, name: str, args: dict | None = None) -> dict:
+    def call(self, name: str, args: dict | None = None, actor: str | None = None) -> dict:
         args = dict(args or {})
-        by = getattr(self, "actor", None)  # set by agents.common.ActorToolbox; lets viewers attribute calls (additive, C2)
-        self.log.emit("sim", "tool_call", {"name": name, "args": args, **({"by": by} if isinstance(by, str) else {})})
+        by = actor if isinstance(actor, str) else getattr(self, "actor", None)  # the calling agent (agents.common.ActorToolbox)
+        who = by if isinstance(by, str) else "sim"
+        self.log.emit(who, "tool_call", {"name": name, "args": args, **({"by": by} if isinstance(by, str) else {})})
         if self._exhausted():
             result = {"error": "budget_exhausted"}
         else:
@@ -145,7 +146,7 @@ class Toolbox:
             except Exception as e:  # never raise into the agent loop
                 result = {"error": f"{type(e).__name__}: {e}"}
         result = json.loads(json.dumps(result, default=str))
-        self.log.emit("sim", "tool_result", {"name": name, "result": result})
+        self.log.emit(who, "tool_result", {"name": name, "result": result})
         return result
 
     def _dispatch(self, name, args):
