@@ -36,7 +36,7 @@ FAULT_ASSETS = {
 }
 
 REQUIRED = {"id", "goal", "split", "seed", "start", "weather", "faults", "expected", "budget"}
-OPTIONAL = {"preroll_min"}
+OPTIONAL = {"preroll_min", "botched_work"}
 
 
 def check_step(step, errs):
@@ -109,6 +109,10 @@ def check_scenario(path, sc):
             faultlib.make(f)
         except TypeError as e:
             errs.append(f"{ftype}: the sim rejects this fault spec ({e})")
+
+    for b in sc.get("botched_work") or []:
+        if not (isinstance(b, dict) and b.get("work_order") in WORK_ORDERS and isinstance(b.get("times", 1), int)):
+            errs.append(f"botched_work: bad entry {b!r} (need asset, a known work_order, integer times)")
 
     exp = sc.get("expected") or {}
     if missing := {"final_status", "human_page"} - exp.keys():

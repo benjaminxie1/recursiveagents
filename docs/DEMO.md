@@ -47,6 +47,7 @@ If judges pick the scenario, offer these pre-tested ones: `s06_stale_scada` (sen
 
 ## Before going on stage
 
+- Run `python -m scripts.demo_check` first (no key needed, a few seconds): it must print ALL PASS.
 - Warm the prefix cache: `.venv/bin/python -m gridtwin.run --warm`.
 - Start the viewer: `.venv/bin/python -m gridtwin.serve --port 8000`, then open `http://localhost:8000/?run=<id>` and `http://localhost:8000/wall.html?run=<id>`.
 - Have a finished run of each pre-tested scenario ready to show with `&replay=1` if the live run stalls.

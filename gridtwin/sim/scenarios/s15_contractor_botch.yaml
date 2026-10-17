@@ -1,0 +1,18 @@
+id: s15_contractor_botch
+goal: "Unit 1 has been losing output around midday. Get it back to full output safely."
+split: dev
+seed: 15
+start: "2026-07-15T12:00"
+preroll_min: 240
+weather: {clouds: clear}
+faults:
+  - {type: F3_fan_failure, asset: INV-1, onset_min: -230}
+botched_work:
+  - {asset: INV-1, work_order: replace_fan_filter, times: 1}
+expected:
+  final_status: DONE
+  human_page: not_needed
+  resolved_by:
+    - {dispatch_tech: {asset: INV-1, work_order: replace_fan_filter}}
+    - {dispatch_tech: {asset: INV-1, work_order: replace_fan_filter}}
+budget: {sim_minutes: 480, tool_calls: 80}
