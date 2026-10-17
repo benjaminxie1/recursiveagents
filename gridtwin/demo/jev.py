@@ -368,14 +368,15 @@ def _ask_jev(state: dict, key: str) -> dict:
     body = json.loads(json.dumps(jev_body(state), default=str))
     r = httpx.post(JevDecision.url, headers={"Authorization": f"Bearer {key}"}, json=body, timeout=JEV_TIMEOUT_S)
     r.raise_for_status()
-    out = parse_jev(r.json())
+    out = parse_jev(r.json(), state)
     if out is None:
         raise ValueError("no fix_verified answer in the Jev response")
     return out
 
 
-def parse_jev(payload) -> dict | None:
-    """Normalised decision from a Jev payload, or None when it has no fix_verified answer."""
+def parse_jev(payload, state: dict | None = None) -> dict | None:
+    """Normalised decision from a Jev payload, or None when it has no fix_verified answer. Jev returns no reason
+    text, so the reason is its probabilities plus, given the state, the evidence they rest on."""
     if not isinstance(payload, (dict, list)):
         return None
     ans = _find(payload, "fix_verified")
@@ -402,7 +403,26 @@ def parse_jev(payload) -> dict | None:
     if not reason:
         reason = f"jev chose {verdict}" + (
             " (" + ", ".join(f"{k} {v:.2f}" for k, v in probs.items()) + ")" if probs else "")
+        if isinstance(state, dict) and state:
+            reason += f"; evidence: {evidence_summary(state)}"
     return _result(verdict, p, unc, "jev", reason)
+
+
+def evidence_summary(state: dict) -> str:
+    """One line of the facts a verdict rests on: telemetry age, each camera check, independent confirmations."""
+    sensors = state.get("sensors") if isinstance(state.get("sensors"), dict) else {}
+    age = _num(sensors.get("data_age_min"))
+    stale = "stale" if sensors.get("stale") is not False else "fresh"
+    parts = [f"telemetry {age:g} min old ({stale})" if age is not None else "telemetry undatable (stale)"]
+    for v in state.get("visual") or [] if isinstance(state.get("visual"), list) else []:
+        if isinstance(v, dict):
+            conf = _num(v.get("confidence"))
+            parts.append(f"camera {v.get('viewpoint') or '?'} {'passed' if v.get('pass') is True else 'failed'}"
+                         + (f" ({conf:.2f})" if conf is not None else ""))
+    cov = state.get("coverage") if isinstance(state.get("coverage"), dict) else {}
+    n = int(_num(cov.get("independent_confirmations")) or 0)
+    parts.append(f"{n} independent confirmation{'' if n == 1 else 's'}")
+    return ", ".join(parts)
 
 
 def _ask_model(state: dict, log) -> dict:

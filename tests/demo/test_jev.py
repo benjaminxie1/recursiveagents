@@ -368,3 +368,33 @@ def test_backend_not_verified_is_never_loosened(isolate):
     isolate.content = '{"verdict": "not_verified", "p_verified": 0.3, "uncertainty": 0.4, "reason": "strict"}'
     out = jev.decide(state())
     assert out["verdict"] == "not_verified" and out["reason"] == "strict"
+
+
+# recorded from the live API (jev-1.13.0) with jev_body() on the real s06 states; Jev returns no reason text
+REAL_JEV_STALE = {"model": "jev-1.13.0", "answers": {
+    "fix_verified": {"type": "choice", "choice": "not_verified", "confidence": 1.0,
+                     "probabilities": {"verified": 0.0, "not_verified": 1.0, "uncertain": 0.0}},
+    "uncertainty": {"type": "noul", "noul": 0.42}}, "usage": {"input_tokens": 1112, "output_tokens": 62}}
+REAL_JEV_FRESH = {"model": "jev-1.13.0", "answers": {
+    "fix_verified": {"type": "choice", "choice": "verified", "confidence": 0.86,
+                     "probabilities": {"verified": 0.91, "not_verified": 0.01, "uncertain": 0.08}},
+    "uncertainty": {"type": "noul", "noul": 0.3}}, "usage": {"input_tokens": 1114, "output_tokens": 61}}
+
+
+def test_real_jev_stale_answer_cites_the_evidence(monkeypatch):
+    monkeypatch.setenv("JEV_API_KEY", "test-key")
+    monkeypatch.setattr(jev.httpx, "post", FakeHttp(REAL_JEV_STALE))
+    out = jev.decide(state(tel=STALE_TEL, visual=BAD_VIEW))
+    check_shape(out)
+    assert (out["backend"], out["verdict"], out["p_verified"], out["uncertainty"]) == ("jev", "not_verified", 0.0, 0.42)
+    assert "not_verified 1.00" in out["reason"]
+    assert "telemetry 91 min old (stale)" in out["reason"] and "inv3_cabinet failed" in out["reason"]
+
+
+def test_real_jev_fresh_answer_cites_the_evidence(monkeypatch):
+    monkeypatch.setenv("JEV_API_KEY", "test-key")
+    monkeypatch.setattr(jev.httpx, "post", FakeHttp(REAL_JEV_FRESH))
+    out = jev.decide(state())
+    assert (out["backend"], out["verdict"], out["p_verified"], out["uncertainty"]) == ("jev", "verified", 0.91, 0.3)
+    assert "telemetry 0 min old (fresh)" in out["reason"] and "inv3_cabinet passed (0.91)" in out["reason"]
+    assert "1 independent confirmation" in out["reason"]
