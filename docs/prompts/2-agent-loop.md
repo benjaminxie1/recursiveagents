@@ -14,7 +14,7 @@ Most of the Technicality score (40%) comes from this workstream. The pieces that
 - recovery when a worker fails
 
 **Alike (development only).** If your session has the Alike MCP:
-- At the start, call `resolve_work_item` with the anchor `{type: "git_branch", value: "benjaminxie1/recursiveagents:claude/sweet-faraday-yssuo9"}`.
+- At the start, call `resolve_work_item` with the anchor `{type: "git_branch", value: "benjaminxie1/recursiveagents:main"}`.
 - Call `record_decision` for design choices, such as the DoD schema.
 
 Never import Alike or MCP into product code.
@@ -24,9 +24,9 @@ Never import Alike or MCP into product code.
 Three coding agents are building **GridTwin** in parallel for the Crusoe × Cerebral Valley Recursive Agents Hackathon. The deadline is today, Sat Oct 17 2026, at 5:00 PM PDT, with feature freeze at 3:30 PM. Each agent owns its own set of files. Stay inside yours.
 
 **Repo:** https://github.com/benjaminxie1/recursiveagents. This is the only codebase. Don't use Jonathan's local `recursive-agents-hackathon` folder or its `crusoe.py`.
-- `main` is the shared branch, and it must always be ready to demo.
-- Cut your own branch from `main`, named `<your-name>/<workstream>` (for example `will/sim`), and merge it into `main` about once an hour.
-- `claude/sweet-faraday-yssuo9` is Benjamin's working branch. Don't push to it.
+- `main` is the only active branch, and it must always be ready to demo.
+- Work directly on `main`; do not recreate retired branches unless Benjamin explicitly requests one.
+- Benjamin's 2026-10-17 consolidation request supersedes all earlier per-person and shared-Claude branch instructions.
 
 **Read these first, in this order:** `docs/HACKATHON.md`, `docs/MEMORY.md`, `docs/SIMULATOR.md`, `docs/PLAN.md`. Where PLAN.md or SIMULATOR.md disagrees with this prompt, follow this prompt. Jonathan confirmed the decisions below at 10:30.
 
@@ -207,9 +207,9 @@ The board lasts for one run only, and every post is logged as a `finding` event.
 ### Working rules
 
 - **Git:**
-  - Work on your own branch cut from `main`, and make small commits.
-  - Merge into `main` about once an hour, and right away whenever you change a contract, so the others can pull it.
-  - Before every push, run `git status -sb` and rebase on `origin/main`. Never force-push a shared branch.
+  - Work directly on `main`, and make small commits; do not recreate retired branches.
+  - Share committed contract changes on `main` promptly when authorized, so the others can pull them.
+  - Before every push, run `git status -sb`, fetch and integrate `origin/main`, and preserve teammates' commits. Never force-push shared history.
   - If MEMORY.md conflicts, resolve it by keeping both lines.
 - **Shared memory:** when you decide something, or learn something the others need, add a line `HH:MM <name>: text` to the right section of `docs/MEMORY.md`. Put it in the same commit as the change it describes.
 - **Secrets:** never print, log or commit keys. `.env` is gitignored.
