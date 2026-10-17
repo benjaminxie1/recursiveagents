@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-17T19:02:37+00:00",
+ "generated_at": "2026-10-17T19:53:41+00:00",
  "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B",
  "models_used": [
   "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
@@ -27,8 +27,8 @@
   }
  },
  "summary": {
-  "photos": 15,
-  "correct": 13,
+  "photos": 27,
+  "correct": 25,
   "misread": [
    "assets/photos/INV-1/thermal_normal/01_afcis_infrared.jpg",
    "assets/photos/INV-1/thermal_normal/02_flir_one_pro_thermal_camera_30418557488.jpg"
@@ -635,6 +635,666 @@
       "pass": true,
       "confidence": 0.95,
       "evidence": "The thermal image shows a component with a bright yellow/orange region indicating higher temperature compared to the surrounding purple/blue areas, confirming a hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-2/display_off/01_ai_generated.jpg",
+   "asset": "INV-2",
+   "expected_state": "display_off",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "display_off",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark and blank with no visible readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark and blank with no visible readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark and blank, with no visible readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "healthy",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark and not showing any readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark and not showing any readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark and not showing any readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-2/display_off/02_ai_generated.jpg",
+   "asset": "INV-2",
+   "expected_state": "display_off",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "display_off",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark and blank with no visible readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark and blank with no visible readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark and blank with no visible readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "healthy",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark and not illuminated, showing no readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark with no visible lit status lights or readings.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark and not showing any readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-2/display_off/03_ai_generated.jpg",
+   "asset": "INV-2",
+   "expected_state": "display_off",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "display_off",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark and blank with no visible readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark and blank with no visible readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark and blank with no visible readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "healthy",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark and not lit, showing no readings or status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark and not lit, showing no readings or status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is dark and not lit, showing no readings or status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-2/healthy/01_ai_generated.jpg",
+   "asset": "INV-2",
+   "expected_state": "healthy",
+   "verdict": "correct",
+   "confidence": 0.983,
+   "own_claim": {
+    "state": "healthy",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is illuminated with green background, showing numerical readings (482, 271, 256) and a bar graph, indicating it is on and displaying status.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 1.0,
+      "evidence": "The inverter's display screen is illuminated with green, showing numerical readings and a bar graph, indicating it is on.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 1.0,
+      "evidence": "The inverter's display screen is illuminated with green, showing numerical readings and a bar graph, indicating it is on.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "display_off",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The inverter's display screen is lit and shows numerical readings (482, 271, 256) and a bar graph, indicating it is not off.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The inverter's display screen is lit and shows numerical readings (482, 271, 256) and a bar graph, indicating it is not off.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The inverter's display screen is lit and shows numerical readings (482, 271, 256) and a bar graph, indicating it is not off.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-2/healthy/02_ai_generated.jpg",
+   "asset": "INV-2",
+   "expected_state": "healthy",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "healthy",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is illuminated with green background showing numerical readings (732, 418, 276) and a bar graph, indicating it is on and displaying status.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is illuminated with green background showing numerical readings (732, 418, 276) and a bar graph, indicating it is on and displaying status.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen is illuminated with green background showing numerical readings (732, 418, 276) and a bar graph, indicating it is on and displaying status.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "display_off",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The inverter's display screen is lit with green numbers and a bar graph, indicating it is on, not off.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The inverter's display screen is lit with green numbers and a bar graph, indicating it is on, not off.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The inverter's display screen is lit with green numbers and a bar graph, indicating it is on, not off.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-2/healthy/03_ai_generated.jpg",
+   "asset": "INV-2",
+   "expected_state": "healthy",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "healthy",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen shows numbers (402, 376, 284) and a green status light is lit.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen shows numbers (402, 376, 284) and a green status light is lit.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter's display screen shows numbers (402, 376, 284) and a green status light is lit.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "display_off",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The inverter's display shows numbers (402, 376, 284) and a bar graph, with a lit green status light, indicating it is on.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The inverter's display shows numbers (402, 376, 284) and a bar graph, with a lit green status light, indicating it is on.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The inverter's display shows numbers (402, 376, 284) and a bar graph, with a lit green status light, indicating it is on.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-3/display_off/01_ai_generated.jpg",
+   "asset": "INV-3",
+   "expected_state": "display_off",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "display_off",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The small screen on the cabinet door is dark with no visible readings or lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The small screen on the cabinet door is dark and shows no lit status or readings, indicating it is off.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The small screen on the cabinet door is dark with no visible readings or lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "healthy",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The small screen on the cabinet door is dark, indicating it is not on or showing readings.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The small screen on the cabinet door is dark, indicating it is not on and showing no readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The small screen on the cabinet door is dark, indicating it is not on and showing no readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-3/display_off/02_ai_generated.jpg",
+   "asset": "INV-3",
+   "expected_state": "display_off",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "display_off",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The screen on the cabinet door is dark and blank, showing no readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The screen on the cabinet door is dark with no visible readings or lit status lights, indicating it is off.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The screen on the cabinet door is dark with no visible readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "healthy",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The screen on the cabinet door is dark, indicating it is not displaying readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The screen on the cabinet door is dark, indicating it is not displaying readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The screen on the cabinet door is dark, indicating it is not displaying readings or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-3/display_off/03_ai_generated.jpg",
+   "asset": "INV-3",
+   "expected_state": "display_off",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "display_off",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The small screen on the cabinet door is dark and shows no lit status lights or readings, indicating it is off.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The small screen on the cabinet door is dark and shows no lit status lights or readings, indicating it is off.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The small screen on the cabinet door is dark and shows no lit status lights or readings, indicating it is off.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "healthy",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The small window on the cabinet door is dark, indicating no visible display or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The small window on the cabinet door is dark, indicating no visible display or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The small window on the cabinet door is dark, indicating no visible display or lit status lights.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-3/healthy/01_ai_generated.jpg",
+   "asset": "INV-3",
+   "expected_state": "healthy",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "healthy",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The cabinet has a digital display screen showing numbers (812, 406, 779) and a graph, indicating it is lit and displaying readings.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The cabinet has a digital display screen showing numbers (812, 406, 779) and a graph, indicating it is on and displaying readings.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The cabinet has a digital display screen showing numbers (812, 406, 779) and a graph, indicating it is on and displaying readings.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "display_off",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The display screen on the cabinet is lit and shows numbers (812, 406, 779) and a graph, indicating it is not off.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The display screen on the cabinet is lit and shows numbers (812, 406, 779) and a graph, indicating it is not off.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The display screen on the cabinet is lit and shows numbers (812, 406, 779) and a graph, indicating it is not off.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-3/healthy/02_ai_generated.jpg",
+   "asset": "INV-3",
+   "expected_state": "healthy",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "healthy",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The cabinet has a lit display screen showing numbers and a graph, indicating the inverter's status screen is on.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The cabinet has a lit display screen showing numbers and a graph, indicating the inverter's status screen is on.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The cabinet has a lit display screen showing numbers and a graph, indicating the inverter's status screen is on.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "display_off",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The display screen on the cabinet is lit and shows numbers and a graph, indicating it is not off.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The display screen on the cabinet is lit and shows numbers and a graph, so it is not off or blank.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The display screen on the cabinet is lit and shows numbers and a graph, so it is not off or blank.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-3/healthy/03_ai_generated.jpg",
+   "asset": "INV-3",
+   "expected_state": "healthy",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "healthy",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The cabinet has a lit display screen showing numerical readings and a graph.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The cabinet has a lit display screen showing numerical readings and a graph, indicating the inverter's status screen is on.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The cabinet has a lit display screen showing numerical readings and a graph, indicating the inverter's status screen is on.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "display_off",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The display screen on the cabinet is lit and shows numbers and a graph, so it is not off or blank.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The display screen on the cabinet is lit and shows numbers and a graph, so it is not off or blank.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The display screen on the cabinet is lit and shows numbers and a graph, indicating it is not off.",
       "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
      }
     ]
