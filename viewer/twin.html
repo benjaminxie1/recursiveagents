@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GridTwin digital twin</title>
+<link rel="stylesheet" href="twin.css">
+<script>if (/[?&]tour=1(&|$)/.test(location.search)) document.documentElement.classList.add('tour');  // demos skip the intro</script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three-0.180.0/three.module.min.js",
+    "three/addons/": "./vendor/three-0.180.0/addons/",
+    "@sparkjsdev/spark": "./vendor/spark-2.3.1/spark.module.js"
+  }
+}
+</script>
+</head>
+<body class="nostations">
+<canvas id="view" aria-label="Plant digital twin"></canvas>
+<div id="pins" class="pins"></div>
+<div id="measureLabel" class="measure-label" hidden></div>
+
+<div id="loader" class="loader">
+  <div class="cube" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div id="pct" class="pct">0.0%</div>
+  <div class="brand">GridTwin</div>
+  <div id="loaderMsg" class="loader-msg" hidden></div>
+</div>
+
+<div id="splash" class="splash">
+  <div class="splash-main">
+    <h1 class="splash-title"><span id="splashTitle">GridTwin - plant digital twin</span></h1>
+    <button id="btnEnter" class="enter" autofocus>
+      <span class="ring"><svg viewBox="0 0 24 24"><path d="M8.4 5.4v13.2l10.4-6.6z" class="fill"/></svg></span>
+      <span class="lbl">Enter tour</span>
+    </button>
+    <p class="splash-note">A walk-through scan of the plant, with the agents' inspection overlaid as it happens.</p>
+    <p id="splashCredit" class="splash-credit" hidden></p>
+  </div>
+  <div class="presented">
+    <span>Presented by</span>
+    <div class="mark mark-lg"><svg viewBox="0 0 20 20"><path d="M10 1.8l7.2 4.1v8.2L10 18.2l-7.2-4.1V5.9z"/><path d="M2.8 5.9L10 10l7.2-4.1M10 10v8.2"/></svg><b>GridTwin</b></div>
+  </div>
+</div>
+
+<div id="notice" class="notice" role="status" hidden>
+  <button class="x" aria-label="Close">
+    <svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg>
+  </button>
+  <p>Drag to look around in any direction, use W A S D or the mouse wheel to move forward and back, and click any spot to walk straight there.</p>
+</div>
+
+<div class="corner tl">
+  <button id="btnSettings" class="chip" data-tip="Settings" aria-label="Settings">
+    <svg viewBox="0 0 24 24"><path d="M10.3 3.2h3.4l.5 2.4 1.6.9 2.3-.8 1.7 2.9-1.8 1.6v1.6l1.8 1.6-1.7 2.9-2.3-.8-1.6.9-.5 2.4h-3.4l-.5-2.4-1.6-.9-2.3.8-1.7-2.9 1.8-1.6v-1.6L4.2 8.6l1.7-2.9 2.3.8 1.6-.9z"/><circle cx="12" cy="12" r="2.6"/></svg>
+  </button>
+  <button id="btnHelp" class="chip" data-tip="Help" aria-label="Help">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.4v.5"/><circle cx="12" cy="16.6" r=".35" class="fill"/></svg>
+  </button>
+</div>
+<canvas id="gizmo" class="gizmo" width="160" height="160" aria-hidden="true"></canvas>
+
+<header id="runChip" class="run-chip" hidden>
+  <span id="runMode" class="mode"></span>
+  <span id="runName" class="name"></span>
+  <span class="sep"></span>
+  <span id="runChecks" class="checks"></span>
+  <button id="runStatus" class="badge" hidden aria-expanded="false" aria-controls="banner"></button>
+  <span id="replayCtl" class="replay" hidden>
+    <button id="btnPlay" aria-label="Play or pause"></button>
+    <button id="btnRestart" aria-label="Restart">
+      <svg viewBox="0 0 24 24"><path d="M5 12a7 7 0 1 0 2.1-5"/><path d="M5 4v4h4"/></svg>
+    </button>
+  </span>
+</header>
+<section id="banner" class="banner" aria-label="Run summary" hidden></section>
+
+<nav class="toolbar" aria-label="Tools">
+  <button id="tWalk" class="on" data-tip="Walk" aria-label="Walk">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="4.6" r="1.8"/><path d="M12 7.6v6.2M12 13.8l-3 6.4M12 13.8l3 6.4M8 10.6l4-1.6 4 1.6"/></svg>
+  </button>
+  <button id="tOrbit" data-tip="Orbit" aria-label="Orbit">
+    <svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9" ry="3.6"/><circle cx="12" cy="12" r="2.4"/><path d="M19.4 9.7l1.4-.9.2 1.7"/></svg>
+  </button>
+  <button id="tTour" data-tip="Follow the agents" aria-label="Follow the agents">
+    <svg viewBox="0 0 24 24"><circle cx="5.5" cy="17.5" r="2"/><circle cx="18.5" cy="6.5" r="2"/><path d="M7.4 16.6c4-1.6 1.3-6.6 5-8.6 1.4-.8 2.9-1.1 4.2-1.3"/></svg>
+  </button>
+  <button id="tStations" data-tip="Show camera stations" aria-label="Camera stations">
+    <svg viewBox="0 0 24 24"><path d="M3.5 8.5h11v8h-11z"/><path d="M14.5 11l6-3v9l-6-3"/></svg>
+  </button>
+  <button id="tPins" class="on" data-tip="Asset hotspots" aria-label="Asset hotspots">
+    <svg viewBox="0 0 24 24"><path d="M12 21s-6.5-6.1-6.5-11a6.5 6.5 0 0 1 13 0c0 4.9-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>
+  </button>
+  <button id="tMeasure" data-tip="Measure" aria-label="Measure">
+    <svg viewBox="0 0 24 24"><path d="M3.8 15.6l11.8-11.8 4.6 4.6-11.8 11.8z"/><path d="M7.2 12.2l1.8 1.8M9.9 9.5l1.2 1.2M12.5 6.9l1.8 1.8"/></svg>
+  </button>
+</nav>
+
+<div class="corner br">
+  <button id="btnLock" class="chip" data-tip="Lock the view" aria-label="Lock the view">
+    <svg viewBox="0 0 24 24"><rect x="6" y="10.8" width="12" height="9" rx="1.8"/><path id="lockShackle" d="M8.8 10.8V8.2a3.2 3.2 0 0 1 6.3-.8"/></svg>
+  </button>
+  <button id="btnHome" class="chip" data-tip="Back to the start view" aria-label="Back to the start view">
+    <svg viewBox="0 0 24 24"><path d="M12 3.8l6 14.4-6-3.4-6 3.4z"/></svg>
+  </button>
+</div>
+
+<div class="mark wordmark" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M10 1.8l7.2 4.1v8.2L10 18.2l-7.2-4.1V5.9z"/><path d="M2.8 5.9L10 10l7.2-4.1M10 10v8.2"/></svg><b>GridTwin</b></div>
+<div id="activity" class="activity" hidden>
+  <ol id="actList" class="act-list" hidden></ol>
+  <button id="actLine" class="act-line" aria-expanded="false" aria-controls="actList" aria-label="Agent activity, latest step">
+    <i class="act-dot"></i><span id="actText" class="act-text"></span>
+    <svg class="chev" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></svg>
+  </button>
+</div>
+<aside id="drawer" class="drawer" hidden></aside>
+
+<section id="settings" class="panel" hidden>
+  <h2>Settings</h2>
+  <label>Run <select id="runPick"></select></label>
+  <label class="row"><input id="optReplay" type="checkbox"> Replay from the start</label>
+  <label class="row"><input id="optLabels" type="checkbox" checked> Hotspot tags</label>
+  <label>Replay speed <input id="optSpeed" type="range" min="0.25" max="8" step="0.25" value="1"><output id="optSpeedVal">1x</output></label>
+  <p class="muted">Scene: <code id="sceneName"></code><span id="sceneCredit"></span>. Other views: <a href="./">evidence</a> · <a href="wall.html">inspection wall</a></p>
+</section>
+<section id="help" class="panel" hidden>
+  <h2>Moving around</h2>
+  <dl>
+    <dt>Look</dt><dd>Drag to look around, all the way round</dd>
+    <dt>Move</dt><dd>W A S D or the arrow keys, E up, Q down, Shift to go faster</dd>
+    <dt>Wheel</dt><dd>Forward and back towards the pointer; right-drag to pan</dd>
+    <dt>Click</dt><dd>Walk to the spot you click</dd>
+    <dt>Orbit</dt><dd>Drag to turn around a point, right-drag to pan, wheel to zoom, click to set the point</dd>
+    <dt>Assets</dt><dd>Point at a hotspot for its status; click it for what the agents found</dd>
+    <dt>Cameras</dt><dd>The camera tool shows every station; the one the agents look through lights up by itself</dd>
+    <dt>Follow</dt><dd>Fly to each camera the agents look through, as it happens</dd>
+    <dt>Measure</dt><dd>Click two points; metres come from the registration board. Esc to stop</dd>
+    <dt>Run</dt><dd>Click the activity line for the last six steps, and the run chip for the summary</dd>
+  </dl>
+  <p class="muted">Colours: <i class="dot st-verified"></i>verified <i class="dot st-failed"></i>failed or paged <i class="dot st-analyzing"></i>analyzing <i class="dot st-seen"></i>seen, no check <i class="dot st-idle"></i>not visited</p>
+</section>
+<div id="tip" class="tip" hidden></div>
+<script type="module" src="twin.js"></script>
+</body>
+</html>
