@@ -14,8 +14,13 @@ DEMO_TYPES = {
     "demo.stage", "demo.sensor", "demo.camera", "demo.diagnosis", "demo.agent", "demo.workorder", "demo.email",
     "demo.contractor", "demo.check", "demo.jev", "demo.diffusion", "demo.verdict", "demo.memory", "demo.final",
 }
-SUBAGENT_ROLES = ("safety", "repair", "acceptance")
-DEMO_ACTORS = {"orchestrator", "diagnoser", "contractor", "memory"} | {f"subagent:{r}" for r in SUBAGENT_ROLES}
+SUBAGENT_ROLES = ("safety", "repair", "acceptance")  # the planner's team
+# Every sub-agent role any team may spawn (diagnosis, plan, verification); actors are "subagent:<role>".
+ALL_SUBAGENT_ROLES = SUBAGENT_ROLES + (
+    "sensors", "vision", "spatial", "history",                  # diagnosis team
+    "telemetry_judge", "visual_judge", "jev_judge", "meta_judge",  # verification team
+)
+DEMO_ACTORS = {"orchestrator", "diagnoser", "contractor", "memory"} | {f"subagent:{r}" for r in ALL_SUBAGENT_ROLES}
 
 _sim_events.TYPES.update(DEMO_TYPES)
 _sim_events.ACTORS_FIXED.update(DEMO_ACTORS)

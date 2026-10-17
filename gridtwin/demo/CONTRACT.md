@@ -26,7 +26,7 @@ All events go through the existing EventLog (`log.emit(actor, type, data)`) into
 | `demo.sensor` | `diagnoser` | `{asset, data_age_min, last_update_ts, latest: {point: value}, stale: bool}` |
 | `demo.camera` | `diagnoser` or `verifier` | `{viewpoint, asset, mode, image (path under repo, served as /<path>), description, round}` |
 | `demo.diagnosis` | `planner` | `{asset, fault, confidence, summary, evidence: [str]}` |
-| `demo.agent` | `planner` or `subagent:<role>` | `{id, parent (null at depth 0), depth, role, model, task, status: "spawned"|"done"|"failed", output}` |
+| `demo.agent` | `planner`, `diagnoser`, `verifier` or `subagent:<role>` | `{id, parent (null at depth 0), depth, role, model, task, status: "spawned"|"done"|"failed", output, team: "diagnose"|"plan"|"verify", round}`; ids are unique per run (e.g. `diagnosis-lead`, `diagnosis-lead.sensors`, `planner.repair`, `verify-lead.r2.visual_judge`); sub-agent roles are listed in `gridtwin/demo/events.py` `ALL_SUBAGENT_ROLES` |
 | `demo.workorder` | `planner` | `{wo_id, asset, work_order, steps: [str], forbid: [str], acceptance: [str], lessons_applied: [lesson id], round}` |
 | `demo.email` | `planner`, `verifier` or `contractor` | `{direction: "out"|"in", wo_id, round, from, to, subject, body, eml (path), attachments: [{name, path}]}` |
 | `demo.contractor` | `contractor` | `{wo_id, round, actions: [{tool, args, ok}], shortcut: bool, note}` |
