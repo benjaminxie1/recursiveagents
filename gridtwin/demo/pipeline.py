@@ -265,6 +265,7 @@ class Demo:
         return wo
 
     def work_order(self, dx, outs, lessons, forbid_mem) -> dict:
+        outs = json.loads(json.dumps(outs, default=str, ensure_ascii=False).replace("\u2014", " - ").replace("\u2013", "-"))
         asset = dx["asset"]
         n = asset.split("-")[-1]
         safety = outs.get("safety") or {}
@@ -323,7 +324,9 @@ class Demo:
                        "evidence": {"backend": decision.get("backend")}})
         meta = None
         try:  # the verification team: three deterministic judges plus a different-family meta judge, one level deep
-            team = R.verify_team(wo, rnd, {"telemetry": {**tel, "data_age_min": age},
+            ping = self.tb.call("run_diagnostic", {"asset": asset, "test": "comms_ping"})
+            team = R.verify_team(wo, rnd, {"telemetry": {**tel, "data_age_min": age, "latest": latest},
+                                           "plant_readings": {"comms_ping": ping, "scada_latest": latest, "data_age_min": age},
                                            "visual": [{"viewpoint": v["viewpoint"], "image": getattr(self, "_last_image", None),
                                                        "check": self._last_check} for v in visual],
                                            "jev": {"input": state, "output": decision}, "contractor_claim": claim},

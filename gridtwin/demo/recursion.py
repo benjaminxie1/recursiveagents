@@ -322,6 +322,9 @@ Three deterministic judges checked the plant itself: SCADA telemetry, a camera v
 You also see the contractor's claim. The claim is not evidence: only the plant's own readings and images count.
 Decide whether the evidence, taken together, proves the fix is real. Say "fail" if a judge failed, if the evidence is missing,
 thin or contradictory, or if the claim asserts something the evidence does not show. Say "pass" only if the evidence proves it.
+plant_readings holds the extra readings the verifier took from the plant (for example comms_ping and the latest SCADA values);
+use them for acceptance criteria. Acceptance items about how the contractor worked (procedure, tools) are not plant evidence:
+do not fail a fix on them unless a plant reading contradicts the fix.
 Reply with JSON only: {"verdict": "pass" | "fail", "reason": "<1-2 sentences citing the numbers>"}"""
 
 
@@ -414,6 +417,7 @@ def verify_team(wo: dict, round_no: int, evidence: dict, lessons: list[dict] | N
     user = json.dumps({"work_order": {k: (wo or {}).get(k) for k in ("wo_id", "asset", "work_order", "acceptance")},
                        "round": round_no, "judges": [{k: c[k] for k in ("kind", "name", "pass", "detail")} for c in checks],
                        "contractor_claim": claim,
+                       "plant_readings": evidence.get("plant_readings") or {},
                        "lessons": [{k: l.get(k) for k in ("id", "fix", "forbid", "acceptance") if l.get(k)} for l in lessons or []]},
                       default=str)
     try:
