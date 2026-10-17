@@ -37,3 +37,4 @@ Read it at the start of a session, after `docs/HACKATHON.md`.
 
 - 10:05 Will: Crusoe rate limits are per model, so spread roles across models and put a card on file first.
 - 10:07 Will: Benjamin rewrote `claude/sweet-faraday-yssuo9` at 10:02 (setup commits squashed into b4ef25f, no file changes); a clone from before then has unrelated history, so back up local work, then `git fetch && git reset --hard origin/claude/sweet-faraday-yssuo9` and re-apply it. Check `git status -sb` for ahead/behind before every push.
+- 10:14 Will: Crusoe key works; smoke test green on all five roles after fixing two model IDs in `gridtwin/config.py` (exact IDs: `nvidia/NVIDIA-Nemotron-3-Super-120B-A12B`, `nvidia/Nemotron-3.5-Lightning-30B-A3B`).

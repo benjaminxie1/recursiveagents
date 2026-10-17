@@ -12,9 +12,9 @@ BASE_URL = os.environ.get("CRUSOE_BASE_URL", "https://api.inference.crusoecloud.
 
 ROLES = {
     # Writes the definition of done and replans. Strongest Nemotron, built for agent teams.
-    "planner": "nvidia/Nemotron-3-Super-120B-A12B",
+    "planner": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B",
     # High-frequency sub-agents (inspection, diagnosis, operator actions).
-    "worker": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "worker": "nvidia/Nemotron-3.5-Lightning-30B-A3B",
     # Independent verifier: a different model family, so its errors don't line up with the workers'.
     "verifier": "openai/gpt-oss-120b",
     # Video, image, and audio perception of inspection footage and splat renders.
