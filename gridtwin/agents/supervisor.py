@@ -34,6 +34,7 @@ class Supervisor:
         self.progress: list[float] = []
         self.rejections: Counter = Counter()
         self.flagged: set[str] = set()
+        self.last_drift_round = -9
         self.messages = [{"role": "system", "content": SYSTEM}]
         evs = read_events(log)
         self.t0 = next((e["t_sim"] for e in evs if e.get("t_sim")), None)
@@ -97,9 +98,10 @@ class Supervisor:
             d = ("replan", f"no progress: check-pass fraction flat at {self.progress[-1]:.0%} for {FLAT_ROUNDS} verifications")
             self.emit(*d)
             return d
-        if drift and actions:
+        if drift and actions and round_no - self.last_drift_round >= 2:  # at most every other round
             on_track, reason = self.judge_drift(round_no, actions, board_posts)
             if not on_track:
+                self.last_drift_round = round_no
                 d = ("replan", f"drift: {reason}")
                 self.emit(*d)
                 return d

@@ -181,12 +181,40 @@ class ReadCache:
                 self.hits += 1
                 return {"seq": snap["seq"], "result": annotate(self.view(snap["result"], args)),
                         "note": f"from the team's read of this asset at seq {snap['seq']} (same sim minute); no tool call spent"}
+            logged = self.from_log("read_telemetry", args, now)
+            if logged:
+                return logged
             return None
         if name in READ_ONLY:
             hit = self.seen.get(self.key(name, args))
             if hit and hit[0] == now:
                 self.hits += 1
                 return {"seq": hit[1], "result": hit[2], "note": f"same as seq {hit[1]} (same sim minute); no tool call spent"}
+        return None
+
+    def from_log(self, name: str, args: dict, now):
+        """Reuse a read anyone made in this sim minute (e.g. the DoD pre-check) when it covers the request."""
+        want = self._points(args)
+        if name != "read_telemetry" or not want:
+            return None
+        evs = read_events(self.log)
+        for i in range(len(evs) - 1, 0, -1):
+            e = evs[i]
+            if e.get("t_sim") != now:
+                break
+            d = e.get("data") or {}
+            if e.get("type") != "tool_result" or d.get("name") != name:
+                continue
+            r, call = d.get("result"), (evs[i - 1].get("data") or {})
+            if not (isinstance(r, dict) and "error" not in r and r.get("asset") == args.get("asset")):
+                continue
+            if self._window(call.get("args") or {}) < min(self._window(args), 5):
+                continue
+            pts = r.get("points") if isinstance(r.get("points"), dict) else {}
+            if all(p in pts and not isinstance(pts[p], dict) for p in want):
+                self.hits += 1
+                return {"seq": e.get("seq"), "result": annotate(self.view(r, args)),
+                        "note": f"from the read at seq {e.get('seq')} (same sim minute); no tool call spent"}
         return None
 
     def put(self, name: str, args: dict, seq, result):

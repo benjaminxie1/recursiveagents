@@ -50,6 +50,12 @@ KNOWLEDGE BASE (retrieved for this goal):
 Write the plan. Reply with only JSON:
 {{"dod": {{"version": 1, "branches": {{"DONE": [...], "ESCALATED": [...], "NO_ACTION": [...]}}}}, "tasks": [{{"worker": "...", "instruction": "..."}}]}}"""
 
+PRECHECK_REQUEST = """PRE-CHECK. Before any work, the independent verifier ran the DONE branch against the live plant. Failing checks show what is wrong right now (a healthy plant passes them all):
+{verdicts}
+
+Write the first tasks (2 to 4) aimed at the failing checks: confirm the cause with the cheapest evidence, then give the operator the precise fix if the evidence will already be on the board. If every check passes, have the team confirm nothing is wrong and change nothing. Reply with only JSON:
+{{"tasks": [{{"worker": "...", "instruction": "..."}}]}}"""
+
 REPLAN_REQUEST = """REPLAN (round {round}). Supervisor: {reason}
 
 Verifier results so far (check id -> pass, evidence):
@@ -157,7 +163,15 @@ def _plan_errors(dod) -> list[str]:
     for b, checks in (dod.get("branches") or {}).items():
         if isinstance(checks, list) and len(checks) > MAX_BRANCH_CHECKS:
             errors.append(f"branch {b} has {len(checks)} checks; keep it to at most {MAX_BRANCH_CHECKS}")
+        for c in checks if isinstance(checks, list) else []:
+            if (isinstance(c, dict) and c.get("op") == "threshold" and c.get("point") in POWER_POINTS
+                    and isinstance(c.get("value"), dict) and c.get("cmp") in (">=", ">")):
+                errors.append(f"check {c.get('id')}: output against a rating depends on sun and weather, so a healthy "
+                              "plant can fail it; use peer or balance for output instead")
     return errors
+
+
+POWER_POINTS = ("ac_kw", "dc_kw", "export_kw", "p_kw")
 
 
 def _clean_tasks(tasks) -> list[dict]:
@@ -229,16 +243,24 @@ class Planner:
         tasks = _clean_tasks(d.get("tasks") if isinstance(d, dict) else None) or list(DEFAULT_TASKS)
         return {"dod": dod, "tasks": tasks, "validation_errors": errors, "repairs": notes}
 
+    def precheck_tasks(self, verdicts: list[dict]) -> list[dict]:
+        vtxt = "\n".join(f"- {v['check_id']} ({v['kind']}): {'pass' if v['pass'] else 'FAIL'} "
+                         f"{json.dumps(v.get('evidence'), default=str)[:400]}" for v in verdicts) or "(no checks ran)"
+        d = extract_json(self._ask(PRECHECK_REQUEST.format(verdicts=vtxt), max_tokens=12288))
+        return _clean_tasks(d.get("tasks") if isinstance(d, dict) else None)
+
     def replan(self, round_no: int, reason: str, verdicts: list[dict], board_posts: list[dict], dod: dict) -> dict:
         vtxt = "\n".join(f"- {v['check_id']}: {'pass' if v['pass'] else 'FAIL'} {json.dumps(v.get('evidence'), default=str)[:300]}"
                          for v in verdicts[-20:]) or "(none yet)"
         btxt = "\n".join(f"- [{p['worker']}] {p['text'][:300]}" for p in board_posts[-15:]) or "(no posts)"
         ids = {b: [c["id"] for c in dod["branches"][b]] for b in D.OUTCOMES}
         reply = self._ask(REPLAN_REQUEST.format(round=round_no, reason=reason, verdicts=vtxt, board=btxt, ids=json.dumps(ids)),
-                          max_tokens=8192, low_effort=True)
+                          max_tokens=12288, low_effort=not reason.startswith(("verifier", "regression", "the team")))
         d = extract_json(reply)
         d = d if isinstance(d, dict) else {}
         added = {}
+        if not reason.startswith(("verifier", "regression")):
+            d["add_checks"] = {}  # the DoD only grows in response to evidence from the verifier
         for b, checks in (d.get("add_checks") or {}).items():
             b = str(b).upper()
             if b in D.OUTCOMES and isinstance(checks, list) and checks:
