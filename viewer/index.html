@@ -3,19 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GridTwin evidence</title>
+<title>GridTwin operations</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header class="top">
   <div class="brand">
     <strong>GridTwin</strong>
-    <span class="sub">Evidence from the autonomous loop: what the agents saw, did and proved</span>
+    <span class="sub">GridTwin Demo Solar · 5 MWac PV, battery and substation</span>
   </div>
   <div class="controls">
-    <select id="runPick" aria-label="Run"></select>
+    <span class="views" role="tablist" aria-label="View">
+      <button role="tab" data-view="operator">Operator</button>
+      <button role="tab" data-view="contractor">Contractor</button>
+    </span>
+    <label class="muted">Incident <select id="runPick" aria-label="Incident"></select></label>
     <span id="modeTag" class="tag"></span>
-    <a id="wallLink" class="tag" href="wall.html">inspection wall</a>
     <span id="replayCtl" hidden>
       <button id="btnRestart" title="Restart">⏮</button>
       <button id="btnPlay" title="Play or pause">⏸</button>
@@ -26,10 +29,23 @@
   </div>
 </header>
 
-<div id="banners"></div>
-<section id="goal" class="goal"></section>
+<section id="status" class="status op-only" aria-label="Plant status"></section>
 
-<main class="grid">
+<section class="ops op-only">
+  <article class="card incident">
+    <h2>Incident</h2>
+    <div id="incident"></div>
+  </article>
+  <article class="card evidence">
+    <h2>Evidence photos <span class="muted">every camera shot the agents took, and what they concluded from it</span></h2>
+    <div id="evidence"></div>
+  </article>
+</section>
+
+<section id="work" class="work contractor-only" aria-label="Work orders"></section>
+
+<h2 class="section op-only">How the agents proved it</h2>
+<main class="grid op-only">
   <section class="card plant">
     <h2>Plant <span class="muted">one-line view · click a pin for its evidence</span></h2>
     <div id="plantSvg"></div>
@@ -67,7 +83,7 @@
   </section>
 </main>
 
-<footer id="judge" class="judge"></footer>
+<footer id="judge" class="judge op-only"></footer>
 <script src="app.js"></script>
 </body>
 </html>
