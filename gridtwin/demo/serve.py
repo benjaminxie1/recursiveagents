@@ -101,10 +101,10 @@ def list_demo_runs(limit=50) -> list[dict]:
     return out[:limit]
 
 
-def run_urls(run_id: str) -> dict:
+def run_urls(run_id: str, kb: str = DEFAULT_KB) -> dict:
     return {"snapshot": f"/api/demo/runs/{run_id}", "events": f"/api/demo/runs/{run_id}/events?after=0",
             "stream": f"/api/demo/runs/{run_id}/stream", "events_jsonl": f"/runs/{run_id}/events.jsonl",
-            "page": f"/demo.html?run={run_id}"}
+            "memory": f"/api/demo/memory?kb={kb}", "page": f"/demo.html?run={run_id}"}
 
 
 def start_run(body: dict) -> dict:
@@ -117,8 +117,9 @@ def start_run(body: dict) -> dict:
         n += 1
         run_id = f"{base}-{n}"
     cmd = [sys.executable, "-m", "gridtwin.demo.run", "--scenario", scenario, "--run-id", run_id, "--runs-dir", str(RUNS)]
-    if body.get("memory") is False:
-        cmd += ["--memory", str(RUNS / f"_nomem-{run_id}")]
+    # the lesson store: live runs share e2e-kb, stub rehearsals share e2e-kb-stub, memory off gets a throwaway store
+    kb = f"_nomem-{run_id}" if body.get("memory") is False else ("e2e-kb-stub" if body.get("stub") else DEFAULT_KB)
+    cmd += ["--memory", str(RUNS / kb)]
     if body.get("fresh_memory"):
         cmd.append("--fresh-memory")
     if body.get("stub"):
@@ -128,7 +129,7 @@ def start_run(body: dict) -> dict:
         p = subprocess.Popen(cmd, cwd=serve.REPO, stdout=fh, stderr=subprocess.STDOUT, start_new_session=True)
     with PROCS_LOCK:
         PROCS[run_id] = p
-    return {"run_id": run_id, "cmd": " ".join(cmd[1:]), "urls": run_urls(run_id)}
+    return {"run_id": run_id, "kb": kb, "cmd": " ".join(cmd[1:]), "urls": run_urls(run_id, kb)}
 
 
 def health() -> dict:

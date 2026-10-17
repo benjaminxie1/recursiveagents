@@ -139,7 +139,8 @@ def test_runs_list_and_memory_view(server, stub_run):
     rows = json.loads(call(base, "/api/demo/runs")[2])
     row = next(r for r in rows if r["id"] == started["run_id"])
     assert row["status"] == "VERIFIED" and row["rounds"] == 2 and row["stub"] is True
-    mem = json.loads(call(base, f"/api/demo/memory?kb=_nomem-{started['run_id']}")[2])
+    assert started["kb"] == f"_nomem-{started['run_id']}" and started["urls"]["memory"].endswith(started["kb"])
+    mem = json.loads(call(base, started["urls"]["memory"])[2])
     assert mem["exists"] and mem["lessons"] and mem["stats"]["runs"] == 1
     assert json.loads(call(base, "/api/demo/memory?kb=no-such-kb")[2])["exists"] is False
 

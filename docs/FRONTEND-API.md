@@ -23,7 +23,7 @@ Stub runs (`"stub": true`) make no model calls, finish in about 3 seconds and te
 | Method and path | What it returns |
 |---|---|
 | `GET /api/demo/health` | `{ok, schema, scenario, models: {role: model id}, keys: {crusoe: bool, jev: bool}, diffusion: "diffusion" or "photo_bank"}` |
-| `POST /api/demo/run` | Body `{scenario?: "s06_stale_scada", stub?: false, memory?: true, fresh_memory?: false}`. Returns at once with `{run_id, cmd, urls: {snapshot, events, stream, events_jsonl, page}}`. |
+| `POST /api/demo/run` | Body `{scenario?: "s06_stale_scada", stub?: false, memory?: true, fresh_memory?: false}`. Returns at once with `{run_id, kb, cmd, urls: {snapshot, events, stream, events_jsonl, memory, page}}`. `kb` is the lesson store the run reads and writes: `e2e-kb` for live runs, `e2e-kb-stub` for stub runs (so rehearsals never touch the live store), a throwaway store when `memory` is false. `fresh_memory` empties that store first. |
 | `GET /api/demo/runs` | Demo runs, newest first: `[{id, mtime, status, rounds, scenario_id, stub}]`. `status` is `RUNNING`, `VERIFIED`, `ESCALATED` or `FAILED`. |
 | `GET /api/demo/runs/<id>` | The whole run as one snapshot (below). Poll it, or use the stream. |
 | `GET /api/demo/runs/<id>/events?after=<seq>` | `{run_id, events: [raw event], last_seq, done}`: the raw log after `seq`, for pages that fold events themselves. |
@@ -101,4 +101,4 @@ curl -s -X POST localhost:8010/api/demo/run -d '{}'
 ```
 
 The first run catches the contractor's shortcut and is fixed in round 2; the second recalls the lesson and is fixed in round 1.
-Both runs use the lesson store `runs/e2e-kb`; `GET /api/demo/memory` shows it.
+Both runs use the lesson store `runs/e2e-kb`; `GET /api/demo/memory` shows it (for stub runs, `GET /api/demo/memory?kb=e2e-kb-stub`, or follow `urls.memory` from the POST).
