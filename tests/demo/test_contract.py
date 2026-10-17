@@ -445,10 +445,14 @@ def test_a_missing_camera_image(tmp_path):
 # the frontend fixture and real runs -------------------------------------------------------------------------
 
 
-def test_the_frontend_fixture_honours_the_contract():
-    if not FIXTURE.is_file():
-        pytest.skip("tests/demo/fixtures/demo_events.jsonl not written yet")
-    assert validate_run(FIXTURE) == []
+FIXTURES = sorted(FIXTURE.parent.glob("*.jsonl"))  # the first run and the recall run the page replays
+
+
+@pytest.mark.parametrize("fixture", FIXTURES or [None], ids=lambda p: p.stem if p else "none")
+def test_the_frontend_fixtures_honour_the_contract(fixture):
+    if fixture is None:
+        pytest.skip("tests/demo/fixtures/*.jsonl not written yet")
+    assert validate_run(fixture) == []
 
 
 VALIDATE_RUNS = os.environ.get("GRIDTWIN_VALIDATE_RUNS") == "1"
