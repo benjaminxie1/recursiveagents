@@ -274,6 +274,18 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
     all_verdicts, failed_before, feedback = [], [], ""
     final, triaged, tree = None, False, []
 
+    # DoD pre-check, as in full: the verifier runs the DONE checks once before any work (red before green)
+    if hasattr(planner, "precheck_tasks"):
+        sup.emit("precheck", "verifier runs the DONE checks before any work; failing checks show what is wrong")
+        pre = D.evaluate([D.sanitize_check(c) for c in dod["branches"]["DONE"] if c.get("kind") != "visual"],
+                         ActorToolbox(toolbox, "verifier"), log, kb_dir=kb_dir, actor="verifier")
+        failed_before += [v for v in pre if not v["pass"]]
+        all_verdicts += pre
+        first = planner.precheck_tasks(pre)
+        if first:
+            tasks = first
+            log.emit("planner", "dod", {"checks": dod["branches"], "tasks": tasks, "precheck_failing": [v["check_id"] for v in pre if not v["pass"]]})
+
     def escalate(reason: str) -> dict:
         left = sup.calls_left()
         if left is None or left > 0:
@@ -331,9 +343,8 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
         if decision in ("page", "stop"):
             final = escalate(reason)
             break
-        if decision == "replan":
+        if decision == "replan":  # new tasks for the next round; the team still reviews and may claim now
             replan(rnd, reason)
-            continue
 
         done_tickets = wait_for_tickets(toolbox, log, sup)
         if done_tickets:
@@ -342,7 +353,8 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
         claim = team.claim(goal, feedback)
         if claim["status"] == "CONTINUE":
             feedback = ""
-            replan(rnd, f"the team says more work is needed: {claim['summary'][:400]}")
+            if decision != "replan":
+                replan(rnd, f"the team says more work is needed: {claim['summary'][:400]}")
             continue
         status = claim["status"]
         log.emit("worker:operator", "claim", {"status": status, "summary": claim["summary"]})
