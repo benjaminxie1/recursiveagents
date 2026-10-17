@@ -1,7 +1,7 @@
 # GridTwin end-to-end demo: contract between the pieces
 
 Owner: Will (agent-build session). Scenario: `s06_stale_scada` (INV-3 comms card failed; telemetry frozen at good-looking values; display dark).
-Run: `.venv/bin/python -m gridtwin.demo.run --scenario s06_stale_scada [--memory runs/demo-kb] [--stub]`.
+Run: `.venv/bin/python -m gridtwin.demo.run --scenario s06_stale_scada [--memory runs/e2e-kb] [--stub]`.
 Page: `.venv/bin/python -m gridtwin.demo.serve --port 8010`, then `http://localhost:8010/demo.html` (Run button) or `demo.html?run=<run_id>` (live or `&replay=1`).
 
 ## Stages (one run)

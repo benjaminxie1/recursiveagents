@@ -1,6 +1,6 @@
 """One command for the end-to-end demo.
 
-  python -m gridtwin.demo.run --scenario s06_stale_scada [--memory runs/demo-kb] [--fresh-memory] [--stub]
+  python -m gridtwin.demo.run --scenario s06_stale_scada [--memory runs/e2e-kb] [--fresh-memory] [--stub]
 
 Prints one line per stage; the page (python -m gridtwin.demo.serve, then demo.html?run=<id>) shows the rest.
 """
@@ -34,7 +34,7 @@ def trace(log):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--scenario", default=SCENARIO)
-    ap.add_argument("--memory", default=None, help="lesson store directory (default runs/demo-kb)")
+    ap.add_argument("--memory", default=None, help="lesson store directory (default runs/e2e-kb)")
     ap.add_argument("--fresh-memory", action="store_true", help="empty the lesson store first (first run of a demo)")
     ap.add_argument("--stub", action="store_true", help="no model calls: deterministic stand-ins (offline rehearsal)")
     ap.add_argument("--run-id")

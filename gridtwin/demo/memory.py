@@ -1,7 +1,7 @@
 """Memory flywheel for the demo: verified outcomes become lessons; the next run's planner recalls them.
 
 Built on gridtwin.kb.KB (same lesson files and BM25 search as the full loop), in a separate directory
-(default runs/demo-kb) so the demo never writes into Jonathan's kb/. Only a run whose last verdict passed
+(default runs/e2e-kb) so the demo never writes into Jonathan's kb/. Only a run whose last verdict passed
 writes a lesson, so the team learns the fix and never the fake fix.
 """
 from __future__ import annotations
@@ -11,7 +11,7 @@ from pathlib import Path
 from gridtwin.kb import KB
 from gridtwin.sim.camera import REPO
 
-DEFAULT_DIR = REPO / "runs" / "demo-kb"
+DEFAULT_DIR = REPO / "runs" / "e2e-kb"
 
 
 class Memory:
