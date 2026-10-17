@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:46:57+00:00",
+  "query": "NREL PV Fleets power data QA stale flatlined data check",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:46:57+00:00",
+      "query": "NREL PV Fleets power data QA stale flatlined data check",
+      "snippet": "run basic data checks to identify stale and abnormal/outlier data in the time series",
+      "title": "PV Fleets QA Process: Power, PVAnalytics documentation (NREL PV Fleets Data Initiative QA pipeline example)",
+      "url": "https://pvanalytics.readthedocs.io/en/stable/generated/gallery/pvfleets-qa-pipeline/pvfleets-power-qa.html"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:46:57+00:00",
+  "query": "string-to-string comparison alert threshold percent",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:46:57+00:00",
+      "query": "string-to-string comparison alert threshold percent",
+      "snippet": "A 5% deviation threshold is typical for string-to-string comparison.",
+      "title": "String Monitoring, solar glossary (SurgePV)",
+      "url": "https://www.surgepv.com/glossary/string-monitoring"
+    }
+  ]
+}

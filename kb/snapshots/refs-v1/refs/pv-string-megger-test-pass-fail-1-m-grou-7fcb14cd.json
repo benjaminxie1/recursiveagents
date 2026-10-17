@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:46:57+00:00",
+  "query": "PV string megger test pass fail 1 M\u03a9 ground fault",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:46:57+00:00",
+      "query": "PV string megger test pass fail 1 M\u03a9 ground fault",
+      "snippet": "1 M\u03a9 minimum (IEC 62446-1)",
+      "title": "PV Isolation Protection: Key Causes, Troubleshooting, and Preventative Measures (PV ISO PRO 01/02 Alarm) (Solis inverters US service knowledge base)",
+      "url": "https://usservice.solisinverters.com/support/solutions/articles/73000652956-pv-isolation-protection-key-causes-troubleshooting-and-preventative-measures-pv-iso-pro-01-02-ala"
+    }
+  ]
+}

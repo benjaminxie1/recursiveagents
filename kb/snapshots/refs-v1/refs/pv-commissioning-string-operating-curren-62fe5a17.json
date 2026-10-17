@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:46:57+00:00",
+  "query": "PV commissioning string operating current compare to reference value",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:46:57+00:00",
+      "query": "PV commissioning string operating current compare to reference value",
+      "snippet": "Compare current measurement to reference value",
+      "title": "Standard Work Specifications 0.0501.1m Commissioning and Testing, Specification History (DOE/NREL-NLR Standard Work Specifications, Roof Interconnected Photovoltaic)",
+      "url": "https://sws.nlr.gov/specification/11362/history#:~:text=Operating%20current%20of%20each%20string"
+    }
+  ]
+}

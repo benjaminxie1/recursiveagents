@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:46:57+00:00",
+  "query": "IEC 62446-1 insulation resistance minimum 1 M\u03a9 PV array test voltage",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:46:57+00:00",
+      "query": "IEC 62446-1 insulation resistance minimum 1 M\u03a9 PV array test voltage",
+      "snippet": "The measured insulation resistance should be no less than 1 M\u03a9.",
+      "title": "Insulation Resistance Testing (IRT) in solar installations (Fluke, restating IEC 62446-1)",
+      "url": "https://www.fluke.com/en/learn/blog/renewable-energy/insulation-resistance-testing-in-solar"
+    }
+  ]
+}
