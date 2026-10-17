@@ -8,7 +8,8 @@ The input is a small JSON of points picked in the twin viewer, all in the splat 
 
 "up" is the world-up direction in the file, "origin" a point on the floor. The output has the same shape as
 scripts/register_viewpoints.py writes (board_to_splat plus one view per station), so twin.js needs no special case.
-Optional "start" ({position, target}, the twin's opening view) and "viewer" (render options) are copied through.
+Optional "start" ({position, target}, the twin's opening view) and "viewer" (render options, the case pack) are copied
+through, and a station may name its "asset" when the sim has no viewpoint for it.
 
     python -m scripts.place_pins assets/splats/plant.picks.json
 """
@@ -59,6 +60,9 @@ def main(path):
         "views": {vid: view(st["eye"], st["target"], up) for vid, st in p["stations"].items()},
     }
     out.update({k: p[k] for k in ("start", "viewer") if k in p})  # the twin's opening view and render options
+    for vid, st in p["stations"].items():  # a station the sim has no viewpoint for names its asset itself
+        if "asset" in st:
+            out["views"][vid]["asset"] = st["asset"]
     dst = Path(p["splat"]).with_suffix("").with_suffix(".registration.json")
     dst.write_text(json.dumps(out, indent=1))
     print(f"wrote {dst} with {len(out['views'])} stations")
