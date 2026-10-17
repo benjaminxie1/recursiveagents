@@ -35,7 +35,8 @@ renderer.setClearColor(0x000000, 0);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(65, 1, 0.02, 2000);
 camera.rotation.order = 'YXZ';
-scene.add(new SparkRenderer({ renderer }));
+const spark = new SparkRenderer({ renderer });
+scene.add(spark);
 const splatFrame = new THREE.Group();
 splatFrame.matrixAutoUpdate = false;
 scene.add(splatFrame);
@@ -666,14 +667,18 @@ function viewFrom(st) {
 
 // the start view: standing behind the registered stations, looking over the equipment they watch, like walking in
 function startPose() {
-  const reg = stations.filter((s) => s.eye);
-  if (!reg.length) return { eye: focus.clone().add(new V3(0, 0.35 * extent, 0.8 * extent)), at: focus.clone() };
-  const at = reg.reduce((a, s) => a.add(s.target), new V3()).divideScalar(reg.length);
-  const back = reg.reduce((a, s) => a.add(s.eye.clone().sub(s.target).setY(0).normalize()), new V3()).setY(0);
+  // a scene can name its own start (registration "start": {position, target} in splat coordinates), e.g. standing
+  // in the aisle of a scan so a full turn shows the room
+  const st = reg?.start;
+  if (st?.position && st?.target) { splatFrame.updateMatrixWorld(true); return { eye: splatPoint(st.position), at: splatPoint(st.target) }; }
+  const placed = stations.filter((s) => s.eye);
+  if (!placed.length) return { eye: focus.clone().add(new V3(0, 0.35 * extent, 0.8 * extent)), at: focus.clone() };
+  const at = placed.reduce((a, s) => a.add(s.target), new V3()).divideScalar(placed.length);
+  const back = placed.reduce((a, s) => a.add(s.eye.clone().sub(s.target).setY(0).normalize()), new V3()).setY(0);
   if (back.lengthSq() < 0.04) back.set(0, 0, 1);
   back.normalize();
-  const spread = Math.max(...reg.map((s) => Math.hypot(s.target.x - at.x, s.target.z - at.z)), 2 * M);
-  const heights = reg.map((s) => s.eye.y).sort((a, b) => a - b);
+  const spread = Math.max(...placed.map((s) => Math.hypot(s.target.x - at.x, s.target.z - at.z)), 2 * M);
+  const heights = placed.map((s) => s.eye.y).sort((a, b) => a - b);
   // back far enough for the spread to fill the width (a portrait phone counts as 1.2:1), near enough for the tags
   const hTan = Math.tan((camera.fov * Math.PI) / 360) * Math.max(camera.aspect, 1.2);
   const eye = at.clone().addScaledVector(back, (spread / hTan) * 1.25 + M).setY(heights[heights.length >> 1] + 0.4 * M);
@@ -985,6 +990,9 @@ async function startRun() {
   $('#optLabels').onchange = (e) => { tagsOn = e.target.checked; $('#pins').classList.toggle('nolabels', !tagsOn); };
   render();
   if (!runId) return;
+  if (runId === 'none') {  // ?run=none: the scan on its own, no run chip or activity
+    $('#runChip').hidden = true; $('#activity').hidden = true; return;
+  }
   if (!replay) { poll(); return; }
   $('#replayCtl').hidden = false;
   try { events = await fetchEvents(); } catch (err) { $('#runChecks').textContent = `can't read run: ${err.message}`; return; }
@@ -1055,7 +1063,12 @@ async function main() {
   }
   placeFrame();
   try {
-    mesh = new SplatMesh({ url: SPLAT_URL, onProgress: (e) => { if (e.lengthComputable && e.total) setPct(Math.min(0.999, e.loaded / e.total)); } });
+    // a full-detail scan renders through Spark's level of detail: a fixed splat budget, fine splats near the camera
+    // and merged ones far away (registration "viewer": {"lod": true, "lod_splats": N}; ?lod=0 or ?lodsplats=N override)
+    const lod = params.has('lod') ? params.get('lod') !== '0' : !!reg?.viewer?.lod;
+    const budget = Number(params.get('lodsplats')) || reg?.viewer?.lod_splats;
+    if (lod && budget) spark.lodSplatCount = budget;
+    mesh = new SplatMesh({ url: SPLAT_URL, lod: lod || undefined, onProgress: (e) => { if (e.lengthComputable && e.total) setPct(Math.min(0.999, e.loaded / e.total)); } });
     splatFrame.add(mesh);
     await mesh.initialized;
   } catch (err) {

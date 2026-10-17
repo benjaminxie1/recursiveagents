@@ -35,13 +35,19 @@ VISUAL_CONF = 0.7       # the verifier's bar for a camera check (same as the ful
 MAX_ROUNDS = 3
 POINTS = ["ac_kw", "dc_kw", "status", "heatsink_c"]
 HEALTHY_CLAIM = "The inverter's front display or touchscreen is lit and showing live readings; it is not dark or blank."
-TWIN_SCENE = os.environ.get("GRIDTWIN_TWIN_SCENE", "_dev")
+def _default_scene() -> str:
+    """The demo's Gaussian-splat twin: the tugboat engine-room scan when it is here, else the synthetic _dev scene."""
+    return "tugboat.splat" if (REPO / "assets" / "splats" / "tugboat.registration.json").exists() else "_dev"
+
+
+TWIN_SCENE = os.environ.get("GRIDTWIN_TWIN_SCENE") or _default_scene()
 
 
 # ---------- optional pieces (built in parallel; each has a fallback so the demo never depends on it) ----------
 
 def _registration(scene: str):
-    p = REPO / "assets" / "splats" / f"{scene}.registration.json"
+    base = scene[: -len(".splat")] if scene.endswith(".splat") else scene  # twin.html wants tugboat.splat; the file is tugboat.registration.json
+    p = REPO / "assets" / "splats" / f"{base}.registration.json"
     if not p.exists():
         alt = Path.home() / "claude" / "recursiveagents" / "assets" / "splats" / p.name
         p = alt if alt.exists() else p
