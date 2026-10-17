@@ -3,6 +3,7 @@
 Serves viewer/ at /, plus assets/ and runs/. Stdlib only, so it works with Wi-Fi off.
 truth.jsonl is never served (contract C2: only the judge reads hidden truth).
 GET /api/runs lists every run folder that has an events.jsonl, newest first.
+GET /api/viewpoints lists the camera stations (contract C5) for the inspection wall, without the photo states.
 """
 import argparse
 import json
@@ -39,6 +40,19 @@ def list_runs(limit=300):
     return out[:limit]
 
 
+def list_viewpoints():
+    """Same merge as sim.camera.Camera: assets/photos/viewpoints.yaml wins over the sim's extras on an id clash.
+    Only station fields go out; the `states` lists name hidden photo states, so they stay server-side."""
+    import yaml  # only this endpoint needs it
+
+    merged = {}
+    for path in (REPO / "gridtwin" / "sim" / "viewpoints_extra.yaml", ROOTS["assets"] / "photos" / "viewpoints.yaml"):
+        if path.exists():
+            merged.update((yaml.safe_load(path.read_text()) or {}).get("viewpoints") or {})
+    keep = ("asset", "modes", "label", "heading_deg", "map_xy")
+    return [{"id": vid, **{k: vp[k] for k in keep if k in vp}} for vid, vp in sorted(merged.items())]
+
+
 class Handler(SimpleHTTPRequestHandler):
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map,
                       ".jsonl": "text/plain; charset=utf-8", ".js": "text/javascript"}
@@ -52,8 +66,9 @@ class Handler(SimpleHTTPRequestHandler):
         return str(VIEWER.joinpath(*parts))
 
     def do_GET(self):
-        if urlsplit(self.path).path == "/api/runs":
-            body = json.dumps(list_runs()).encode()
+        api = {"/api/runs": list_runs, "/api/viewpoints": list_viewpoints}.get(urlsplit(self.path).path)
+        if api:
+            body = json.dumps(api()).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(body)))
@@ -77,7 +92,7 @@ def main(argv=None):
     ap.add_argument("--host", default="127.0.0.1")
     a = ap.parse_args(argv)
     server = ThreadingHTTPServer((a.host, a.port), Handler)
-    print(f"GridTwin evidence view on http://{a.host}:{a.port}/  (add ?run=<id> or ?run=<id>&replay=1)")
+    print(f"GridTwin evidence view on http://{a.host}:{a.port}/  (add ?run=<id> or ?run=<id>&replay=1; /wall.html for the inspection wall)")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

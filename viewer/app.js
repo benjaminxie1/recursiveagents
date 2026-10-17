@@ -348,6 +348,7 @@ async function loadRuns() {
 
 async function main() {
   await loadRuns();
+  if (runId) $('#wallLink').href = `wall.html${runUrl(runId, replay)}`;
   const tag = $('#modeTag');
   tag.textContent = replay ? 'replay · switch to live' : '● live · switch to replay';
   tag.className = `tag ${replay ? '' : 'live'}`;

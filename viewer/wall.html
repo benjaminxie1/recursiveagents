@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GridTwin inspection wall</title>
+<link rel="stylesheet" href="wall.css">
+</head>
+<body>
+<header class="top">
+  <div class="crumb"><a id="backLink" href="./">← GridTwin</a><strong>Plant inspection wall</strong></div>
+  <div class="controls">
+    <select id="runPick" aria-label="Run"></select>
+    <span id="modeTag" class="tag"></span>
+    <span id="replayCtl" hidden>
+      <button id="btnRestart" title="Restart">⏮</button>
+      <button id="btnPlay" title="Play or pause">⏸</button>
+      <button id="btnStep" title="Step one event">⏭</button>
+      <label class="speed">speed <input id="speed" type="range" min="0.25" max="8" step="0.25" value="1"> <span id="speedVal">1×</span></label>
+    </span>
+    <span id="views" class="mono"></span>
+  </div>
+</header>
+<div class="progress"><i id="progressBar"></i></div>
+
+<div id="summary" class="summary"></div>
+
+<main class="layout">
+  <section id="tiles" class="tiles" aria-label="Camera stations"></section>
+  <aside class="side">
+    <h2>Top-down map</h2>
+    <div id="map"></div>
+    <div class="legend">
+      <span><i class="dot verified"></i>verified</span>
+      <span><i class="dot failed"></i>failed / paged</span>
+      <span><i class="dot analyzing"></i>analyzing</span>
+      <span><i class="dot seen"></i>seen, no check</span>
+      <span><i class="dot idle"></i>not visited</span>
+    </div>
+    <p id="final" class="final"></p>
+  </aside>
+</main>
+<script src="wall.js"></script>
+</body>
+</html>
