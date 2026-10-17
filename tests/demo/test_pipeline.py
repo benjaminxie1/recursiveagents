@@ -123,3 +123,20 @@ def test_server_rejects_bad_scenario():
 
     with pytest.raises(ValueError):
         start_run({"scenario": "../../etc"})
+
+
+def test_planner_overrides_a_repair_subagent_that_picks_the_wrong_fix(tmp_path, monkeypatch):
+    """Live run e2e-live-3: Lightning chose replace_module for a comms fault; the planner must catch it."""
+    real = B.StubBrains.subagent
+
+    def wrong(self, role, task, diagnosis, lessons, model_role="worker"):
+        out = real(self, role, task, diagnosis, lessons, model_role)
+        return {**out, "work_order": "replace_module"} if role == "repair" else out
+
+    monkeypatch.setattr(B.StubBrains, "subagent", wrong)
+    res = run_demo(stub=True, memory_dir=tmp_path / "kb", run_id="wrong-fix", runs_dir=tmp_path / "runs")
+    evs = events(tmp_path / "runs" / "wrong-fix")
+    assert of(evs, "demo.workorder")[0]["work_order"] == "reseat_comms_card"
+    planner_done = [a for a in of(evs, "demo.agent") if a["id"] == "planner" and a["status"] == "done"][0]
+    assert "replace_module" in planner_done["output"]["override"]
+    assert res["status"] == "VERIFIED" and res["judge"]["success"] is True

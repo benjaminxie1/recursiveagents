@@ -249,7 +249,8 @@ class Demo:
             capped = True
         wo = self.work_order(dx, outs, lessons, forbid_mem)
         self.emit("planner", "demo.agent", root.event("done", {"briefs": briefs, "rationale": plan.get("rationale"),
-                                                              "depth_cap_enforced": capped, "work_order": wo["wo_id"]}))
+                                                              "depth_cap_enforced": capped, "work_order": wo["wo_id"],
+                                                              "override": self.override}))
         self.emit("planner", "demo.workorder", wo)
         self.stage("plan", "end")
         return wo
@@ -261,12 +262,19 @@ class Demo:
         repair = outs.get("repair") or {}
         acc = outs.get("acceptance") or {}
         wo_type = repair.get("work_order")
-        if wo_type not in WORK_ORDERS or wo_type == "inspect":
-            wo_type = "reseat_comms_card" if "comm" in (dx["fault"] + dx["summary"]).lower() or "stale" in dx["fault"].lower() else "inspect"
+        expected = B.expected_work_order(f"{dx['fault']} {dx['summary']}")
+        self.override = None
+        if wo_type not in WORK_ORDERS or wo_type == "inspect" or (expected and wo_type != expected):
+            # the planner checks its sub-agent against the diagnosis instead of trusting it
+            self.override = f"repair sub-agent chose {wo_type!r}, which does not fix {dx['fault']!r}; planner set {expected or 'inspect'}"
+            wo_type = expected or "inspect"
+            steps_repair = [f"{wo_type.replace('_', ' ')} on {asset}"]
+        else:
+            steps_repair = None
         brk = BREAKER_FOR.get(asset, f"52-I{n}")
         before = [str(s) for s in (safety.get("before") or [f"Open feeder breaker {brk} and apply lockout/tagout"])]
         after = [str(s) for s in (safety.get("after") or [f"Close {brk} after the work is complete and confirm the unit restarts"])]
-        steps = before + [str(s) for s in (repair.get("steps") or [wo_type.replace("_", " ")])] + after
+        steps = before + (steps_repair or [str(s) for s in (repair.get("steps") or [wo_type.replace("_", " ")])]) + after
         forbid = list(dict.fromkeys([str(s) for s in (repair.get("do_not") or [])] + forbid_mem))
         acceptance = [str(s) for s in (acc.get("acceptance") or [])] or [
             f"{asset} SCADA data_age_min under {FRESH_MIN}", f"{asset} display lit in a camera view the verifier picks"]
@@ -334,6 +342,22 @@ class Demo:
         new["round"] = rnd + 1
         if visit.get("shortcut") and SHORTCUT_FORBID not in new["forbid"]:
             new["forbid"] = new["forbid"] + [SHORTCUT_FORBID]
+        elif not visit.get("shortcut"):
+            # the contractor did exactly what we asked and the plant is still broken: our work order was wrong
+            alt = B.expected_work_order(f"{self.dx['fault']} {self.dx['summary']} {' '.join(self.dx['evidence'])}")
+            tried = {wo["work_order"], *getattr(self, "tried", set())}
+            self.tried = tried
+            if alt and alt not in tried:
+                new["work_order"] = alt
+                new["steps"] = [s if wo["work_order"].replace("_", " ") not in s.lower() else f"{alt.replace('_', ' ')} on {wo['asset']}"
+                                for s in wo["steps"]]
+                if not any(alt.replace("_", " ") in s for s in new["steps"]):
+                    new["steps"] = new["steps"][:1] + [f"{alt.replace('_', ' ')} on {wo['asset']}"] + new["steps"][1:]
+                new["forbid"] = new["forbid"] + [f"Do not repeat {wo['work_order']}; it did not fix the fault."]
+                self.emit("planner", "demo.agent", {"id": f"planner.replan.r{rnd}", "parent": None, "depth": 0, "role": "planner",
+                                                    "model": "rule", "task": "Replan after a faithful visit failed verification",
+                                                    "status": "done", "team": "plan", "round": rnd,
+                                                    "output": {"from": wo["work_order"], "to": alt}})
         src = getattr(self, "_last_image", None)
         prompt = f"the same {wo['asset']} inverter cabinet, repaired: its display lit and showing live readings, photo-realistic"
         img = expected_image(wo["asset"], src, prompt, self.run_dir / "img" / f"expected-r{rnd}.png")
@@ -380,6 +404,7 @@ class Demo:
         goal = goal or self.sc["goal"]
         self.emit("operator", "goal", {"text": goal, "scenario_id": self.sc["id"]})
         dx = self.diagnose()
+        self.dx = dx
         wo = self.plan(dx)
         contractor = Contractor(self.tb, wo["asset"])
         prof = contractor.profile

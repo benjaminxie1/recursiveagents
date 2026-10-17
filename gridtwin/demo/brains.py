@@ -16,6 +16,34 @@ from gridtwin.demo.events import SUBAGENT_ROLES
 from gridtwin.sim.tools import WORK_ORDERS
 
 MAX_DEPTH = 1  # the planner is depth 0; its sub-agents are depth 1 and cannot spawn
+WO_FIXES = {
+    "inspect": "look only, repairs nothing",
+    "replace_fan_filter": "failed or clogged inverter cooling fan/filter (overheating, derating)",
+    "reseat_comms_card": "failed inverter comms card (SCADA frozen/stale, comms_ping timeout, dark display)",
+    "replace_mc4_connector": "damaged DC connector (ground fault, low insulation on a combiner)",
+    "clean_modules": "soiled PV modules (block output low on a clear day)",
+    "mow_vegetation": "vegetation shading the array",
+    "replace_module": "cracked or hot-spot PV module",
+    "transformer_oil_service": "transformer oil problems (leak, dissolved gas)",
+}
+# Diagnosis keywords -> the work order that fixes it; the planner uses this to check its repair sub-agent.
+FAULT_WORK_ORDER = [
+    (("comm", "stale", "frozen", "scada", "ping", "display"), "reseat_comms_card"),
+    (("fan", "overheat", "heatsink", "thermal derat"), "replace_fan_filter"),
+    (("ground fault", "gfdi", "insulation", "mc4", "connector"), "replace_mc4_connector"),
+    (("soil", "dust", "dirt"), "clean_modules"),
+    (("vegetation", "weed", "shade", "shading"), "mow_vegetation"),
+    (("hot spot", "hotspot", "crack"), "replace_module"),
+    (("oil", "dga", "acetylene", "transformer"), "transformer_oil_service"),
+]
+
+
+def expected_work_order(text: str) -> str | None:
+    t = (text or "").lower()
+    for words, wo in FAULT_WORK_ORDER:
+        if any(w in t for w in words):
+            return wo
+    return None
 # Crusoe rate limits are per model, so the planner's three sub-agents run on three different Nemotron models.
 SUB_MODEL_ROLE = {"safety": "gate", "repair": "worker", "acceptance": "supervisor"}
 
@@ -65,9 +93,11 @@ SUB_SYS = {
     "safety": """You are the safety sub-agent. Given a fault and asset, list the lockout/tagout steps before the work and the
 re-energize steps after it (open the inverter's feeder breaker 52-In before work on INV-n, close it after the work is complete).
 Reply with JSON only: {"before": ["<step>"], "after": ["<step>"], "cites": ["<standard, e.g. NFPA 70E 120>"]}""",
-    "repair": """You are the repair sub-agent. Choose exactly one work order from this list: %s.
+    "repair": """You are the repair sub-agent. Choose exactly one work order; each one fixes only its own fault:
+%s
 Then write the field steps a contractor follows. If a lesson says a cheap visit failed before, put it in do_not.
-Reply with JSON only: {"work_order": "<one of the list>", "steps": ["<step>"], "do_not": ["<item>"]}""" % ", ".join(WORK_ORDERS),
+Reply with JSON only: {"work_order": "<one of the list>", "steps": ["<step>"], "do_not": ["<item>"]}""" % "\n".join(
+        f"- {w}: {WO_FIXES.get(w, '')}" for w in WORK_ORDERS),
     "acceptance": """You are the acceptance sub-agent. Write 2-4 acceptance criteria that a verifier can check against the plant itself,
 never against the contractor's word: SCADA freshness (data_age_min under 5), live values, and a camera view that shows the healthy state.
 Reply with JSON only: {"acceptance": ["<criterion>"]}""",
