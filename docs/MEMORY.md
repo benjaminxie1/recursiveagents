@@ -27,6 +27,9 @@ Read it at the start of a session, after `docs/HACKATHON.md`.
 - 10:18 Benjamin: Benjamin's own context and research notes live in `docs/BENJAMINXIE_MEMORY.md`, standing in for Alike until his cloud sessions can sign in to it.
 - 10:25 Benjamin: branches: `main` is the shared, demo-ready branch (created at e6c8dd5). Everyone works on their own branch cut from `main` (`will/...`, `jonathan/...`; Benjamin's sessions use `claude/sweet-faraday-yssuo9`) and merges into `main` about hourly. Stop pushing straight to `claude/sweet-faraday-yssuo9`.
 - 11:05 Benjamin: the Gaussian splat twin is required, not optional: it is the plant view in the demo and the source of the verifier's visual-check viewpoints (`docs/PLAN.md` §2.6).
+- 11:19 Benjamin: splat pitched as spatial map plus verifier-chosen viewpoints; we admit sim state is painted in, and the real-world story is nightly drone recapture. Sun ray-tracing for shading is dropped (`docs/JUDGE_QA.md`).
+- 11:19 Benjamin: benchmark gets a third arm, a self-verify baseline (same workers told to verify, same token budget).
+- 11:19 Benjamin: in the live demo, judges pick one of 3–4 pre-tested scenarios.
 
 ## Open questions
 
