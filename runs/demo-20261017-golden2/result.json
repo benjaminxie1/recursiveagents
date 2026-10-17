@@ -3,8 +3,8 @@
   "status": "VERIFIED",
   "rounds": 1,
   "summary": "INV-2 reseat comms card verified against the plant in round 1",
-  "usd": 0.0045,
-  "wall_s": 30.4,
+  "usd": 0.0048,
+  "wall_s": 40.1,
   "judge": {
     "success": true,
     "false_done": false,
@@ -58,9 +58,9 @@
       "precision": null
     },
     "usage": {
-      "prompt": 8422,
+      "prompt": 8928,
       "cached": 48,
-      "completion": 1842
+      "completion": 1689
     }
   }
 }
