@@ -57,15 +57,20 @@ def test_second_run_recalls_the_lesson_and_passes_first_visit(two_runs):
     assert wo["lessons_applied"] == ["L-r1"] and forbids_shortcut(wo)
 
 
-def test_recursion_is_one_level_with_three_subagents(two_runs):
+def test_recursion_is_one_level_in_every_team(two_runs):
     runs, _, _ = two_runs
     agents = of(events(runs / "r1"), "demo.agent")
-    depths = {a["id"]: a["depth"] for a in agents}
-    assert max(depths.values()) == 1
-    subs = {a["id"] for a in agents if a["depth"] == 1}
-    assert len(subs) == 3 and all(a["parent"] == "planner" for a in agents if a["depth"] == 1)
-    root_done = [a for a in agents if a["depth"] == 0 and a["status"] == "done"][0]
-    assert root_done["output"]["depth_cap_enforced"] is True
+    assert max(a["depth"] for a in agents) == 1
+    ids = {a["id"]: a for a in agents}
+    for a in agents:
+        if a["depth"] == 1:
+            assert ids[a["parent"]]["depth"] == 0 and ids[a["parent"]]["team"] == a["team"]
+    teams = {(a["team"], a["round"]) for a in agents if a["depth"] == 0}
+    assert teams == {("diagnose", 0), ("plan", 0), ("verify", 1), ("verify", 2)}
+    plan_subs = {a["id"] for a in agents if a["depth"] == 1 and a["team"] == "plan"}
+    assert plan_subs == {"planner.safety", "planner.repair", "planner.acceptance"}
+    leads_done = [a for a in agents if a["depth"] == 0 and a["status"] == "done"]
+    assert len(leads_done) == 4 and all(a["output"]["depth_cap_enforced"] is True for a in leads_done)
 
 
 def test_depth_cap_is_code_not_prompt():

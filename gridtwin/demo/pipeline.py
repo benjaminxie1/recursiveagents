@@ -17,6 +17,7 @@ from gridtwin import llm
 from gridtwin.agents.common import minutes_between, tel_latest
 from gridtwin.demo import brains as B
 from gridtwin.demo import memory as M
+from gridtwin.demo import recursion as R
 from gridtwin.demo.contractors import OPS_ADDR, Contractor, Mailbox, contractor_for, rel, work_order_email
 from gridtwin.demo.events import SUBAGENT_ROLES, LockedLog
 from gridtwin.sim import episode
@@ -48,12 +49,22 @@ def _registration(scene: str):
         return {"views": {}}
 
 
-def jev_step(registration, asset, telemetry, visual, log=None) -> tuple[dict, dict]:
-    """(interpreted JSON state, decision). Uses gridtwin.demo.jev when present."""
+def jev_step(registration, asset, telemetry, visual, log=None, stub=False) -> tuple[dict, dict]:
+    """(interpreted JSON state, decision). Uses gridtwin.demo.jev when present; stub mode never calls out."""
     try:
         from gridtwin.demo import jev
         state = jev.interpret(registration, asset, telemetry, visual)
-        return state, jev.decide(state, log=log)
+        if not stub:
+            return state, jev.decide(state, log=log)
+        ask_model = jev._ask_model  # stub: keep decide() (and its vetoes) but never call a model
+
+        def offline(*_a, **_k):
+            raise RuntimeError("stub mode: no model call")
+        jev._ask_model = offline
+        try:
+            return state, jev.decide(state, log=log)
+        finally:
+            jev._ask_model = ask_model
     except Exception as e:  # noqa: BLE001 - fallback keeps the demo running
         age = _age(telemetry)
         state = {"asset": asset, "sensors": {"data_age_min": age, "stale": age is None or age > FRESH_MIN},
@@ -137,6 +148,8 @@ class Demo:
         self.mail = Mailbox(self.run_dir)
         self.max_rounds = max_rounds
         self.stub = stub
+        if stub:
+            os.environ["GRIDTWIN_NO_DIFFUSION"] = "1"  # offline rehearsal: photo bank, no model load
         self.viewpoints = {vp: info.get("asset") for vp, info in self.sim.camera.viewpoints.items()
                            if "rgb" in (info.get("modes") or ["rgb"])}
         self.used_viewpoints: set[str] = set()
@@ -145,6 +158,10 @@ class Demo:
     # ----- helpers -----
     def emit(self, actor, type_, data):
         return self.log.emit(actor, type_, data)
+
+    def on_agent(self, agent, status, output):
+        """demo.agent for the diagnosis and verification teams (gridtwin.demo.recursion)."""
+        self.emit(R.actor_for(agent), "demo.agent", R.agent_event(agent, status, output))
 
     def stage(self, name, status, rnd=0, **extra):
         self.emit("orchestrator", "demo.stage", {"stage": name, "status": status, "round": rnd, **extra})
@@ -185,11 +202,17 @@ class Demo:
         evidence = {"sensors": sensors, "diagnostics": diags,
                     "camera": [{"asset": s["asset"], "viewpoint": s["viewpoint"], "description": s["description"]} for s in shots],
                     "splat_twin": "camera stations registered in the Gaussian-splat twin; see twin_url"}
+        stale = [s["asset"] for s in sensors if s["stale"]]
+        self.lessons = self.memory.recall(f"{' '.join(stale)} stale scada frozen telemetry data_age_min "
+                                          + " ".join(str(s.get("description", "")) for s in shots))
         try:
-            dx = self.brains.diagnose(evidence)
-        except Exception as e:  # noqa: BLE001
-            dx = B.StubBrains().diagnose(evidence)
-            dx["summary"] = f"{dx['summary']} (planner call failed: {type(e).__name__})"
+            dx = R.diagnose_team(evidence, self.lessons, "stub" if self.stub else "live", self.on_agent, log=self.log)
+        except Exception as e:  # noqa: BLE001 - the flat diagnosis keeps the demo running
+            try:
+                dx = self.brains.diagnose(evidence)
+            except Exception:  # noqa: BLE001
+                dx = B.StubBrains().diagnose(evidence)
+            dx["summary"] = f"{dx['summary']} (diagnosis team failed: {type(e).__name__})"
         dx = {"asset": dx.get("asset") if dx.get("asset") in INVERTERS else suspects[0], "fault": str(dx.get("fault", "unknown")),
               "confidence": float(dx.get("confidence") or 0.5), "summary": str(dx.get("summary", "")),
               "evidence": [str(x) for x in (dx.get("evidence") or [])][:6], "twin_url": self.twin_url,
@@ -250,7 +273,7 @@ class Demo:
         return {"wo_id": "WO-1", "asset": asset, "work_order": wo_type, "steps": steps, "forbid": forbid,
                 "acceptance": acceptance, "lessons_applied": [l["id"] for l in lessons], "round": 1}
 
-    def verify(self, wo, rnd, contractor_vp) -> dict:
+    def verify(self, wo, rnd, contractor_vp, claim: str = "") -> dict:
         self.stage("verify", "start", rnd)
         asset, checks = wo["asset"], []
         tel = self.tb.call("read_telemetry", {"asset": asset, "points": POINTS, "window_min": 30})
@@ -273,17 +296,31 @@ class Demo:
                            "detail": f"{res.get('evidence', '')} (confidence {res.get('confidence')})"[:400],
                            "evidence": {"image": shot["image"], "viewpoint": vp, "model": res.get("model")}})
             visual.append({"viewpoint": vp, "claim": HEALTHY_CLAIM, "pass": v_ok, "confidence": res.get("confidence")})
+            self._last_check = res
             self._last_image = shot["image"]
-        state, decision = jev_step(_registration(TWIN_SCENE), asset, tel, visual, log=self.log)
+        state, decision = jev_step(_registration(TWIN_SCENE), asset, tel, visual, log=self.log, stub=self.stub)
         self.emit("verifier", "demo.jev", {"wo_id": wo["wo_id"], "round": rnd, "input": state, "output": decision})
         checks.append({"kind": "jev", "name": "jev_fix_verified", "pass": decision.get("verdict") == "verified",
                        "detail": f"{decision.get('verdict')} p={decision.get('p_verified')} via {decision.get('backend')}: "
                                  f"{decision.get('reason', '')}"[:400],
                        "evidence": {"backend": decision.get("backend")}})
+        meta = None
+        try:  # the verification team: three deterministic judges plus a different-family meta judge, one level deep
+            team = R.verify_team(wo, rnd, {"telemetry": {**tel, "data_age_min": age},
+                                           "visual": [{"viewpoint": v["viewpoint"], "image": getattr(self, "_last_image", None),
+                                                       "check": self._last_check} for v in visual],
+                                           "jev": {"input": state, "output": decision}, "contractor_claim": claim},
+                                 getattr(self, "lessons", []), "stub" if self.stub else "live", self.on_agent, log=self.log)
+            checks, meta = team["checks"], team["meta"]
+            if team.get("failed") and "meta_judge" in team["failed"]:
+                checks = checks + [{"kind": "meta", "name": "meta_judge", "pass": False, "detail": meta.get("reason", ""),
+                                    "evidence": {"model": meta.get("model")}}]
+        except Exception as e:  # noqa: BLE001 - the flat checks above decide
+            meta = {"verdict": "abstain", "reason": f"verification team failed ({type(e).__name__}); flat checks decide"}
         for c in checks:
             self.emit("verifier", "demo.check", {"wo_id": wo["wo_id"], "round": rnd, **c})
         failed = [c for c in checks if not c["pass"]]
-        verdict = {"wo_id": wo["wo_id"], "round": rnd, "pass": not failed, "failed": [c["name"] for c in failed]}
+        verdict = {"wo_id": wo["wo_id"], "round": rnd, "pass": not failed, "failed": [c["name"] for c in failed], "meta": meta}
         ev = self.emit("verifier", "demo.verdict", verdict)
         verdict["seq"] = ev.get("seq") if isinstance(ev, dict) else None
         verdict["checks"] = checks
@@ -362,7 +399,7 @@ class Demo:
                 "in", wo["wo_id"], rnd, f"{prof['tech']} <{prof['addr']}>", OPS_ADDR, f"Re: [{wo['wo_id']}] done", visit["reply"], atts))
             self.stage("contractor", "end", rnd)
             contractor_vp = next((a["args"].get("viewpoint") for a in visit["actions"] if a["tool"] == "get_camera_view"), None)
-            v = self.verify(wo, rnd, contractor_vp)
+            v = self.verify(wo, rnd, contractor_vp, visit.get("reply", ""))
             verdicts.append(v)
             if v["pass"]:
                 break
