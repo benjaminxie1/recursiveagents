@@ -18,7 +18,7 @@ All times are plant local time on 2026-07-14.
 | `INV-n_dc_v` | V | inverter DC bus voltage |
 | `INV-n_heatsink_c` | C | inverter heatsink temperature |
 | `INV-n_fan_rpm` | rpm | inverter cooling fan speed |
-| `INV-n_status` | | running, derated, tripped or stopped |
+| `INV-n_status` | | the inverter's reported state, for example running, derated or tripped |
 | `INV-n_last_update` | | when SCADA last received a report from the inverter |
 
 `alarms.json` lists the active SCADA alarms at 11:00 and every alarm raised since 09:00.
@@ -40,4 +40,8 @@ The thermal camera is a dual-sensor unit mounted with the display camera, and it
 ## objects.json
 
 One entry per inverter with its block, breaker, rating, latest SCADA reading and the paths of its camera frame, thermal frame and radiometric data.
-Paths start with `agent/` and are relative to the folder that holds this one.
+Paths in objects.json and the index files start with `agent/`, the name of this folder.
+
+## work_orders.json
+
+The work orders the O&M contractor offers, with how long each takes, what it costs and whether the equipment must be de-energized first.

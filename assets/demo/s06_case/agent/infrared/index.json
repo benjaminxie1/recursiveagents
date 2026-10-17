@@ -47,9 +47,9 @@
           205
         ],
         "box_convention": "x0, y0, x1, y1 in the 320x240 grid; x1 and y1 exclusive",
-        "max_c": 39.7,
-        "min_c": 29.1,
-        "mean_c": 36.8
+        "max_c": 39.5,
+        "min_c": 33.1,
+        "mean_c": 36.9
       }
     }
   },
@@ -102,8 +102,8 @@
         ],
         "box_convention": "x0, y0, x1, y1 in the 320x240 grid; x1 and y1 exclusive",
         "max_c": 39.9,
-        "min_c": 29.6,
-        "mean_c": 36.8
+        "min_c": 32.7,
+        "mean_c": 36.9
       }
     }
   },
@@ -144,7 +144,7 @@
           205,
           68
         ],
-        "temp_c": 24.7
+        "temp_c": 34.2
       },
       "Bx1": {
         "label": "cabinet",
@@ -155,9 +155,9 @@
           212
         ],
         "box_convention": "x0, y0, x1, y1 in the 320x240 grid; x1 and y1 exclusive",
-        "max_c": 35.5,
-        "min_c": 24.5,
-        "mean_c": 32.0
+        "max_c": 35.8,
+        "min_c": 29.0,
+        "mean_c": 32.3
       }
     }
   },
@@ -209,8 +209,8 @@
           208
         ],
         "box_convention": "x0, y0, x1, y1 in the 320x240 grid; x1 and y1 exclusive",
-        "max_c": 40.4,
-        "min_c": 29.6,
+        "max_c": 40.0,
+        "min_c": 32.6,
         "mean_c": 36.8
       }
     }

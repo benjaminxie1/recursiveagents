@@ -119,8 +119,8 @@ def _font(size, mono=False):
         return ImageFont.load_default()
 
 
-def camera_frame(unit, running, src_dir):
-    """The unit's display-camera frame at 1024x768: the generated photo when present, else the photo bank."""
+def camera_frame(unit, running, src_dir, allow_bank=False):
+    """The unit's display-camera frame at 1024x768: the generated photo, or the photo bank only when allow_bank."""
     for ext in (".jpg", ".png"):
         p = Path(src_dir) / f"{unit}{ext}"
         if p.exists():
@@ -129,6 +129,9 @@ def camera_frame(unit, running, src_dir):
             prov = json.loads(meta.read_text()) if meta.exists() else {"source": str(p)}
             break
     else:
+        if not allow_bank:
+            raise FileNotFoundError(f"no generated photo for {unit} in {src_dir} (run scripts.gen_s06_case_photos, "
+                                    "or pass allow_bank=True for photo-bank stand-ins)")
         p = BANK["lit" if running else "dark"]
         im, prov = Image.open(p).convert("RGB"), {"source": str(p.relative_to(REPO)), "model": None, "prompt": None}
     w, h = im.size
@@ -256,7 +259,8 @@ def temperature_field(im, geo, ambient, heatsink, running, seed):
         cab[y0:y1, x0:x1] = True
 
     sat = rgb.max(-1) - rgb.min(-1)
-    cand = (((b > r + 0.06) & (b >= g)) | ((sat < 0.10) & (lum > 0.82))) & (yy < 0.5) & ~cab
+    modules = (b > r + 0.12) & (lum < 0.5)                            # dark blue PV glass, not sky seen through the fence
+    cand = (((b > r + 0.06) & (b >= g)) | ((sat < 0.10) & (lum > 0.82))) & (yy < 0.5) & ~cab & ~modules
     _n, lab = cv2.connectedComponents(cand.astype(np.uint8), connectivity=4)
     top = set(np.unique(lab[0])) - {0}
     sky = np.isin(lab, list(top)) if top else np.zeros_like(cand)
@@ -295,8 +299,8 @@ def temperature_field(im, geo, ambient, heatsink, running, seed):
     for k in ("louvre_ll", "louvre_lr"):
         _fill(T, geo[k], ambient + 1.0 + 0.3 * E + j())
     _fill(T, geo["bezel"], ambient + 5.5 + 0.3 * E + j())
-    _fill(T, geo["screen"], (ambient + 3.0 + 0.45 * E if running else ambient - 4.0) + j())
-    _fill(T, geo["handles"], ambient + 1.0 + j())
+    _fill(T, geo["screen"], (ambient + 3.0 + 0.45 * E if running else ambient + 5.5) + j())  # dark glass still takes sun
+    _fill(T, geo["handles"], ambient + 7.0 + j())                     # black plastic in sun, recessed in the door
     _fill(T, geo["plinth"], ambient + 3.5 + 0.2 * E + j())
     glass = np.zeros((H, W), bool)                                     # LWIR cannot see what an LCD shows
     bx0, by0, bx1, by1 = geo["bezel"]
@@ -307,6 +311,10 @@ def temperature_field(im, geo, ambient, heatsink, running, seed):
     T = T + np.where(cab, 0.004, -0.015) * hp * (~sky) * (~glass)    # dark stones run hotter; faint skin texture
     hot = np.where(cab, np.clip(T - (ambient + 6.0), 0, None), 0).astype(np.float32)
     T = T + 0.15 * cv2.GaussianBlur(hot, (0, 0), 14)                 # warm air spreads from the vents
+    if running:                                                        # exhaust can never be hotter than the heatsink
+        for k in ("grille_l", "grille_r", "louvre_ul", "louvre_ll", "louvre_lr"):
+            x0, y0, x1, y1 = geo[k]
+            np.minimum(T[y0:y1, x0:x1], heatsink - 0.3, out=T[y0:y1, x0:x1])
     T = cv2.GaussianBlur(T.astype(np.float32), (0, 0), 2.2)          # optics of a 320x240 LWIR lens
     rad = cv2.resize(T, IR, interpolation=cv2.INTER_AREA) + rng.normal(0, 0.05, (IR[1], IR[0]))  # NETD about 50 mK
     return np.round(rad, 2)
@@ -418,7 +426,7 @@ Report:
 
 1. the asset at fault and what is wrong with it;
 2. the evidence from each source (sensors, camera, infrared), with the numbers;
-3. what it is costing, and the work order you would send.
+3. what it is costing, and the work order you would send (see work_orders.json).
 """
 
 DATA = """# Data in this folder
@@ -441,7 +449,7 @@ All times are plant local time on 2026-07-14.
 | `INV-n_dc_v` | V | inverter DC bus voltage |
 | `INV-n_heatsink_c` | C | inverter heatsink temperature |
 | `INV-n_fan_rpm` | rpm | inverter cooling fan speed |
-| `INV-n_status` | | running, derated, tripped or stopped |
+| `INV-n_status` | | the inverter's reported state, for example running, derated or tripped |
 | `INV-n_last_update` | | when SCADA last received a report from the inverter |
 
 `alarms.json` lists the active SCADA alarms at 11:00 and every alarm raised since 09:00.
@@ -463,22 +471,26 @@ The thermal camera is a dual-sensor unit mounted with the display camera, and it
 ## objects.json
 
 One entry per inverter with its block, breaker, rating, latest SCADA reading and the paths of its camera frame, thermal frame and radiometric data.
-Paths start with `agent/` and are relative to the folder that holds this one.
+Paths in objects.json and the index files start with `agent/`, the name of this folder.
+
+## work_orders.json
+
+The work orders the O&M contractor offers, with how long each takes, what it costs and whether the equipment must be de-energized first.
 """
 
 
 def _counterfactual_loss(minutes):
     """kWh INV-3 would have made since its card died: the mean of the other three units each minute."""
     lost = 0.0
-    for _row, truth in minutes:
+    for _row, truth in minutes[:-1]:  # each row is the minute starting at t, so 11:00 itself is not yet lost
         if not truth["INV-3_comms_ok"] and truth["INV-3_true_ac_kw"] == 0:
             lost += np.mean([truth[f"{i}_true_ac_kw"] for i in INVERTERS if i != "INV-3"]) / 60
     return lost
 
 
-def build(out=OUT, src_dir=None):
+def build(out=OUT, src_dir=None, allow_bank=False):
     out = Path(out)
-    src_dir = Path(src_dir) if src_dir else out / "_src"
+    src_dir = Path(src_dir) if src_dir else OUT / "_src"
     sc, minutes, alarms, now = simulate()
     for sub in ("agent", "answer_key"):
         shutil.rmtree(out / sub, ignore_errors=True)
@@ -488,6 +500,8 @@ def build(out=OUT, src_dir=None):
 
     (agent / "PROMPT.md").write_text(PROMPT)
     (agent / "DATA.md").write_text(DATA)
+    catalogue = {k: {"minutes": m, "cost_usd": c, "needs_deenergized": d} for k, (m, c, d) in CFG["work_orders"].items()}
+    (agent / "work_orders.json").write_text(json.dumps(catalogue, indent=2) + "\n")
     rows, truths = [m[0] for m in minutes], [m[1] for m in minutes]
     with open(agent / "sensors" / "scada_1min.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0]))
@@ -504,7 +518,7 @@ def build(out=OUT, src_dir=None):
     for n, unit in enumerate(INVERTERS):
         inv = now["inv"][unit]
         running = inv["status"] == "running" and inv["ac_kw"] > 0
-        im, prov[unit] = camera_frame(unit, running, src_dir)
+        im, prov[unit] = camera_frame(unit, running, src_dir, allow_bank)
         geo = geometry(im)
         rad = temperature_field(im, geo, now["ambient_c"], inv["heatsink_c"], running, seed=600 + n)
         readings = ir_readings(rad, geo)
@@ -567,7 +581,9 @@ def build(out=OUT, src_dir=None):
                                "INV-3_heatsink_c": round(now["inv"]["INV-3"]["heatsink_c"], 2), "ambient_c": now["ambient_c"]},
         "cost_so_far": {"lost_mwh": round(lost_kwh / 1000, 3), "lost_usd": round(lost_kwh / 1000 * usd, 2),
                         "window": f"{first_dead[11:]} to 11:00", "basis": "mean of INV-1, INV-2 and INV-4 each minute",
-                        "rate_usd_per_mwh": usd},
+                        "rate_usd_per_mwh": usd,
+                        "accept_lost_mwh": [1.45, 1.75],  # dashboard minus meter, peer mean, inverter or meter side
+                        "loss_rate_kw_at_1100": round(np.mean([now["inv"][i]["ac_kw"] for i in INVERTERS if i != "INV-3"]))},
         "fix": {"work_order": "reseat_comms_card", "asset": "INV-3", "needs_deenergized": True, "isolate": "open 52-I3",
                 "expected_minutes": CFG["work_orders"]["reseat_comms_card"][0],
                 "expected_cost_usd": CFG["work_orders"]["reseat_comms_card"][1]},
@@ -580,18 +596,50 @@ def build(out=OUT, src_dir=None):
                     "temperatures at 11:00; not a real thermal camera",
     }, indent=2) + "\n")
     _overview(out / "overview.png", frames, objects, last)
+    _readme_case(out / "README.md", finding, objects, last)
     return finding
+
+
+def _readme_case(path, finding, objects, last):
+    """Fill README.md's case section from this build, so its numbers can't drift from the data."""
+    if not path.exists():
+        return
+    o, ok = objects, [u for u in INVERTERS if u != "INV-3"]
+    sp = lambda u: o[u]["infrared"]["readings"]["Sp1"]["temp_c"]
+    bx = lambda u: o[u]["infrared"]["readings"]["Bx1"]["max_c"]
+    s3, c = o["INV-3"]["scada_latest"], finding["cost_so_far"]
+    dash = sum(last[f"{i}_ac_kw"] for i in INVERTERS)
+    lines = [
+        f"- {finding['failure'].split('. ')[0][-5:]}: INV-3's comms card dies, and the inverter safe-stops at 0 kW.",
+        f"  SCADA keeps showing its last report ({s3['ac_kw']} kW, {s3['status']}, heatsink {s3['heatsink_c']} C, fan "
+        f"{s3['fan_rpm']} rpm) with `last_update` stuck at {s3['last_update'][11:]}, and no alarm is raised.",
+        f"- 11:00: the dashboard adds up to {dash:,.0f} kW, while the revenue meter POI-1 reads {last['poi_export_kw']:,.0f} kW, "
+        f"a gap of about one inverter.",
+        f"- Camera at 11:00: INV-3's display is dark, while {', '.join(ok[:-1])} and {ok[-1]} are lit and show their output.",
+        f"- Infrared at 11:00 (ambient {last['ambient_c']} C): INV-3's upper louvre reads {sp('INV-3')} C and its cabinet max "
+        f"is {bx('INV-3')} C.",
+        f"  On the running units, the louvre reads {min(map(sp, ok))} to {max(map(sp, ok))} C and the cabinet max "
+        f"{min(map(bx, ok))} to {max(map(bx, ok))} C.",
+        "  INV-3 is making no heat, so it is converting no power, whatever SCADA says.",
+        f"- Energy lost from {c['window']} is {c['lost_mwh']:.2f} MWh (${c['lost_usd']:.2f} at ${c['rate_usd_per_mwh']}/MWh), "
+        f"counting INV-3 as the {c['basis']}; graders accept {c['accept_lost_mwh'][0]} to {c['accept_lost_mwh'][1]} MWh.",
+        f"- The fix is to open 52-I3 and reseat INV-3's comms card (work order `{finding['fix']['work_order']}`, "
+        f"{finding['fix']['expected_minutes']} minutes, ${finding['fix']['expected_cost_usd']}).",
+    ]
+    text = path.read_text()
+    a, b = text.index("<!-- case:start -->"), text.index("<!-- case:end -->")
+    path.write_text(text[:a] + "<!-- case:start -->\n" + "\n".join(lines) + "\n" + text[b:])
 
 
 def _overview(path, frames, objects, last):
     """Camera row over infrared row, one column per inverter, for people (not the agent)."""
     cw, ch, pad, head, foot = 480, 360, 16, 124, 44
     W = 4 * cw + 5 * pad
-    H = head + 2 * ch + 3 * pad + 30 + foot
+    H = head + 2 * ch + pad + 30 + foot
     sheet = Image.new("RGB", (W, H), (248, 248, 246))
     d = ImageDraw.Draw(sheet)
     ft, fh, fs = _font(26), _font(17), _font(15)
-    d.text((pad, 18), "s06 case at 11:00: what the agent gets for each inverter", font=ft, fill=(20, 20, 20))
+    d.text((pad, 18), "GridTwin Demo Solar at 11:00: what the agent sees for each inverter", font=ft, fill=(20, 20, 20))
     meter = (f"Dashboard sum {sum(last[f'{i}_ac_kw'] for i in INVERTERS):,.0f} kW   ·   revenue meter POI-1 "
              f"{last['poi_export_kw']:,.0f} kW   ·   ambient {last['ambient_c']} °C")
     d.text((pad, 60), meter, font=fh, fill=(70, 70, 70))
@@ -606,11 +654,29 @@ def _overview(path, frames, objects, last):
         sheet.paste(frames[unit][1].resize((cw, ch), Image.LANCZOS), (x, head + ch + pad))
         d.text((x, head + 2 * ch + pad + 22), f"Sp1 louvre {r['Sp1']['temp_c']} °C   ·   cabinet max {r['Bx1']['max_c']} °C",
                font=fs, fill=(30, 30, 30), anchor="ls")
-    d.text((pad, H - 18), "Simulated plant (GridTwin sim, seed 6). Camera frames are AI-generated stand-ins; infrared is "
+    d.text((pad, H - 16), "Simulated plant (GridTwin sim, seed 6). Camera frames are AI-generated stand-ins; infrared is "
            "modelled from the sim's true heatsink and ambient temperatures.", font=fs, fill=(110, 110, 110), anchor="ls")
     sheet.save(path)
 
 
+def stage(dest, out=OUT):
+    """Copy only agent/ into an empty folder, so the agent's working folder holds no answer key."""
+    dest = Path(dest)
+    if dest.exists() and any(dest.iterdir()):
+        raise SystemExit(f"{dest} is not empty")
+    shutil.copytree(Path(out) / "agent", dest / "agent")
+    return dest
+
+
 if __name__ == "__main__":
-    f = build(sys.argv[1] if len(sys.argv) > 1 else OUT)
-    print(json.dumps(f["evidence"], indent=2))
+    import argparse
+
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("out", nargs="?", default=str(OUT))
+    ap.add_argument("--stage", metavar="DIR", help="copy agent/ into DIR for a live run, instead of building")
+    a = ap.parse_args()
+    if a.stage:
+        print(f"staged {stage(a.stage, a.out)}: start the agent there, with agent/PROMPT.md as its task")
+    else:
+        f = build(a.out)
+        print(json.dumps(f["evidence"], indent=2))

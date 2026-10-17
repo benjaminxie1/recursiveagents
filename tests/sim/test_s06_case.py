@@ -15,8 +15,14 @@ SPOILERS = re.compile(r"fail|stale|frozen|stuck|comms card|truth|hidden|answer|f
 @pytest.fixture(scope="module", params=["generated", "photo_bank"])
 def pack(request, tmp_path_factory):
     out = tmp_path_factory.mktemp(request.param)
-    src = OUT / "_src" if request.param == "generated" else out / "no_photos"
-    return out, build(out, src_dir=src)
+    if request.param == "generated":
+        return out, build(out)
+    return out, build(out, src_dir=out / "no_photos", allow_bank=True)
+
+
+def test_missing_photos_fail_loudly(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        build(tmp_path / "pack", src_dir=tmp_path / "none")
 
 
 def test_sensors_show_the_frozen_unit(pack):
@@ -53,6 +59,9 @@ def test_infrared_shows_a_cold_inverter(pack):
     for u in UNITS:  # exhaust air leaves below the heatsink: no louvre reads hotter than the unit's own heatsink
         assert sp1[u] < max(float(truth[f"{u}_true_heatsink_c"]), ambient + 3)
     assert all(ir[u]["readings"]["Bx1"]["min_c"] > ambient - 6 for u in UNITS)  # the box holds cabinet, not sky
+    assert ir["INV-3"]["readings"]["Sp2"]["temp_c"] > ambient                  # dark glass in sun is not below air temp
+    cost = finding["cost_so_far"]
+    assert cost["accept_lost_mwh"][0] <= cost["lost_mwh"] <= cost["accept_lost_mwh"][1]
 
 
 def test_objects_index_every_file(pack):

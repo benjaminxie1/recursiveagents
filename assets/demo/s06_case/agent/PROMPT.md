@@ -12,4 +12,4 @@ Report:
 
 1. the asset at fault and what is wrong with it;
 2. the evidence from each source (sensors, camera, infrared), with the numbers;
-3. what it is costing, and the work order you would send.
+3. what it is costing, and the work order you would send (see work_orders.json).

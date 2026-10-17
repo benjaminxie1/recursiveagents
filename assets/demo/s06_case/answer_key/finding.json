@@ -11,7 +11,7 @@
   "evidence": {
     "sensors": "Dashboard sum 4573 kW vs revenue meter 3558 kW at 11:00 (gap 1015 kW, about one inverter). INV-3's ac_kw, dc_kw, heatsink_c and fan_rpm have not changed since 09:29; the other units update every minute. No alarms.",
     "camera": "INV-3's display is dark; INV-1, INV-2 and INV-4 are lit and show their output.",
-    "infrared": "INV-3's upper louvre reads 29.7 C and its cabinet max 35.5 C at 28.5 C ambient, vs 38.2 to 39.2 C and 39.7 to 40.4 C on the running units: it is not making heat, so it is not converting power, though SCADA reports a 32.1 C heatsink."
+    "infrared": "INV-3's upper louvre reads 29.7 C and its cabinet max 35.8 C at 28.5 C ambient, vs 38.2 to 39.2 C and 39.5 to 40.0 C on the running units: it is not making heat, so it is not converting power, though SCADA reports a 32.1 C heatsink."
   },
   "true_state_at_1100": {
     "INV-3_ac_kw": 0.0,
@@ -20,11 +20,16 @@
     "ambient_c": 28.5
   },
   "cost_so_far": {
-    "lost_mwh": 1.663,
-    "lost_usd": 74.86,
+    "lost_mwh": 1.643,
+    "lost_usd": 73.96,
     "window": "09:30 to 11:00",
     "basis": "mean of INV-1, INV-2 and INV-4 each minute",
-    "rate_usd_per_mwh": 45
+    "rate_usd_per_mwh": 45,
+    "accept_lost_mwh": [
+      1.45,
+      1.75
+    ],
+    "loss_rate_kw_at_1100": 1197
   },
   "fix": {
     "work_order": "reseat_comms_card",
