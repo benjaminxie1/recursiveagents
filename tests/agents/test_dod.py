@@ -517,6 +517,7 @@ def test_visual_confidence_threshold():
 
 def test_visual_default_fn_falls_back(monkeypatch):
     monkeypatch.setitem(sys.modules, "gridtwin.vision", None)  # not importable
+    monkeypatch.delattr(sys.modules["gridtwin"], "vision", raising=False)  # set once any test imports it
     monkeypatch.setattr(vision_fallback, "check", lambda p, c: {"pass": True, "confidence": 0.8, "evidence": "fb"})
     v, _, _ = run([{"id": "v", "kind": "visual", "viewpoint": "vp", "claim": "c"}])
     assert v[0]["pass"] is True and v[0]["evidence"]["vision_evidence"] == "fb"

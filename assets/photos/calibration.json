@@ -1,0 +1,864 @@
+{
+ "generated_at": "2026-10-17T19:02:37+00:00",
+ "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B",
+ "models_used": [
+  "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+ ],
+ "pass_confidence": 0.7,
+ "repeats": 3,
+ "claims": {
+  "INV-1": {
+   "healthy": "The inverter cabinet looks healthy: its housing is intact and clean, with no clogged or dirty air filter, damage or burn marks visible.",
+   "filter_clogged": "An air filter is visibly clogged: its surface is coated with dust, lint or dirt.",
+   "thermal_normal": "This infrared (thermal) image shows no hot spot: the components are at similar temperatures and none stands out as much hotter than the parts around it.",
+   "thermal_hot": "This infrared (thermal) image shows a hot spot: one component or connection is clearly much hotter than the parts around it."
+  },
+  "INV-2": {
+   "healthy": "The inverter's display or status screen is on, showing readings or lit status lights.",
+   "display_off": "The inverter's display or status screen is off: it is dark or blank, with no readings or lit status lights."
+  },
+  "XFMR-1": {
+   "normal": "The transformer looks normal: its tank is intact, with no oil stains, drips or pooled oil visible on it or on the ground below it.",
+   "oil_leak": "The transformer is leaking oil: dark oil stains, drips or pooled oil are visible on its tank or on the ground below it."
+  },
+  "INV-3": {
+   "healthy": "The inverter's display or status screen is on, showing readings or lit status lights.",
+   "display_off": "The inverter's display or status screen is off: it is dark or blank, with no readings or lit status lights."
+  }
+ },
+ "summary": {
+  "photos": 15,
+  "correct": 13,
+  "misread": [
+   "assets/photos/INV-1/thermal_normal/01_afcis_infrared.jpg",
+   "assets/photos/INV-1/thermal_normal/02_flir_one_pro_thermal_camera_30418557488.jpg"
+  ]
+ },
+ "photos": [
+  {
+   "file": "assets/photos/INV-1/filter_clogged/01_dirty_ac_filters_2023_1_01.jpg",
+   "asset": "INV-1",
+   "expected_state": "filter_clogged",
+   "verdict": "correct",
+   "confidence": 0.967,
+   "own_claim": {
+    "state": "filter_clogged",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 1.0,
+      "evidence": "The photo shows a large rectangular heat exchanger or coil component covered in a thick layer of grey lint and dust, which visually confirms it is clogged.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The image shows a large rectangular component, likely a heat exchanger or filter assembly, which is heavily coated in a thick layer of grey lint and dust, indicating it is visibly clogged.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The image displays a large rectangular component with horizontal fins that is heavily coated in grey lint and dust, visually confirming it is a clogged filter.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "healthy",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The image shows a large rectangular component, likely a heat exchanger or condenser, that is heavily clogged with thick dust and lint, directly contradicting the claim that the cabinet is clean with no dirty air filter.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The large internal component is heavily covered in thick dust and lint, showing it is dirty and clogged, which contradicts the claim of being clean with no clogged filter.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The image shows a large component, likely a heat exchanger or condenser, heavily covered in thick dust and lint, which contradicts the claim that the cabinet is clean with no dirty air filter.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-1/filter_clogged/02_dirty_ac_filters_2023_1_03.jpg",
+   "asset": "INV-1",
+   "expected_state": "filter_clogged",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "filter_clogged",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The air filter in the photo is covered with a thick layer of dust, lint, and dirt, indicating it is visibly clogged.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The air filter in the photo is covered with a thick layer of dust, lint, and dirt, indicating it is visibly clogged.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The air filter in the photo is covered with a thick layer of dust, lint, and dirt, indicating it is visibly clogged.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "healthy",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The image shows a white air filter frame that is heavily clogged with a large accumulation of grey dust and fibrous debris, directly contradicting the claim that there is 'no clogged or dirty air filter'.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The photo shows a white air filter frame covered in a large clump of grey dust and lint, which directly contradicts the claim that there is no clogged or dirty air filter.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.98,
+      "evidence": "The image shows a white air filter frame heavily obstructed by a large accumulation of grey dust and fibrous material, directly contradicting the claim that there is 'no clogged or dirty air filter'.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-1/filter_clogged/03_a_dirty_cabin_filter.jpg",
+   "asset": "INV-1",
+   "expected_state": "filter_clogged",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "filter_clogged",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The air filter in the image is covered with dried leaves, dirt, and debris, indicating it is clogged.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The air filter in the image is covered with dried leaves, dirt, and debris, indicating it is clogged.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The air filter in the image is covered with dried leaves, dirt, and debris, indicating it is clogged.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "healthy",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The photo shows a clogged and dirty air filter with leaves and debris, which contradicts the claim that there is no clogged or dirty air filter.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 1.0,
+      "evidence": "The photo shows a clogged and dirty air filter with leaves and debris, which contradicts the claim that there is no clogged or dirty air filter.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The photo shows a clogged and dirty air filter with leaves and debris, which contradicts the claim that there is no clogged or dirty air filter.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-1/healthy/01_dornbirn_sma_sunny_boy_inverter_swr_3000_01asd.jpg",
+   "asset": "INV-1",
+   "expected_state": "healthy",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "healthy",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The red inverter cabinet has a smooth, intact housing with no visible damage, burn marks, or dirt, and the surface appears clean.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The red inverter cabinet has a smooth, intact housing with no visible damage, burn marks, or dirt, and the surface appears clean.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The red inverter cabinet has a smooth, intact housing with no visible damage, burn marks, or dirt, and the surface appears clean.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "filter_clogged",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows a red inverter (Sunny Boy) with no visible air filter, so there is no evidence of a clogged air filter.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows a red inverter (Sunny Boy) with no visible air filter, so there is no evidence of a clogged air filter.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows a red inverter (Sunny Boy) with no visible air filter, so there is no evidence of a clogged air filter.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-1/healthy/02_inverter_sma_sunny_boy_sb_2100tl_01asd.jpg",
+   "asset": "INV-1",
+   "expected_state": "healthy",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "healthy",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The blue inverter cabinet has an intact housing with no visible damage, burn marks, or dirt, and the surface appears clean.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The blue inverter cabinet has an intact housing with no visible damage, burn marks, or dirt, and the surface appears clean.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The blue inverter cabinet has an intact housing with no visible damage, burn marks, or dirt, and the surface appears clean.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "filter_clogged",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.9,
+      "evidence": "The photo shows a blue electrical cabinet with a label, but no air filter is visible in the image.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The photo shows a blue electrical cabinet with a label, but no air filter is visible in the image.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The photo shows a blue electrical cabinet with a label, but no air filter is visible in the image.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-1/healthy/03_inverter_sma_sunny_boy_sb_2800i_01asd.jpg",
+   "asset": "INV-1",
+   "expected_state": "healthy",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "healthy",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter cabinet's housing is intact with no visible damage, burn marks, or dirt, and the perforations (air vents) appear clear and unclogged.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter cabinet's housing is intact with no visible damage, burn marks, or dirt, and the perforations (air vents) appear clear and unclogged.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The inverter cabinet's housing is intact with no visible damage, burn marks, or dirt, and the perforations (air vents) appear clear and unclogged.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "filter_clogged",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The photo shows a Sunny Boy solar inverter with perforated vents on top, but no air filter is visible, let alone one that is clogged with dust, lint, or dirt.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows a Sunny Boy solar inverter with perforated vents on top, but no air filter is visible, let alone one that is clogged with dust, lint, or dirt.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The photo shows a Sunny Boy solar inverter with perforated vents on top, but no air filter is visible, let alone one that is clogged with dust, lint, or dirt.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-1/thermal_hot/01_electrical_fault.jpg",
+   "asset": "INV-1",
+   "expected_state": "thermal_hot",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "thermal_hot",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The thermal image shows three components in yellow/orange (indicating higher temperature) compared to the surrounding purple areas, with the color scale showing temperatures up to 85.1°C, confirming a clear hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The thermal image shows three components in yellow/orange (indicating higher temperature) compared to the surrounding purple areas, with the color scale showing temperatures up to 85.1°C, confirming a clear hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The thermal image shows three components in yellow/orange (indicating higher temperature) compared to the surrounding purple areas, with the color scale showing temperatures up to 85.1°C, confirming a clear hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "thermal_normal",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows bright yellow/orange areas (indicating higher temperatures around 80-85°C) on some components, which stand out as hot spots against the cooler purple background (51.2-60°C).",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows bright yellow/orange areas (indicating higher temperatures around 80-85°C) on the components, which stand out as hot spots against the cooler purple background (51.2-60°C), so there are visible hot spots.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows bright yellow/orange areas (indicating higher temperatures around 80-85°C) on some components, which stand out as hot spots against the cooler purple background (51.2-60°C).",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-1/thermal_hot/02_elektroschuetz.jpg",
+   "asset": "INV-1",
+   "expected_state": "thermal_hot",
+   "verdict": "correct",
+   "confidence": 0.933,
+   "own_claim": {
+    "state": "thermal_hot",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The thermal image shows a component with a temperature around 100°C (orange/red area) while surrounding parts are cooler (blue/purple), indicating a hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The thermal image shows a component with a temperature around 100°C (orange/red area) while surrounding parts are cooler (blue/purple), indicating a hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.9,
+      "evidence": "The thermal image shows a component with a temperature around 100°C (orange/red area) while surrounding parts are cooler (blue/purple), indicating a hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "thermal_normal",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows a yellow/orange arc (indicating higher temperature) which stands out as a hot spot compared to surrounding cooler areas (blue/green), contradicting the claim of no hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows a yellow/orange arc (indicating higher temperature) which stands out as a hot spot compared to the surrounding cooler blue/green areas, contradicting the claim of no hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows a yellow/orange arc (indicating higher temperature) which stands out as a hot spot compared to surrounding cooler areas (blue/green), contradicting the claim of no hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-1/thermal_hot/03_200_deg_neutral.jpg",
+   "asset": "INV-1",
+   "expected_state": "thermal_hot",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "thermal_hot",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The image shows a distinct yellow/orange area (indicating higher temperature) surrounded by cooler blue regions, with a crosshair marking a component that is clearly hotter than its surroundings as per the thermal scale.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The image shows a distinct yellow/orange area (indicating higher temperature) with a crosshair, surrounded by cooler blue regions, confirming a hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The image shows a distinct yellow/orange area (indicating higher temperature) surrounded by cooler blue regions, with a crosshair marking a component that is clearly hotter than its surroundings as per the thermal scale.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "thermal_normal",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows a distinct hot spot (yellow/orange area with higher temperature reading) surrounded by cooler blue regions, indicating a component is significantly hotter than its surroundings.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows a distinct hot spot (yellow/orange area with higher temperature reading) surrounded by cooler blue regions, indicating a component is significantly hotter than its surroundings.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows a distinct hot spot (yellow/orange area with higher temperature reading) surrounded by cooler blue regions, indicating a component is significantly hotter than its surroundings.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-1/thermal_normal/01_afcis_infrared.jpg",
+   "asset": "INV-1",
+   "expected_state": "thermal_normal",
+   "verdict": "misread",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "thermal_normal",
+    "passed": false,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows a bright yellow (hot) spot in the center, with temperature readings indicating higher temperatures there (16.1°C) compared to surrounding areas (12.3°C), so a hot spot is visible.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows a bright yellow (hot) component in the center, with temperature readings indicating higher temperatures (16.1°C) compared to surrounding areas (12.3°C), indicating a hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows a bright yellow (hot) component in the center, with temperature readings indicating higher temperatures (16.1°C) compared to surrounding areas (12.3°C), indicating a hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "thermal_hot",
+    "failed": false,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The central component in the thermal image is bright yellow/orange, indicating a significantly higher temperature compared to the surrounding purple/blue areas, with the temperature scale showing 16.1°C at the hottest point versus cooler regions.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The central component in the thermal image is bright yellow/orange, indicating a significantly higher temperature compared to the surrounding purple/blue areas, with the temperature scale showing 16.1°C at the hottest point versus cooler regions.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The central component in the thermal image is bright yellow/orange, indicating a significantly higher temperature compared to the surrounding purple/blue areas, with the temperature scale showing higher values (up to 16.1) in that region.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/INV-1/thermal_normal/02_flir_one_pro_thermal_camera_30418557488.jpg",
+   "asset": "INV-1",
+   "expected_state": "thermal_normal",
+   "verdict": "misread",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "thermal_normal",
+    "passed": false,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows a component with bright yellow/orange areas (indicating higher temperature) contrasting with purple surroundings (lower temperature), revealing a hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows a component with bright yellow/orange areas (indicating higher temperature) contrasting with purple surroundings (lower temperature), meaning there is a visible hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "The image shows a component with bright yellow/orange areas (indicating higher temperature) contrasting with purple surroundings (lower temperature), revealing a hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "thermal_hot",
+    "failed": false,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The image shows a thermal gradient where a central component is bright yellow/orange (indicating high temperature) while surrounding areas are purple/blue (cooler), confirming a hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The thermal image shows a bright yellow/orange area on the box-like component, indicating higher temperature compared to the surrounding purple/blue regions, which are cooler.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The thermal image shows a component with a bright yellow/orange region indicating higher temperature compared to the surrounding purple/blue areas, confirming a hot spot.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/XFMR-1/normal/01_pad_mounted_transformer_photo_2024.jpg",
+   "asset": "XFMR-1",
+   "expected_state": "normal",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "normal",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The green electrical cabinet (transformer) has an intact tank with no visible oil stains, drips, or pooled oil on its surface or the surrounding ground.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The green electrical cabinet (transformer) has an intact tank with no visible oil stains, drips, or pooled oil on its surface or the ground below.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The green electrical cabinet (transformer) has an intact tank with no visible oil stains, drips, or pooled oil on its surface or the ground below.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "oil_leak",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "No dark oil stains, drips, or pooled oil are visible on the cabinet or the ground below it.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "No dark oil stains, drips, or pooled oil are visible on the transformer's tank or the ground below it.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "No dark oil stains, drips, or pooled oil are visible on the cabinet or the ground below it.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/XFMR-1/normal/02_prolec_ge_pad_mounted.jpg",
+   "asset": "XFMR-1",
+   "expected_state": "normal",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "normal",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The green transformer cabinet appears intact with no visible oil stains, drips, or pooled oil on its surface or the surrounding ground.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The green transformer cabinet appears intact with no visible oil stains, drips, or pooled oil on its surface or the surrounding ground.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The green transformer cabinet is intact with no visible oil stains, drips, or pooled oil on its surface or the ground below it.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "oil_leak",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "No dark oil stains, drips, or pooled oil are visible on the transformer's tank or the ground below it.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "No dark oil stains, drips, or pooled oil are visible on the transformer's tank or the ground below it.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "No dark oil stains, drips, or pooled oil are visible on the transformer's tank or the ground below it.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/XFMR-1/normal/03_pse_minipad_transformer_in_redondo_wa.jpg",
+   "asset": "XFMR-1",
+   "expected_state": "normal",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "normal",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The transformer's tank is intact, and there are no visible oil stains, drips, or pooled oil on it or the surrounding ground.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The transformer's tank is intact, and there are no visible oil stains, drips, or pooled oil on it or the surrounding ground.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "The transformer's tank is intact, and there are no visible oil stains, drips, or pooled oil on it or the surrounding ground.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "oil_leak",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "No dark oil stains, drips, or pooled oil are visible on the transformer's tank or the ground below it.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "No dark oil stains, drips, or pooled oil are visible on the transformer's tank or the ground below it.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.95,
+      "evidence": "No dark oil stains, drips, or pooled oil are visible on the transformer's tank or the ground below it.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  },
+  {
+   "file": "assets/photos/XFMR-1/oil_leak/01_electrical_transformer_damaged_by_2011_tornado.jpg",
+   "asset": "XFMR-1",
+   "expected_state": "oil_leak",
+   "verdict": "correct",
+   "confidence": 0.95,
+   "own_claim": {
+    "state": "oil_leak",
+    "passed": true,
+    "runs": [
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "A large, dark, wet-looking stain or pool of liquid is clearly visible on the asphalt directly beneath and around the white cylindrical transformer lying on the road.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "A large, dark, wet-looking stain or pool of liquid is clearly visible on the asphalt directly beneath and around the fallen white transformer.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": true,
+      "confidence": 0.95,
+      "evidence": "A large, dark, wet-looking stain or pool of liquid is clearly visible on the asphalt directly beneath and around the fallen white transformer.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   },
+   "opposite_claim": {
+    "state": "normal",
+    "failed": true,
+    "runs": [
+     {
+      "pass": false,
+      "confidence": 0.9,
+      "evidence": "A large dark stain is visible on the pavement directly beneath and next to the transformer, contradicting the claim that no oil stains are visible on it or the ground below it.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.9,
+      "evidence": "A large dark stain is visible on the pavement directly beneath and next to the transformer, contradicting the claim that no oil stains are visible on it or the ground below it.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     },
+     {
+      "pass": false,
+      "confidence": 0.9,
+      "evidence": "A large dark stain is visible on the pavement directly beneath and next to the transformer, contradicting the claim that no oil stains are visible on it or the ground below it.",
+      "model": "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B"
+     }
+    ]
+   }
+  }
+ ]
+}
