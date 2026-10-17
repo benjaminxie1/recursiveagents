@@ -41,6 +41,16 @@ def _default_scene() -> str:
 
 
 TWIN_SCENE = os.environ.get("GRIDTWIN_TWIN_SCENE") or _default_scene()
+# The simulated case data the twin opens when an inverter is clicked (SCADA, display camera and infrared at 11:00),
+# one pack per scenario. Any other scenario passes an empty case, so the twin shows no case data rather than another
+# scenario's (s06's healthy INV-2 under s06b's failed INV-2).
+CASE_PACKS = {"s06_stale_scada": "assets/demo/s06_case"}
+
+
+def twin_url(scenario_id: str, run_id: str) -> str:
+    pack = CASE_PACKS.get(scenario_id)
+    case = pack if pack and (REPO / pack / "agent" / "objects.json").exists() else ""
+    return f"twin.html?scene={TWIN_SCENE}&run={run_id}&case={case}"
 
 
 # ---------- optional pieces (built in parallel; each has a fallback so the demo never depends on it) ----------
@@ -203,7 +213,7 @@ class Demo:
         self.viewpoints = {vp: info.get("asset") for vp, info in self.sim.camera.viewpoints.items()
                            if "rgb" in (info.get("modes") or ["rgb"])}
         self.used_viewpoints: set[str] = set()
-        self.twin_url = f"twin.html?scene={TWIN_SCENE}&run={self.run_id}"
+        self.twin_url = twin_url(self.sc["id"], self.run_id)
 
     # ----- helpers -----
     def emit(self, actor, type_, data):
