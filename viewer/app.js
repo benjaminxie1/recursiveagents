@@ -533,6 +533,7 @@ async function loadRuns() {
   const demo = runs.filter((r) => r.id.startsWith('demo/'));
   const first = demo.find((r) => r.status === 'DONE') || demo[0] || runs[0];
   if (!runId && first) { runId = first.id; history.replaceState(null, '', runUrl(runId, replay)); }
+  if (runId) $('#wallLink').href = `wall.html${runUrl(runId, replay)}`;
   const sel = $('#runPick');
   if (runId && !runs.some((r) => r.id === runId)) runs.unshift({ id: runId, status: null });
   const label = (r) => `${r.scenario_id || r.id} · ${STATUS_WORD[r.status] || (r.status ? r.status : 'running')}${r.scenario_id ? ` (${r.id})` : ''}`;
