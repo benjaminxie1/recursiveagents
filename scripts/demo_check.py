@@ -4,6 +4,7 @@ Runs the pre-tested demo scenarios with the scripted_correct agent, starts the v
 GETs every page and API the demo uses, checks each viewpoint has an image on disk, and (if CRUSOE_API_KEY is set)
 checks every role's model id is listed. Prints one PASS/FAIL line per check and exits 1 on any FAIL. No key needed.
 """
+import importlib.util
 import json
 import os
 import re
@@ -138,6 +139,24 @@ def check_viewpoints():
            f"none on disk for {', '.join(missing)}" if missing else "")
 
 
+def check_e2e(repo=REPO, home=Path.home()):
+    """What the end-to-end demo (gridtwin.demo) needs beyond the checks above: numpy for jev.py, and the twin's camera
+    registration. Without the registration every run escalates (jev_fix_verified sees 0 registered stations)."""
+    record("PASS" if importlib.util.find_spec("numpy") else "FAIL", "e2e demo imports numpy",
+           "" if importlib.util.find_spec("numpy") else "pip install -r requirements.txt")
+    name = f"{os.environ.get('GRIDTWIN_TWIN_SCENE', '_dev')}.registration.json"
+    paths = [repo / "assets" / "splats" / name, home / "claude" / "recursiveagents" / "assets" / "splats" / name]  # as pipeline._registration
+    views = {}
+    for p in paths:
+        try:
+            views = json.loads(p.read_text()).get("views") or {}
+            break
+        except (OSError, ValueError, AttributeError):
+            continue
+    record("PASS" if views else "FAIL", f"twin registration {name}",
+           f"{len(views)} stations" if views else "missing or empty: python -m scripts.twin_dev_scene")
+
+
 def check_models():
     if not os.environ.get("CRUSOE_API_KEY"):
         record("SKIP", "Crusoe model ids", "skipped (no key)")
@@ -173,6 +192,7 @@ def main():
             proc.kill()
             proc.wait()
     check_viewpoints()
+    check_e2e()
     check_models()
     fails = sum(1 for s, *_ in results if s == "FAIL")
     print(f"\n{'ALL PASS' if not fails else f'{fails} FAIL'} in {time.time() - t0:.1f} s")
