@@ -31,3 +31,7 @@ Same rules as `docs/MEMORY.md`: append `HH:MM name: text` lines (Pacific time), 
 - 10:18 Benjamin: choose the splat source (`docs/SIMULATOR.md` §4). The visual state comes from a bank of real-world photos.
 - 10:18 Benjamin: feature work starts at 10:45. Build order is in `docs/SIMULATOR.md` §6.
 - 10:25 Benjamin: my working branch is `claude/sweet-faraday-yssuo9`; `main` is shared. Commit signing is off in this repo (`commit.gpgsign false`) so commits stay under my name.
+- 11:28 Benjamin: my working branch is now `BEN_BRANCH` (has `claude/sweet-faraday-yssuo9` merged in); `claude/focused-bardeen-msoz67` is deleted.
+- 11:28 Benjamin: commit signing: SSH signing key goes in env var `GIT_SIGNING_KEY` (base64); a new session sets `gpg.format ssh` and `commit.gpgsign true`. Not yet active.
+- 11:28 Benjamin: settle with Jonathan whether the splat is static (his 10:30 note) or re-rendered from verifier-chosen viewpoints (my 11:19 decision); then update `docs/PLAN.md` §2.6 and `docs/SIMULATOR.md` §4.
+- 11:28 Benjamin: to build from `docs/JUDGE_QA.md`: self-verify baseline arm, weak-checklist ablation, one held-out trap type.
