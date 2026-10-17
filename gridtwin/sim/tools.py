@@ -199,7 +199,10 @@ class Toolbox:
         except Exception as e:
             d = {"route": "confirm", "unsafe": 0.0, "reason": f"gate error: {e}"}
         route, unsafe, reason = d.get("route", "confirm"), float(d.get("unsafe", 0.0)), d.get("reason", "")
-        self.log.emit("gate", "gate", {"proposed": proposed, "route": route, "unsafe": unsafe, "reason": reason})
+        # Which part decided, additive (C2): "policy" for the hard-coded interlock rules, else the decision model's backend.
+        src = "policy" if str(reason).startswith("policy rule") else getattr(self.gate, "backend", None)
+        self.log.emit("gate", "gate", {"proposed": proposed, "route": route, "unsafe": unsafe, "reason": reason,
+                                       **({"source": src} if isinstance(src, str) else {})})
         if route == "reject" or unsafe > 0.5:
             return {"error": f"refused by safety gate: {reason}", "route": route, "unsafe": unsafe}
         if route == "confirm":

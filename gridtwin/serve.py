@@ -62,6 +62,22 @@ def list_requirements():
     return {"requirements": doc.get("requirements") or [], "standards": doc.get("standards") or {}}
 
 
+def meta():
+    """Plant name, model per role (gridtwin/config.py), the gate backend in use, and the bench scenario split."""
+    import os
+
+    import yaml
+
+    from gridtwin.config import ROLES
+
+    split = {}
+    for p in sorted((REPO / "gridtwin" / "sim" / "scenarios").glob("*.yaml")):
+        s = (yaml.safe_load(p.read_text()) or {}).get("split", "dev")
+        split[s] = split.get(s, 0) + 1
+    plant = (yaml.safe_load((REPO / "gridtwin" / "sim" / "plant.yaml").read_text()) or {}).get("plant", {})
+    return {"plant": plant.get("name"), "roles": ROLES, "gate_backend": (os.environ.get("DECISION_BACKEND") or "local").lower(), "scenarios": split}
+
+
 class Handler(SimpleHTTPRequestHandler):
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map,
                       ".jsonl": "text/plain; charset=utf-8", ".js": "text/javascript"}
@@ -75,7 +91,7 @@ class Handler(SimpleHTTPRequestHandler):
         return str(VIEWER.joinpath(*parts))
 
     def do_GET(self):
-        api = {"/api/runs": list_runs, "/api/viewpoints": list_viewpoints, "/api/requirements": list_requirements}.get(urlsplit(self.path).path)
+        api = {"/api/runs": list_runs, "/api/viewpoints": list_viewpoints, "/api/requirements": list_requirements, "/api/meta": meta}.get(urlsplit(self.path).path)
         if api:
             body = json.dumps(api()).encode()
             self.send_response(200)
