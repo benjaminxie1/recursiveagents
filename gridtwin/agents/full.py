@@ -56,7 +56,8 @@ def kb_context(kb: KB, goal: str, actor: str) -> tuple[str, str, list[dict]]:
     lessons = [h for h in hits if h.get("kind") == "lessons"][:3]
     refs = [h for h in hits if h.get("kind") == "refs"][:4]
     ltxt = "\n".join(f"- [{h['id']}] {h['text'][:700]}" for h in lessons) or "(none)"
-    rtxt = "\n".join(f"- {h.get('title', '')}: {h['text'][:300]}" for h in refs) or "(none)"
+    # The URL is the ref's id; a citation check passes only on the exact cached URL and a quote from its text.
+    rtxt = "\n".join(f"- {h.get('title', '')}\n  url: {h['id']}\n  text: {h['text'][:600]}" for h in refs) or "(none)"
     return ltxt, rtxt, lessons
 
 
