@@ -71,14 +71,14 @@ def loop(monkeypatch, tmp_path):
 def test_full_loop_verifies_the_planners_checks_with_floors(loop):
     rec, log, tb = loop
     assert full.run("goal", tb, log, {}, "kb")["status"] == "DONE"
-    assert rec.verify_calls[0] == {"checks": ["strong"], "audit": True}
+    assert rec.verify_calls[0] == {"checks": ["strong", "done_fix_applied"], "audit": True}  # fix_applied is a floor
     assert rec.waits == [full.HOLD_MIN]
 
 
 def test_weak_dod_keeps_the_floors(loop):
     rec, log, tb = loop
     full.run_weak_dod("goal", tb, log, {}, "kb")
-    assert rec.verify_calls[0] == {"checks": ["weak_no_alarms"], "audit": True}
+    assert rec.verify_calls[0] == {"checks": ["weak_no_alarms", "done_fix_applied"], "audit": True}
     assert rec.waits == [full.HOLD_MIN]
     dod = next(e for e in rec.events if e["type"] == "dod")
     assert dod["data"]["ablation"] == {"weak_dod": True, "floors": True}
