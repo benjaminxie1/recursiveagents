@@ -78,11 +78,20 @@ def verifier_acceptance(asset: str) -> list[str]:
             "JEV verdict 'verified' from the registered camera stations and the sensor state"]
 
 
+# Planner items that restate one of the verifier's bars (freshness, status, ping, the display, JEV) add nothing but noise.
+_COVERED = re.compile(r"(data_age|fresh|stale|scada|telemetry|status|running|ping|comms|display|screen|camera|photo|jev)", re.I)
+
+
 def ground_acceptance(items, asset: str) -> tuple[list[str], list[str]]:
-    """(acceptance, dropped): the verifier's bars first, then the planner's items the plant can prove."""
+    """(acceptance, dropped): the verifier's bars first, then the planner's items the plant can prove and the bars
+    do not already cover. dropped lists the unprovable ones (power, temperature, latency ranges)."""
     kept, dropped = [], []
     for s in _as_list(items):
-        (dropped if _UNPROVABLE.search(s) else kept).append(s.strip())
+        s = s.strip()
+        if _UNPROVABLE.search(s):
+            dropped.append(s)
+        elif not _COVERED.search(s):
+            kept.append(s)
     return list(dict.fromkeys(verifier_acceptance(asset) + kept)), dropped
 
 

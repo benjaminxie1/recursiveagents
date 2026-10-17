@@ -150,12 +150,13 @@ def test_planner_overrides_a_repair_subagent_that_picks_the_wrong_fix(tmp_path, 
 def test_work_order_acceptance_demands_only_what_the_verifier_proves():
     from gridtwin.demo.pipeline import ground_acceptance, verifier_acceptance
     invented = ["Heatsink temperature for INV-3 reads between 40.0 C and 41.0 C", "AC power output at least 1150 kW",
-                "Ping latency under 10 ms", "INV-3 display shows live readings after the visit"]
+                "Ping latency under 10 ms", "INV-3 display shows live readings after the visit",
+                "INV-3 SCADA data_age_min under 5", "Cabinet doors closed and latched after the visit"]
     acc, dropped = ground_acceptance(invented, "INV-3")
     assert acc[:4] == verifier_acceptance("INV-3")
-    assert "INV-3 display shows live readings after the visit" in acc
+    assert acc[4:] == ["Cabinet doors closed and latched after the visit"]  # restatements of the bars are not repeated
     assert set(dropped) == set(invented[:3])
-    assert ground_acceptance("INV-3 answers comms_ping", "INV-3")[0][-1] == "INV-3 answers comms_ping"
+    assert ground_acceptance("INV-3 answers comms_ping", "INV-3")[0] == verifier_acceptance("INV-3")
 
 
 def test_model_fields_given_as_strings_stay_whole_steps():

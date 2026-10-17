@@ -67,7 +67,7 @@ def snapshot(run_dir: Path, events: list[dict] | None = None, proc_state: dict |
             s["goal"], s["scenario"] = d.get("text"), d.get("scenario_id")
         elif t == "demo.stage":
             key = (d.get("stage"), rnd)
-            row = stage_rows.setdefault(key, {"stage": d.get("stage"), "round": rnd, "status": None, "start_seq": seq})
+            row = stage_rows.setdefault(key, {"stage": d.get("stage"), "round": rnd, "status": None, "start_seq": seq, "seq": seq})
             row["status"] = "done" if d.get("status") == "end" else "active"
             if d.get("status") == "start":
                 s["current"] = {"stage": d.get("stage"), "round": rnd, "seq": seq}
@@ -106,8 +106,8 @@ def snapshot(run_dir: Path, events: list[dict] | None = None, proc_state: dict |
                 mem["writes"].append({**d, "seq": seq})
             elif op == "score":
                 mem["scores"].append({**d, "seq": seq})
-            elif op == "stats":
-                mem["stats"] = {**d, "seq": seq}
+            elif op == "stats":  # flat, the same shape as GET /api/demo/memory's stats
+                mem["stats"] = {**(d.get("stats") or {}), "effect": d.get("effect"), "seq": seq}
         elif t == "demo.final":
             s["final"] = {**d, "seq": seq}
     s["sensors"] = list(sensors.values())
@@ -138,4 +138,4 @@ def _teams(agents: list[dict]) -> list[dict]:
         if a.get("parent"):
             kids.setdefault(a["parent"], []).append(a["id"])
     return [{"team": a.get("team") or "plan", "round": a.get("round") or 0, "lead": a["id"], "model": a.get("model"),
-             "status": a.get("status"), "members": kids.get(a["id"], [])} for a in leads]
+             "status": a.get("status"), "members": kids.get(a["id"], []), "seq": a.get("first_seq")} for a in leads]
