@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "transformer top oil temperature above rating loss of life IEEE C57.91 loading guide",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "transformer top oil temperature above rating loss of life IEEE C57.91 loading guide",
+      "snippet": "Heat is one of the most common destroyers of transformers. Operation at only 10 \u00b0C above the transformer rating will cut transformer life by 50%. Heat is caused by internal losses due to loading, high ambient temperature, and solar radiation.",
+      "title": "FIST 3-30 Transformer Maintenance (Bureau of Reclamation, Oct 2000), sec. 3 Transformer Cooling Methods",
+      "url": "https://www.usbr.gov/power/data/fist/fist3_30/fist3_30.pdf#page=7"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "SMA inverter communication failure event 6701 inverter continues feeding in",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "SMA inverter communication failure event 6701 inverter continues feeding in",
+      "snippet": "Error in the communication processor, the inverter continues feeding in, however.",
+      "title": "Event Messages - SMA Sunny Highpower PEAK3 SHP 125-US-20 / SHP 150-US-20 operating manual (representative inverter OEM manual)",
+      "url": "https://manuals.sma.de/SHPxxUS20/en-US/391460235.html"
+    }
+  ]
+}

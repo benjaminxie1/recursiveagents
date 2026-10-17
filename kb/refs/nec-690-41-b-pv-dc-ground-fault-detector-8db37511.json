@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "NEC 690.41(B) PV dc ground-fault detector-interrupter GFDI requirement 30V 8A",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "NEC 690.41(B) PV dc ground-fault detector-interrupter GFDI requirement 30V 8A",
+      "snippet": "PV system DC circuits that exceed 30V or 8A must be provided with ground-fault detector-interrupter (GFDI) protection [Sec. 690.41(B)].",
+      "title": "NEC Requirements for Solar - Part 1 (EC&M, Mike Holt, June 13, 2024)",
+      "url": "https://www.ecmweb.com/national-electrical-code/code-basics/article/55042240/nec-requirements-for-solar-part-1"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "Sandia PVPMC soiling losses PV module particulate irradiance",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "Sandia PVPMC soiling losses PV module particulate irradiance",
+      "snippet": "Dust, soot, organics, and other particulates accumulate on outdoor module surfaces over time, absorbing and scattering some fraction of plane-of-array irradiance before it enters the PV module.",
+      "title": "Soiling Losses \u2013 PV Performance Modeling Collaborative (PVPMC)",
+      "url": "https://pvpmc.sandia.gov/modeling-guide/1-weather-design-inputs/shading-soiling-and-reflection-losses/soiling-losses/"
+    }
+  ]
+}

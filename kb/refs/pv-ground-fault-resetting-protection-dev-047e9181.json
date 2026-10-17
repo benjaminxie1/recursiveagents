@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "PV ground fault resetting protection device root cause before re-energizing FEMP",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "PV ground fault resetting protection device root cause before re-energizing FEMP",
+      "snippet": "Faults in wiring caused by physical damage include short circuits, open circuits, and ground faults. Rather than just replacing fuses or resetting ground-fault protection devices, it is important to discover and repair the root causes of the problems.",
+      "title": "Optimizing Solar Photovoltaic Performance for Longevity",
+      "url": "https://www.energy.gov/femp/optimizing-solar-photovoltaic-performance-longevity#:~:text=Faults%20in%20wiring%20caused%20by%20physical"
+    }
+  ]
+}

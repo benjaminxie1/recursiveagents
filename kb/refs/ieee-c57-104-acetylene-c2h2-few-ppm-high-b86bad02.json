@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "IEEE C57.104 acetylene C2H2 few ppm high-energy arcing Bureau of Reclamation transformer diagnostics",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "IEEE C57.104 acetylene C2H2 few ppm high-energy arcing Bureau of Reclamation transformer diagnostics",
+      "snippet": "If TDCG and individual gases are increasing significantly (more than 30 ppm per day [ppm/day]), an active fault is in progress. The transformer should be de-energized when Condition 4 levels are reached. A sudden increase in key gases and the rate of gas production is more important in evaluating a transformer than the accumulated amount of gas. One very important consideration is acetylene (C2H2). Generation of any amount of this gas above a few ppm indicates high-energy arcing.",
+      "title": "FIST 3-31 Transformer Diagnostics (Bureau of Reclamation, June 2003), sec. 5.2 DGA caution and acetylene",
+      "url": "https://www.usbr.gov/power/data/fist/fist3_31/fist3-31.pdf#page=15"
+    }
+  ]
+}

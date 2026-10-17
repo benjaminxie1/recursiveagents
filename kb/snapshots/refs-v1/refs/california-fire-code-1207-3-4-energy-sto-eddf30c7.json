@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "California Fire Code 1207.3.4 energy storage management system cell temperatures safe condition",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "California Fire Code 1207.3.4 energy storage management system cell temperatures safe condition",
+      "snippet": "The system shall disconnect electrical connections to the ESS or otherwise place it in a safe condition if potentially hazardous temperatures or other conditions such as short circuits, over voltage or under voltage are detected. Where required by the ESS listing, an approved energy storage management system that monitors and balances cell voltages, currents and temperatures within the manufacturer's specifications shall be provided.",
+      "title": "California Fire Code 2025, Chapter 12 Energy Systems, 1207.3.4 Energy Storage Management System (UpCodes)",
+      "url": "https://up.codes/viewer/california/ca-fire-code-2025/chapter/12/energy-systems#1207.3.4"
+    }
+  ]
+}

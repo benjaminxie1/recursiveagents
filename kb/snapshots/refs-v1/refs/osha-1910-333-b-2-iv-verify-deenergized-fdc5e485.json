@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "OSHA 1910.333(b)(2)(iv) verify deenergized test equipment backfeed",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "OSHA 1910.333(b)(2)(iv) verify deenergized test equipment backfeed",
+      "snippet": "A qualified person shall use test equipment to test the circuit elements and electrical parts of equipment to which employees will be exposed and shall verify that the circuit elements and equipment parts are deenergized. The test shall also determine if any energized condition exists as a result of inadvertently induced voltage or unrelated voltage backfeed even though specific parts of the circuit have been deenergized and presumed to be safe.",
+      "title": "1910.333 - Selection and use of work practices.",
+      "url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.333"
+    }
+  ]
+}

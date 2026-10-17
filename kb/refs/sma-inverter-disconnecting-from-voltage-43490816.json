@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "SMA inverter disconnecting from voltage sources before work procedure",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "SMA inverter disconnecting from voltage sources before work procedure",
+      "snippet": "Prior to performing any work on the inverter, always disconnect it from all voltage sources as described in this section.",
+      "title": "Disconnecting the Inverter from Voltage Sources - SMA Sunny Highpower PEAK3 SHP 125-US-20 / SHP 150-US-20 operating manual (representative inverter OEM manual)",
+      "url": "https://manuals.sma.de/SHPxxUS20/en-US/489941643.html"
+    }
+  ]
+}

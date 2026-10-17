@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "SMA inverter event 8003 active power limit temperature derating",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "SMA inverter event 8003 active power limit temperature derating",
+      "snippet": "The inverter has reduced its power output for more than 10 minutes due to excessive temperature.",
+      "title": "Event 8003 - SMA Sunny Highpower PEAK3 operating manual (representative inverter OEM manual)",
+      "url": "https://manuals.sma.de/SHPxxx21/en-US/10971614219.html"
+    }
+  ]
+}

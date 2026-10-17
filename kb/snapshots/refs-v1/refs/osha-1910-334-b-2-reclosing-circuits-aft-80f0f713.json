@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "OSHA 1910.334(b)(2) reclosing circuits after protective device operation breaker trip",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "OSHA 1910.334(b)(2) reclosing circuits after protective device operation breaker trip",
+      "snippet": "After a circuit is deenergized by a circuit protective device, the circuit may not be manually reenergized until it has been determined that the equipment and circuit can be safely energized. The repetitive manual reclosing of circuit breakers or reenergizing circuits through replaced fuses is prohibited.",
+      "title": "1910.334 - Use of equipment.",
+      "url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.334"
+    }
+  ]
+}

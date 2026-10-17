@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "NEC 690.11 dc arc-fault circuit protection PV 80 volts listed AFCI",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "NEC 690.11 dc arc-fault circuit protection PV 80 volts listed AFCI",
+      "snippet": "NEC Section 690.11 requires that any PV system with an operating voltage of 80 V dc or greater between any two conductors shall be protected with a listed arc-fault circuit interrupter or other equivalent equipment.",
+      "title": "Fire and Personnel Safety Requirements for Photovoltaic Systems (IAEI Magazine, John Wiles, May 2022)",
+      "url": "https://iaeimagazine.org/columns/photovoltaic/fire-and-personnel-safety-requirements-for-photovoltaic-systems/"
+    }
+  ]
+}

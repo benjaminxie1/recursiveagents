@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "detect stale frozen PV SCADA telemetry repeated values data quality check",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "detect stale frozen PV SCADA telemetry repeated values data quality check",
+      "snippet": "Identify stale values in the data. For a window of length N, the last value (index N-1) is considered stale if all values in the window are close to the first value (index 0).",
+      "title": "pvanalytics.quality.gaps.stale_values_diff",
+      "url": "https://pvanalytics.readthedocs.io/en/stable/generated/pvanalytics.quality.gaps.stale_values_diff.html"
+    }
+  ]
+}

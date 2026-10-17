@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "Sandia Pecos quality control stagnant data timestamp check PV monitoring",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "Sandia Pecos quality control stagnant data timestamp check PV monitoring",
+      "snippet": "The check_delta method is used to check for stagnant data and abrupt changes in data. The test checks if the difference between the minimum and maximum data value within a moving window is within expected bounds.",
+      "title": "Quality control tests",
+      "url": "https://pecos.readthedocs.io/en/latest/qc_tests.html"
+    }
+  ]
+}

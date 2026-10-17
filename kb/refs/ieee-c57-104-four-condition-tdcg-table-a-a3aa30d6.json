@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "IEEE C57.104 four condition TDCG table acetylene ppm condition 1 2 3 4 limits",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "IEEE C57.104 four condition TDCG table acetylene ppm condition 1 2 3 4 limits",
+      "snippet": "Table 1.\u2014Dissolved Key Gas Concentration Limits in Parts Per Million (ppm) [4] Hydrogen Methane Acetylene Ethylene Ethane Carbon Monoxide Carbon Dioxide Status (H2) (CH4) (C2 H2) (C2H4) (C2H6) (CO) (CO2)1 TDCG Condition 1 100 120 35 50 65 350 2,500 720 Condition 2 101-700 121-400 36-50 51-100 66-100 351-570 2,500-4,000 721-1,920 Condition 3 701-1,800 401-1,000 51-80 101-200 101-150 571-1,400 4,001-10,000 1,921-4,630 Condition 4 >1,800 >1,000 >80 >200 >150 >1,400 >10,000 >4,630",
+      "title": "FIST 3-31 Transformer Diagnostics (Bureau of Reclamation, June 2003), Table 1 Dissolved Key Gas Concentration Limits (from IEEE C57.104-1991)",
+      "url": "https://www.usbr.gov/power/data/fist/fist3_31/fist3-31.pdf#page=14"
+    }
+  ]
+}

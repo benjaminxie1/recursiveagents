@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "transformer DGA acetylene rising reduce loading contact manufacturer IEEE C57.104 L1 limit 35 ppm too high",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "transformer DGA acetylene rising reduce loading contact manufacturer IEEE C57.104 L1 limit 35 ppm too high",
+      "snippet": "Acetylene is the exception; IEEE sets an L1 limit of 35 ppm (too high), and IEC sets acetylene range at 3 to 50. TOA picks the lowest number (3 ppm) and sets the generation rate alarm value at 3 ppm per month. Notes: If one or more gas generation rates are equal to or exceed G1 limits (10% of L1 limits per month), you should begin to pay more attention to this transformer. Reduce the DGA sample interval, reduce loading, plan for future outage, contact the manufacturer etc.",
+      "title": "FIST 3-30 Transformer Maintenance (Bureau of Reclamation, Oct 2000), sec. 4.4 DGA, TOA alarm limits",
+      "url": "https://www.usbr.gov/power/data/fist/fist3_30/fist3_30.pdf#page=49"
+    }
+  ]
+}

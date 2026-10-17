@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "IEEE 1547-2018 clause 10 interoperability monitoring information requirements summary",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "IEEE 1547-2018 clause 10 interoperability monitoring information requirements summary",
+      "snippet": "Clause 10 specifies requirements for interoperability, which is defined as mandatory support for selected communication protocols, requirements for monitoring, control and information exchange, and requirements for standardized information for nameplate, configuration, monitoring and DER management.",
+      "title": "Clause-by-Clause Summary of Requirements in IEEE Std 1547-2018",
+      "url": "https://www.nlr.gov/grid/ieee-standard-1547/clause"
+    }
+  ]
+}

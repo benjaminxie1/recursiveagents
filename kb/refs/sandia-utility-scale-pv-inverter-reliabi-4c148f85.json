@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "Sandia utility-scale PV inverter reliability field incidents",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "Sandia utility-scale PV inverter reliability field incidents",
+      "snippet": "Inverters are the most commonly noted cause of PV system incidents triggered in the field. While not all of these incidents are reliability-related or even necessarily failures, they still result in a loss of generated power.",
+      "title": "Utility-scale grid-tied PV inverter reliability workshop summary report",
+      "url": "https://sandia.gov/research/publications/details/utility-scale-grid-tied-pv-inverter-reliability-workshop-summary-report-2011-07-01"
+    }
+  ]
+}

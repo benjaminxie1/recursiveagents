@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "ongoing acetylene generation active arcing transformer removed from service ppm per month",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "ongoing acetylene generation active arcing transformer removed from service ppm per month",
+      "snippet": "Any ongoing acetylene (C2H2) generation indicates an active arcing fault, and the transformer may have to be removed from service to avoid possible catastrophic failure. A transformer may be safely operated with some C2H2 showing in the DGA. C2H2 sometimes comes from a one-time event such as a close-in lightning strike or through fault. However, if C2H2 is increasing more than 10 ppm per month, the transformer should be removed from service.",
+      "title": "FIST 3-31 Transformer Diagnostics (Bureau of Reclamation, June 2003), Insulating Oil Condition Indicator note on acetylene",
+      "url": "https://www.usbr.gov/power/data/fist/fist3_31/fist3-31.pdf#page=57"
+    }
+  ]
+}

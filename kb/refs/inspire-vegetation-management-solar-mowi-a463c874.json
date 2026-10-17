@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "InSPIRE vegetation management solar mowing tall vegetation shading PV cells",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "InSPIRE vegetation management solar mowing tall vegetation shading PV cells",
+      "snippet": "Tall vegetation can lead to a reduction of solar generation and can cause degradation of PV cells that are shaded (electricity flows into the shaded region the results in high temperature in the cell and higher rates of degradation). Reduction of mowing events is preferred due to risk of projectiles, but often it may be the most effective control.",
+      "title": "InSPIRE/Primer",
+      "url": "https://openei.org/wiki/InSPIRE/Primer"
+    }
+  ]
+}

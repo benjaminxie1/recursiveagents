@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "CFC 1207.3.4 energy storage management system disconnect safe condition hazardous temperatures",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "CFC 1207.3.4 energy storage management system disconnect safe condition hazardous temperatures",
+      "snippet": "The system shall disconnect electrical connections to the ESS or otherwise place it in a safe condition if potentially hazardous temperatures or other conditions such as short circuits, over voltage or under voltage are detected.",
+      "title": "California Fire Code 2022, Chapter 12 Energy Systems, 1207.3.4 Energy Storage Management System",
+      "url": "https://up.codes/viewer/california/ca-fire-code-2022/chapter/12/energy-systems#1207.3.4"
+    }
+  ]
+}

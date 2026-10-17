@@ -1,0 +1,13 @@
+{
+  "fetched_at": "2026-10-17T19:00:14+00:00",
+  "query": "OSHA interpretation NFPA 70E lockout tagout electrical hazards 1910.333(b)",
+  "results": [
+    {
+      "fetched_at": "2026-10-17T19:00:14+00:00",
+      "query": "OSHA interpretation NFPA 70E lockout tagout electrical hazards 1910.333(b)",
+      "snippet": "NFPA 70E is an industry consensus standard, and is generally not enforced by OSHA. Although, compliance with NFPA 70E is an acceptable means of hazard abatement.",
+      "title": "Lockout of tagout requirements for electrical hazards (OSHA letter of interpretation, August 5, 2015)",
+      "url": "https://www.osha.gov/laws-regs/standardinterpretations/2015-08-05"
+    }
+  ]
+}
