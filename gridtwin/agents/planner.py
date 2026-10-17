@@ -23,7 +23,7 @@ Principles:
   DONE: the problem is fixed and the plant is healthy: fresh telemetry, output consistent across sources and peers, no active alarms, and safety invariants held.
   ESCALATED: when no safe fix exists, done means the plant is curtailed to a safe limit, a human was paged, and the outcome is reported as not resolved. Use page_sent, an action_taken check for the curtailment, and safety invariants.
   NO_ACTION: "nothing wrong" is a valid outcome with its own checks: the same health checks as DONE plus no_dispatch and no_state_change.
-- Ratings live on the inverters: for plant-relative values use {"rated": "INV-*", "factor": f}.
+- Ratings live on the inverters: for plant-relative values use {{"rated": "INV-*", "factor": f}}.
 - Keep each branch to 4 to 8 checks. Prefer the cross-checking ops (fresh, balance, peer, no_alarms) over per-asset thresholds, and never compare a state string unless you know its exact value from the registry. Every check must pass on a healthy plant; a check a correct outcome could fail is a bug.
 - Prefer checks that a lazy or mistaken fix would fail. Put hold_min on the key output checks so a fix that only works for a few minutes fails.
 - Use only asset ids, points and viewpoints from the plant registry you are given. Only add a citation check for a URL and quote that appear verbatim in the references you are given.
