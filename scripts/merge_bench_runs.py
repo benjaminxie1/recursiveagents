@@ -1,12 +1,13 @@
 """Rebuild bench rows from judged episodes on disk and merge several bench run folders.
 
 Run from the repo root:
-    .venv/bin/python -m scripts.merge_bench_runs runs/bench-<ts>-full [more run dirs...] [--out DIR]
+    .venv/bin/python -m scripts.merge_bench_runs runs/bench-<ts>-full [more run dirs...] [--agent NAME] [--out DIR]
 
 A row is the episode's `judge` event metrics plus the fields run_episode adds (fault_types, memory,
 lessons_at_start, lesson ids), so totals() and to_markdown() see the same shape as a normal bench run.
 Episodes without a judge event (still running, or killed) are listed as missing.
-Written for held-out lanes run as `--agent full --kb kb/snapshots/refs-v1 --memory frozen`; the labels assume that.
+Written for held-out lanes run as `--agent <name> --kb kb/snapshots/refs-v1 --memory frozen`. Pass one arm's run dirs
+per call: rows are keyed by scenario only, so mixing arms would merge them into one set.
 """
 import argparse
 import json
@@ -45,6 +46,7 @@ def row_from(ep_dir: Path):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("run_dirs", nargs="+")
+    ap.add_argument("--agent", default="full", help="arm label for the table and results.json")
     ap.add_argument("--out", default=None)
     a = ap.parse_args()
     want = episode.list_scenarios("heldout")
@@ -80,7 +82,7 @@ def main():
     missing = [s for s in want if s not in rows]
     tot = bench.totals(ordered)
     label = f"heldout ({len(ordered)} of {len(want)}; missing: {', '.join(missing) or 'none'})"
-    md = bench.to_markdown("full", label, ordered, tot, "frozen")
+    md = bench.to_markdown(a.agent, label, ordered, tot, "frozen")
     md += "\nrate limits inside kept episodes: " + ("; ".join(notes) if notes else "none") + "\n"
     print(md)
     for r in ordered:
@@ -88,7 +90,7 @@ def main():
     if a.out:
         out = Path(a.out)
         out.mkdir(parents=True, exist_ok=True)
-        (out / "results.json").write_text(json.dumps({"agent": "full", "split": "heldout", "scenarios": [r["scenario_id"] for r in ordered],
+        (out / "results.json").write_text(json.dumps({"agent": a.agent, "split": "heldout", "scenarios": [r["scenario_id"] for r in ordered],
                                                       "missing": missing, "kb": str(KB), "memory": "frozen",
                                                       "sources": a.run_dirs, "rows": ordered, "totals": tot}, indent=2))
         (out / "results.md").write_text(md)
