@@ -270,3 +270,13 @@ def test_config_roles_and_prices():
     assert ROLES["supervisor"] == ROLES["planner"]
     for model in ROLES.values():
         assert model in PRICES
+
+
+def test_usage_records_latency_of_successful_attempt(monkeypatch):
+    ticks = iter([10.0, 20.0, 21.5])  # failed attempt, then a 1.5 s success
+    monkeypatch.setattr(llm, "_clock", lambda: next(ticks))
+    use(monkeypatch, [rate_limit_error(), Raw(completion())])
+    log = FakeLog()
+    llm.chat("worker", MSG, log=log)
+    assert log.events[0]["data"]["latency_s"] == pytest.approx(1.5)
+    assert llm.USAGE.snapshot()["worker"]["latency_s"] == pytest.approx(1.5)
