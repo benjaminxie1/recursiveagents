@@ -931,6 +931,7 @@ function openDrawer(asset, refresh = false) {
   const S = lastState ?? derive([]);
   const d = $('#drawer');
   pins.forEach((p) => p.el.classList.toggle('sel', p.asset === asset));
+  if (!refresh) toParent({ type: 'select', asset });
   d.dataset.asset = asset;
   const info = S.assets?.assets?.find((a) => a.asset === asset);
   const F = failedNow(S);
@@ -959,7 +960,7 @@ function openDrawer(asset, refresh = false) {
   d.querySelectorAll('button[data-vp]').forEach((b) => { b.onclick = () => viewFrom(stations.find((s) => s.id === b.dataset.vp)); });
   if (!refresh) { d.scrollTop = 0; const p = pins.find((x) => x.asset === asset); if (p?.stations[0]) viewFrom(p.stations[0]); }
 }
-function closeDrawer() { $('#drawer').hidden = true; pins.forEach((p) => p.el.classList.remove('sel')); }
+function closeDrawer() { toParent({ type: 'select', asset: null }); $('#drawer').hidden = true; pins.forEach((p) => p.el.classList.remove('sel')); }
 
 // ---------- case data: one scenario's evidence per object (SCADA, camera, infrared) ----------
 // The registration's "viewer": {"case": "assets/demo/s06_case"} (or ?case=) names the pack; its agent/objects.json holds
@@ -989,6 +990,13 @@ function openObject(asset) {
   openDrawer(asset);
   return true;
 }
+// opened from the outdoor site (twin-embed.html?...): a chip back out, and the embedding page hears which object is open
+const BACK = params.get('back');
+if (BACK && /^twin-embed\.html(\?|$)/.test(BACK)) {
+  $('#btnBack').hidden = false;
+  $('#btnBack').onclick = () => { location.href = BACK; };
+}
+const toParent = (msg) => { if (parent !== window) parent.postMessage({ source: 'gridtwin-twin', scene: 'interior', ...msg }, '*'); };
 const hhmm = (t) => (typeof t === 'string' && t.length >= 16 ? t.slice(11, 16) : String(t ?? ''));
 function failNote(F) {
   return `<div class="failnote"><b>Failed</b>${esc(F.text)}${F.shouldBe ? `<div>Should be ${esc(F.shouldBe)}</div>` : ''}</div>`;
@@ -1019,7 +1027,7 @@ function objectData(asset, o) {
 addEventListener('message', (e) => {
   if (e.origin !== location.origin && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(e.origin)) return;
   const m = e.data || {};
-  if (m.twin === 'open' && m.asset) openObject(m.asset);
+  if ((m.twin === 'open' || m.type === 'focus') && m.asset) openObject(m.asset);
   else if (m.twin === 'fail') setFailed(m.asset, m.text, m.should_be);
 });
 

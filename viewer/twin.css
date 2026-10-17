@@ -328,3 +328,7 @@ body.nostations .station, body.nopins .pin { display: none !important; }
 .drawer .files { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
 .drawer .files a { color: var(--analyzing); text-decoration: none; }
 .drawer .files a:hover { text-decoration: underline; }
+
+/* twin-embed.html sends you in here with ?back=: the chip that walks you back out to the site */
+.chip.back { width: auto; padding: 0 12px 0 8px; gap: 4px; display: inline-flex; align-items: center; font: 500 13px/1 system-ui, sans-serif; }
+.chip.back svg { width: 18px; height: 18px; }

@@ -19,7 +19,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_SCENARIOS = ["s06_stale_scada", "s03_fan_relapse", "s05_xfmr_incipient", "s00_control"]
-PAGES = ["/", "/wall.html", "/twin.html", "/dashboard.html", "/demo.html"]
+PAGES = ["/", "/wall.html", "/twin.html", "/twin-embed.html", "/dashboard.html", "/demo.html"]
 APIS = ["/api/runs", "/api/viewpoints", "/api/requirements", "/api/demo/runs"]
 FILES = ["/assets/splats/plant.splat", "/assets/splats/scene.json"]
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
