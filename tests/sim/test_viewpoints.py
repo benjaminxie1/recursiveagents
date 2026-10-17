@@ -10,13 +10,14 @@ from gridtwin.sim.camera import Camera
 DEMO_ASSETS = ("INV-1", "INV-2", "INV-3", "XFMR-1")
 
 
-def test_demo_assets_have_three_viewpoints_with_the_same_modes(tmp_path):
+def test_every_camera_asset_has_spare_viewpoints_with_the_same_modes(tmp_path):
     by_asset = defaultdict(list)
     for d in Camera(seed=0, run_dir=tmp_path).viewpoints.values():
         by_asset[d["asset"]].append(tuple(d["modes"]))
-    for a in DEMO_ASSETS:
-        assert len(by_asset[a]) >= 3, a
-        assert len(set(by_asset[a])) == 1, f"{a} viewpoints disagree on modes; list_assets doesn't report them"
+    for a, modes in by_asset.items():
+        assert len(modes) >= (3 if a in DEMO_ASSETS else 2), a
+        assert len(set(modes)) == 1, f"{a} viewpoints disagree on modes; list_assets doesn't report them"
+    assert set(DEMO_ASSETS) <= set(by_asset)
 
 
 def test_verifier_on_the_sim_avoids_the_inspectors_viewpoint(tmp_path, monkeypatch):

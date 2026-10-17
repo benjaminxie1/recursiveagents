@@ -174,7 +174,7 @@ The splat is the **spatial index and the visual stage**: one 3D scene of "the pl
 
 **The splat stays static, and visual checks use named viewpoints (Will 12:04, built by Jonathan 12:16; supersedes Benjamin's 11:44 note from commit 71e865e, struck through below).**
 - Nothing renders the splat today. `get_camera_view` returns a photo from the bank that matches the asset's hidden state, whichever of the asset's named viewpoints asks. The pose in `viewpoints.yaml` places the station on the splat stage and doesn't change the image. **The photos carry the state.**
-- Each demo asset (INV-1, INV-2, INV-3, XFMR-1) has three named viewpoints, all with the asset's modes, because `list_assets` doesn't report modes.
+- Each demo asset (INV-1, INV-2, INV-3, XFMR-1) has three named viewpoints and each extended-fault asset two, all with the asset's modes, because `list_assets` doesn't report modes.
 - For each `visual` check the verifier picks a viewpoint of the same asset that no worker called during the run. It keeps the DoD's own viewpoint if no worker called it, and otherwise takes the first unused one by name (`gridtwin/agents/verifier.py`). The `verdict` evidence records `viewpoint` (the one the photo came from), `dod_viewpoint` and `worker_viewpoints`. If workers called every viewpoint of the asset, the verifier keeps the DoD's and sets `viewpoint_fallback`. The sim logs every tool call as actor `sim`, so the verifier tells its own camera calls apart by `seq`, and a re-verify after the hold reuses its own pick.
 - This closes the 11:44 open question: named viewpoints, no free camera pose. C1 is unchanged: the tool still returns an opaque path under `runs/<run_id>/frames/` and never the state name.
 

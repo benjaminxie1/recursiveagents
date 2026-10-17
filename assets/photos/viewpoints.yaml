@@ -1,20 +1,28 @@
 # Contract C5. Workstream 3 owns this file after the first push (poses get filled in from the splat).
-# Each demo asset has three named viewpoints, so a visual check can use one no worker called
+# Each demo asset has three named viewpoints and each extended-fault asset two, so a visual check can use one no worker called
 # (gridtwin/agents/verifier.py). An asset's viewpoints share its modes, since list_assets doesn't report
 # modes, and all of them show the same photo state: the photo bank is the visual state, not the pose.
 viewpoints:
   inv1_cabinet: {asset: INV-1, modes: [rgb, thermal], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
-  inv1_intake: {asset: INV-1, modes: [rgb, thermal], label: INV-1 air intake, heading_deg: 90, pose: {position: [0, 0, 0], target: [0, 0, 0]}}
-  inv1_rear: {asset: INV-1, modes: [rgb, thermal], label: INV-1 cabinet rear, heading_deg: 180, pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  inv1_intake: {asset: INV-1, modes: [rgb, thermal], label: INV-1 air intake, heading_deg: 90, map_xy: [128, 38], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  inv1_rear: {asset: INV-1, modes: [rgb, thermal], label: INV-1 cabinet rear, heading_deg: 180, map_xy: [150, 8], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
   inv2_cabinet: {asset: INV-2, modes: [rgb], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
-  inv2_display: {asset: INV-2, modes: [rgb], label: INV-2 display, heading_deg: 90, pose: {position: [0, 0, 0], target: [0, 0, 0]}}
-  inv2_side: {asset: INV-2, modes: [rgb], label: INV-2 cabinet side, heading_deg: 270, pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  inv2_display: {asset: INV-2, modes: [rgb], label: INV-2 display, heading_deg: 90, map_xy: [128, 88], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  inv2_side: {asset: INV-2, modes: [rgb], label: INV-2 cabinet side, heading_deg: 270, map_xy: [172, 88], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
   inv3_cabinet: {asset: INV-3, modes: [rgb], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
-  inv3_display: {asset: INV-3, modes: [rgb], label: INV-3 display, heading_deg: 90, pose: {position: [0, 0, 0], target: [0, 0, 0]}}
-  inv3_side: {asset: INV-3, modes: [rgb], label: INV-3 cabinet side, heading_deg: 270, pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  inv3_display: {asset: INV-3, modes: [rgb], label: INV-3 display, heading_deg: 90, map_xy: [128, 138], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  inv3_side: {asset: INV-3, modes: [rgb], label: INV-3 cabinet side, heading_deg: 270, map_xy: [172, 138], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
   xfmr1_yard: {asset: XFMR-1, modes: [rgb], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
-  xfmr1_tank: {asset: XFMR-1, modes: [rgb], label: XFMR-1 tank and radiators, heading_deg: 90, pose: {position: [0, 0, 0], target: [0, 0, 0]}}
-  xfmr1_fence: {asset: XFMR-1, modes: [rgb], label: XFMR-1 from the yard fence, heading_deg: 270, pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  xfmr1_tank: {asset: XFMR-1, modes: [rgb], label: XFMR-1 tank and radiators, heading_deg: 90, map_xy: [224, 118], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  xfmr1_fence: {asset: XFMR-1, modes: [rgb], label: XFMR-1 from the yard fence, heading_deg: 180, map_xy: [250, 76], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+
+  # Second viewpoints for the extended-fault assets (their first ones are in gridtwin/sim/viewpoints_extra.yaml).
+  cb15_side: {asset: CB-1.5, modes: [rgb, thermal], label: CB-1.5 combiner side, heading_deg: 210, map_xy: [108, 10], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  cb23_side: {asset: CB-2.3, modes: [rgb, thermal], label: CB-2.3 combiner side, heading_deg: 210, map_xy: [71, 60], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  cb42_side: {asset: CB-4.2, modes: [rgb, thermal], label: CB-4.2 combiner side, heading_deg: 210, map_xy: [53, 160], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  b3_corner: {asset: B3, modes: [rgb], label: B3 array corner, heading_deg: 45, map_xy: [24, 150], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  b4_corner: {asset: B4, modes: [rgb], label: B4 array corner, heading_deg: 45, map_xy: [24, 200], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  brk_52i4_side: {asset: 52-I4, modes: [rgb], label: 52-I4 breaker side, heading_deg: 0, map_xy: [186, 198], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
 
 # MVP photo states per asset (folders under assets/photos/<ASSET>/<state>/)
 states:
