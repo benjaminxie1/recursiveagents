@@ -28,6 +28,10 @@ GFDI_LIMIT_MOHM = 1.0
 HISTORY_MIN = 240
 
 
+def _applies(prefix: str, asset: str) -> bool:
+    return max((p for p in CFG["taxonomy"] if asset.startswith(p)), key=len, default=None) == prefix
+
+
 def taxonomy_for(asset: str) -> dict:
     """System/subsystem/component and applicable standards for an asset (longest matching prefix)."""
     for prefix in sorted(CFG["taxonomy"], key=len, reverse=True):
@@ -530,6 +534,18 @@ class Plant:
 
     def record_page(self, severity, brief):
         self.pages.append({"t": self.now_str(), "severity": severity, "brief": brief})
+
+    def requirements(self, asset=None) -> dict:
+        """Inspection scope (codes x components). Definitions only: status comes from verification."""
+        if asset is not None and asset not in self.assets():
+            return {"error": f"unknown asset {asset!r}"}
+        out = []
+        for r in CFG["requirements"]:
+            if asset is not None and not _applies(r["applies_to"], asset):
+                continue
+            targets = [asset] if asset else sorted(a for a in self.assets() if _applies(r["applies_to"], a))
+            out.append({**r, "applies_to": targets, "component_code": taxonomy_for(targets[0]).get("component_code") if targets else None})
+        return {"requirements": out, "standards": {sid: CFG["standards"][sid] for r in out for sid in r["standards"]}}
 
     def gate_state(self, proposed) -> dict:
         """Observable context for the safety gate: the same data an operator console shows."""

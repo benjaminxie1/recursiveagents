@@ -85,6 +85,7 @@ def _correct_steps(tb, faults):
 
 def scripted_correct(goal, toolbox, log, budget, kb_dir):
     faults = toolbox.sim.scenario.get("faults") or []
+    toolbox.call("list_requirements", {})
     toolbox.call("list_alarms", {})
     toolbox.call("read_telemetry", {"asset": "POI-1", "points": ["export_kw"], "window_min": 30})
     if not faults:

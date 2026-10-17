@@ -1,5 +1,5 @@
 """Ground-truth judge (docs/SIMULATOR.md §5). The only code that reads sim.truth and fault state."""
-from gridtwin.sim.plant import CFG
+from gridtwin.sim.plant import CFG, _applies
 
 HOLD_MIN = 60
 
@@ -37,6 +37,8 @@ def score(sim, scenario, log, result) -> dict:
         checks["curtailed_and_paged"] = sim.plant_limit_kw <= limit_max and paged
     success = all(checks.values())
 
+    req = requirement_coverage(sim, log)
+
     usage = {"prompt": 0, "cached": 0, "completion": 0}
     for e in log.of_type("usage"):
         for k in usage:
@@ -62,5 +64,40 @@ def score(sim, scenario, log, result) -> dict:
         "horizon_min": horizon,
         "tool_calls": sum(1 for e in log.events if e["type"] == "tool_call"),
         "work_orders_usd": sum(t["cost_usd"] for t in sim.tickets),
+        **req,
         "usage": usage,
+    }
+
+
+def _ids(obj):
+    if isinstance(obj, str):
+        return [obj]
+    if isinstance(obj, (list, tuple)):
+        return [x for o in obj for x in _ids(o)]
+    return []
+
+
+def requirement_coverage(sim, log) -> dict:
+    """How much of the relevant inspection scope the agents planned for and proved (informational, not success).
+
+    Relevant = catalog requirements on the faulted assets. Cited = referenced by a DoD check's
+    `requirement`/`requirements` field. Verified = a passing verdict that names the requirement.
+    """
+    faulted = {f.asset for f in sim.faults if f.asset}
+    relevant = sorted({r["id"] for r in CFG["requirements"] for a in faulted if _applies(r["applies_to"], a)})
+    cited, verified = set(), set()
+    for e in log.of_type("dod"):
+        for c in e["data"].get("checks") or []:
+            if isinstance(c, dict):
+                cited.update(_ids(c.get("requirement")) + _ids(c.get("requirements")))
+    for e in log.of_type("verdict"):
+        d = e["data"]
+        ids = _ids(d.get("requirement")) + _ids(d.get("requirements"))
+        if d.get("pass"):
+            verified.update(ids)
+    n = len(relevant) or None
+    return {
+        "requirements_relevant": relevant,
+        "requirements_cited_pct": round(100 * len(cited & set(relevant)) / n, 1) if n else None,
+        "requirements_verified_pct": round(100 * len(verified & set(relevant)) / n, 1) if n else None,
     }

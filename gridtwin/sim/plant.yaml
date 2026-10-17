@@ -52,40 +52,87 @@ diagnostics:          # minutes
   iv_curve: 30
   dga_sample: 30
 
-# System > subsystem > component taxonomy plus applicable codes and standards, mirroring the reference
-# demo's classify-then-link-to-codes flow. These are seed references for the KB; workstream 2's researcher
-# fetches and cites the actual clause text via You.com before any agent relies on it.
+# System > subsystem > component taxonomy, applicable codes and a requirements catalog, mirroring the
+# reference demo (Phylax): components are classified, linked to California codes, and every
+# code x component pair becomes a requirement that needs evidence. These are seed references for the KB;
+# workstream 2's researcher fetches and cites the actual clause text via You.com before agents rely on it.
+# The catalog is generic plant-wide inspection scope, not a per-fault playbook, and carries no status:
+# whether a requirement is met is decided by the verifier from evidence, never read from the sim.
 taxonomy:
-  INV-:  {system: power_conversion, subsystem: central_inverters, component: inverter,
-          standards: [NEC-690.41, UL-1741, IEEE-1547, NFPA-70E-120, NFPA-70B, OEM-INV-MANUAL]}
-  CB-:   {system: pv_generation, subsystem: dc_collection, component: combiner_box,
-          standards: [NEC-690.41, NEC-690.11, NFPA-70E-120, OEM-CB-MANUAL]}
-  B:     {system: pv_generation, subsystem: pv_array, component: pv_block,
-          standards: [CFC-1205, CFC-1205.5.1, NEC-691, OEM-MODULE-MANUAL]}
-  52-:   {system: mv_collection, subsystem: switchgear, component: breaker,
-          standards: [NFPA-70E-120, NFPA-70B]}
-  XFMR-: {system: substation, subsystem: step_up_transformer, component: transformer,
+  INV-:  {system: power_conversion, subsystem: central_inverters, component: inverter, component_code: "02.01.01",
+          standards: [CEC-690.41, UL-1741, IEEE-1547, CCR8-2320.4, NFPA-70E-120, NFPA-70B, OEM-INV-MANUAL]}
+  CB-:   {system: pv_generation, subsystem: dc_collection, component: combiner_box, component_code: "01.02.01",
+          standards: [CEC-690.41, CEC-690.11, CCR8-2320.4, NFPA-70E-120, OEM-CB-MANUAL]}
+  B:     {system: pv_generation, subsystem: pv_array, component: pv_block, component_code: "01.01.01",
+          standards: [CFC-1205, CFC-1205.5.1, CEC-691, OEM-MODULE-MANUAL]}
+  52-:   {system: mv_collection, subsystem: switchgear, component: breaker, component_code: "03.01.01",
+          standards: [CCR8-2320.4, NFPA-70E-120, NFPA-70B]}
+  XFMR-: {system: substation, subsystem: step_up_transformer, component: transformer, component_code: "04.01.01",
           standards: [IEEE-C57.104, IEEE-C57.91, NFPA-70B]}
-  BESS-: {system: energy_storage, subsystem: bess, component: battery_system,
+  BESS-: {system: energy_storage, subsystem: bess, component: battery_system, component_code: "05.01.01",
           standards: [CFC-1207, NFPA-855]}
-  POI-:  {system: interconnection, subsystem: revenue_metering, component: revenue_meter,
+  POI-:  {system: interconnection, subsystem: revenue_metering, component: revenue_meter, component_code: "06.01.01",
           standards: [IEEE-1547]}
-  MET-:  {system: monitoring, subsystem: weather, component: met_station, standards: []}
+  MET-:  {system: monitoring, subsystem: weather, component: met_station, component_code: "07.01.01", standards: []}
 
 standards:
-  NEC-690.41: "NFPA 70 (NEC) 690.41: PV system grounding and DC ground-fault detection"
-  NEC-690.11: "NFPA 70 (NEC) 690.11: DC arc-fault circuit protection"
-  NEC-691: "NFPA 70 (NEC) Article 691: large-scale PV electric supply stations (5 MW and up)"
-  NFPA-70E-120: "NFPA 70E Article 120: establishing an electrically safe work condition (lockout/tagout)"
+  CEC-690.41: "California Electrical Code (Title 24 Part 3, adopts NEC) 690.41: PV system grounding and DC ground-fault detection"
+  CEC-690.11: "California Electrical Code 690.11: DC arc-fault circuit protection"
+  CEC-691: "California Electrical Code Article 691: large-scale PV electric supply stations (5 MW and up)"
+  CCR8-2320.4: "Cal/OSHA Electrical Safety Orders, 8 CCR 2320.4: work on de-energized equipment (lockout/tagout)"
+  NFPA-70E-120: "NFPA 70E Article 120: establishing an electrically safe work condition"
   NFPA-70B: "NFPA 70B: standard for electrical equipment maintenance"
   UL-1741: "UL 1741: inverters, converters and interconnection equipment"
-  IEEE-1547: "IEEE 1547-2018: interconnection of distributed energy resources"
+  IEEE-1547: "IEEE 1547-2018: interconnection and monitoring of distributed energy resources"
   IEEE-C57.104: "IEEE C57.104: interpretation of gases generated in mineral-oil-immersed transformers (DGA)"
   IEEE-C57.91: "IEEE C57.91: loading guide for mineral-oil-immersed transformers"
-  CFC-1205: "California Fire Code section 1205: solar photovoltaic power systems"
+  CFC-1205: "California Fire Code (Title 24 Part 9) 1205: solar photovoltaic power systems"
   CFC-1205.5.1: "California Fire Code 1205.5.1: vegetation control around ground-mounted PV arrays"
-  CFC-1207: "California Fire Code section 1207: electrical energy storage systems"
+  CFC-1207: "California Fire Code 1207: electrical energy storage systems"
   NFPA-855: "NFPA 855: installation of stationary energy storage systems"
   OEM-INV-MANUAL: "Inverter OEM installation and O&M manual (cooling, comms card, GFDI reset procedure)"
   OEM-CB-MANUAL: "Combiner box OEM manual (string fusing, connector replacement)"
   OEM-MODULE-MANUAL: "PV module OEM manual (cleaning, hot spots, replacement)"
+
+# verify_by.kind uses the DoD check kinds: telemetry | visual | diagnostic | citation | safety | escalation
+requirements:
+  - {id: REQ-INV-01, applies_to: INV-, title: "Inverter output matches irradiance and its peers", standards: [OEM-INV-MANUAL],
+     verify_by: {kind: telemetry, how: "ac_kw vs peer inverters at the same POA, sustained 30 min"}}
+  - {id: REQ-INV-02, applies_to: INV-, title: "Heatsink within OEM limit with no derate, sustained", standards: [OEM-INV-MANUAL],
+     verify_by: {kind: telemetry, how: "heatsink_c and status over a 30-60 min window near peak load"}}
+  - {id: REQ-INV-03, applies_to: INV-, title: "Cooling system operating", standards: [OEM-INV-MANUAL],
+     verify_by: {kind: visual, how: "fan_rpm > 0 and a thermal view of the cabinet"}}
+  - {id: REQ-INV-04, applies_to: INV-, title: "Monitoring data is live and reconciles with the revenue meter", standards: [IEEE-1547],
+     verify_by: {kind: telemetry, how: "last_update_ts fresh; sum of inverter ac_kw vs POI export_kw; comms_ping"}}
+  - {id: REQ-INV-05, applies_to: INV-, title: "No ground fault on the DC side before re-energizing", standards: [CEC-690.41],
+     verify_by: {kind: diagnostic, how: "insulation_resistance on the inverter's live combiners >= 1 MOhm"}}
+  - {id: REQ-CB-01, applies_to: CB-, title: "DC insulation resistance at or above 1 MOhm", standards: [CEC-690.41],
+     verify_by: {kind: diagnostic, how: "insulation_resistance"}}
+  - {id: REQ-CB-02, applies_to: CB-, title: "String currents within 10% of the combiner median", standards: [OEM-MODULE-MANUAL],
+     verify_by: {kind: telemetry, how: "string_a, or iv_curve worst_string_pct_of_median"}}
+  - {id: REQ-CB-03, applies_to: CB-, title: "No burnt connectors or hot spots", standards: [CEC-690.11, OEM-CB-MANUAL],
+     verify_by: {kind: visual, how: "rgb and thermal views of the combiner"}}
+  - {id: REQ-CB-04, applies_to: CB-, title: "Isolated before work and restored after", standards: [CCR8-2320.4, NFPA-70E-120],
+     verify_by: {kind: safety, how: "isolate before replace_mc4_connector / replace_module; restore when complete"}}
+  - {id: REQ-PV-01, applies_to: B, title: "Block specific yield within 3% of peer blocks", standards: [OEM-MODULE-MANUAL],
+     verify_by: {kind: telemetry, how: "inverter dc_kw per block at the same POA, morning and afternoon"}}
+  - {id: REQ-PV-02, applies_to: B, title: "Module surfaces clean", standards: [OEM-MODULE-MANUAL],
+     verify_by: {kind: visual, how: "rgb view of the array"}}
+  - {id: REQ-PV-03, applies_to: B, title: "Vegetation cleared around and under the array", standards: [CFC-1205.5.1],
+     verify_by: {kind: visual, how: "rgb view of the array plus afternoon-only yield loss on front-row combiners"}}
+  - {id: REQ-SW-01, applies_to: 52-, title: "Breaker closed with no active trip; trip cause cleared before re-closing", standards: [NFPA-70B],
+     verify_by: {kind: telemetry, how: "breaker state, alarms, and insulation on the fed equipment before close"}}
+  - {id: REQ-SW-02, applies_to: 52-, title: "Downstream equipment locked out before hands-on work", standards: [CCR8-2320.4, NFPA-70E-120],
+     verify_by: {kind: safety, how: "open the feeding breaker before any work order with needs_deenergized"}}
+  - {id: REQ-XF-01, applies_to: XFMR-, title: "Dissolved gases within IEEE C57.104 normal limits", standards: [IEEE-C57.104],
+     verify_by: {kind: diagnostic, how: "dga_sample; online dga_c2h2_ppm trend"}}
+  - {id: REQ-XF-02, applies_to: XFMR-, title: "Top-oil temperature within loading-guide limits", standards: [IEEE-C57.91],
+     verify_by: {kind: telemetry, how: "oil_top_c vs load_pct and ambient"}}
+  - {id: REQ-XF-03, applies_to: XFMR-, title: "No oil leaks or staining", standards: [NFPA-70B],
+     verify_by: {kind: visual, how: "rgb view of the transformer yard"}}
+  - {id: REQ-XF-04, applies_to: XFMR-, title: "Abnormal DGA escalated to a qualified engineer with loading reduced", standards: [IEEE-C57.104],
+     verify_by: {kind: escalation, how: "set_plant_limit_kw <= 50% and page_human with a cited brief"}}
+  - {id: REQ-POI-01, applies_to: POI-, title: "Plant export reconciles with summed inverter output within 2%", standards: [IEEE-1547],
+     verify_by: {kind: telemetry, how: "export_kw vs 0.99 x sum of inverter ac_kw"}}
+  - {id: REQ-ESS-01, applies_to: BESS-, title: "No rack alarms; cell temperature within limits", standards: [CFC-1207, NFPA-855],
+     verify_by: {kind: telemetry, how: "rack_alarm and max_cell_c"}}

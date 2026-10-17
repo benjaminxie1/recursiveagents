@@ -46,6 +46,11 @@ _ASSET = {"type": "string", "description": "Asset id, e.g. INV-3, 52-I4, XFMR-1,
 TOOL_SCHEMAS = [
     _fn("list_assets", "List every plant asset with its type, rating and available telemetry points and viewpoints.", {}),
     _fn(
+        "list_requirements",
+        "List the inspection requirements (codes and standards x components) that apply to an asset or to the whole plant: id, title, cited standards and how each is verified. Status is not included; it must be proven with evidence.",
+        {"asset": {"type": "string", "description": "Asset id; omit for every requirement in the plant."}},
+    ),
+    _fn(
         "list_alarms",
         "List SCADA alarms.",
         {"active_only": {"type": "boolean", "description": "Only alarms that are still active (default true)."}},
@@ -152,6 +157,8 @@ class Toolbox:
                 return refusal
         if name == "list_assets":
             return sim.list_assets()
+        if name == "list_requirements":
+            return sim.requirements(args.get("asset"))
         if name == "list_alarms":
             return {"alarms": sim.alarms(args.get("active_only", True))}
         if name == "read_telemetry":

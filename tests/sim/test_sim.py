@@ -177,3 +177,28 @@ def test_no_truth_leaks_extended(tmp_path):
                     blob = json.dumps(e["data"]["result"])
                     for w in HIDDEN_WORDS:
                         assert w not in blob, (sid, w, blob[:200])
+
+
+def test_requirements_catalog(tmp_path):
+    sim, tb, log, sc = episode.start("s05_xfmr_incipient", run_id="req", runs_dir=tmp_path)
+    r = tb.call("list_requirements", {"asset": "XFMR-1"})
+    assert {x["id"] for x in r["requirements"]} == {"REQ-XF-01", "REQ-XF-02", "REQ-XF-03", "REQ-XF-04"}
+    assert all("status" not in x for x in r["requirements"])
+    assert set(r["standards"]) >= {"IEEE-C57.104", "IEEE-C57.91"}
+    assert tb.call("list_requirements", {"asset": "BESS-1"})["requirements"][0]["id"] == "REQ-ESS-01"
+    assert [x["id"] for x in tb.call("list_requirements", {"asset": "B3"})["requirements"]] == ["REQ-PV-01", "REQ-PV-02", "REQ-PV-03"]
+    assert "error" in tb.call("list_requirements", {"asset": "NOPE"})
+    assets = {a["asset"]: a for a in tb.call("list_assets", {})["assets"]}
+    assert assets["XFMR-1"]["component_code"] == "04.01.01" and "IEEE-C57.104" in assets["XFMR-1"]["standards"]
+
+
+def test_requirement_coverage_metric(tmp_path):
+    def planner(goal, tb, log, budget, kb):
+        log.emit("planner", "dod", {"checks": [{"id": "c1", "kind": "diagnostic", "requirement": "REQ-XF-01"},
+                                               {"id": "c2", "kind": "escalation", "requirements": ["REQ-XF-04"]}]})
+        log.emit("verifier", "verdict", {"check_id": "c1", "kind": "diagnostic", "pass": True, "evidence": "", "requirement": "REQ-XF-01"})
+        return bench.scripted_correct(goal, tb, log, budget, kb)
+    m = run(planner, "s05_xfmr_incipient", tmp_path)
+    assert m["success"]
+    assert m["requirements_cited_pct"] == 50.0 and m["requirements_verified_pct"] == 25.0
+    assert run(bench.scripted_correct, "s00_control", tmp_path / "c")["requirements_cited_pct"] is None
