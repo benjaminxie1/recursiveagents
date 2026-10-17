@@ -1,0 +1,3356 @@
+{
+ "scenario": "s06_stale_scada",
+ "goal": "Plant output looks fine on the dashboard but the owner says revenue is down. Find out why and fix it.",
+ "as_of": "2026-07-14T11:00",
+ "plant": "GridTwin Demo Solar",
+ "focus": "INV-3",
+ "faults": [
+  {
+   "type": "F6_stale_scada",
+   "asset": "INV-3"
+  }
+ ],
+ "ambient_c": 28.5,
+ "poa_wm2": 941.5,
+ "counts": {
+  "ok": 41,
+  "hot": 0,
+  "fault": 1
+ },
+ "simulated": true,
+ "assets": {
+  "52-B1": {
+   "kind": "breaker",
+   "label": "52-B1 breaker",
+   "anchor": [
+    186,
+    1.0,
+    222
+   ],
+   "taxonomy": {
+    "system": "mv_collection",
+    "subsystem": "switchgear",
+    "component": "breaker"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-SW-01",
+    "REQ-SW-02"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "state": "closed",
+    "last_update": "2026-07-14T11:00",
+    "data_age_min": 0
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/52-B1/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/52-B1/sensors.csv",
+    "points": [
+     "state"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/52-B1/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "handle_closed"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/52-B1/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "52-B1 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 37.4,
+     "min_c": 37.0,
+     "mean_c": 37.2,
+     "max_xy": [
+      432,
+      261
+     ]
+    },
+    "frame": {
+     "max_c": 37.4,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "52-I1": {
+   "kind": "breaker",
+   "label": "52-I1 breaker",
+   "anchor": [
+    186,
+    1.0,
+    30
+   ],
+   "taxonomy": {
+    "system": "mv_collection",
+    "subsystem": "switchgear",
+    "component": "breaker"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-SW-01",
+    "REQ-SW-02"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "state": "closed",
+    "last_update": "2026-07-14T11:00",
+    "data_age_min": 0
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/52-I1/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/52-I1/sensors.csv",
+    "points": [
+     "state"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/52-I1/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "handle_closed"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/52-I1/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "52-I1 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 37.4,
+     "min_c": 37.0,
+     "mean_c": 37.2,
+     "max_xy": [
+      292,
+      401
+     ]
+    },
+    "frame": {
+     "max_c": 37.4,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "52-I2": {
+   "kind": "breaker",
+   "label": "52-I2 breaker",
+   "anchor": [
+    186,
+    1.0,
+    80
+   ],
+   "taxonomy": {
+    "system": "mv_collection",
+    "subsystem": "switchgear",
+    "component": "breaker"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-SW-01",
+    "REQ-SW-02"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "state": "closed",
+    "last_update": "2026-07-14T11:00",
+    "data_age_min": 0
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/52-I2/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/52-I2/sensors.csv",
+    "points": [
+     "state"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/52-I2/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "handle_closed"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/52-I2/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "52-I2 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 37.4,
+     "min_c": 37.0,
+     "mean_c": 37.2,
+     "max_xy": [
+      510,
+      251
+     ]
+    },
+    "frame": {
+     "max_c": 37.4,
+     "min_c": 31.7
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "52-I3": {
+   "kind": "breaker",
+   "label": "52-I3 breaker",
+   "anchor": [
+    186,
+    1.0,
+    130
+   ],
+   "taxonomy": {
+    "system": "mv_collection",
+    "subsystem": "switchgear",
+    "component": "breaker"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-SW-01",
+    "REQ-SW-02"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "state": "closed",
+    "last_update": "2026-07-14T11:00",
+    "data_age_min": 0
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/52-I3/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/52-I3/sensors.csv",
+    "points": [
+     "state"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/52-I3/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "handle_closed"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/52-I3/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "52-I3 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 37.4,
+     "min_c": 37.0,
+     "mean_c": 37.2,
+     "max_xy": [
+      432,
+      406
+     ]
+    },
+    "frame": {
+     "max_c": 37.4,
+     "min_c": 31.7
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "52-I4": {
+   "kind": "breaker",
+   "label": "52-I4 breaker",
+   "anchor": [
+    186,
+    1.0,
+    180
+   ],
+   "taxonomy": {
+    "system": "mv_collection",
+    "subsystem": "switchgear",
+    "component": "breaker"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-SW-01",
+    "REQ-SW-02"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "state": "closed",
+    "last_update": "2026-07-14T11:00",
+    "data_age_min": 0
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/52-I4/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/52-I4/sensors.csv",
+    "points": [
+     "state"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/52-I4/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "splat_render",
+     "station": "brk_52i4",
+     "state": "handle_closed",
+     "file": "assets/splats/renders/brk_52i4/handle_closed.jpg"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/52-I4/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "52-I4 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 41.1,
+     "min_c": 32.5,
+     "mean_c": 35.4,
+     "max_xy": [
+      369,
+      277
+     ]
+    },
+    "frame": {
+     "max_c": 41.1,
+     "min_c": 21.0
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "52-M": {
+   "kind": "breaker",
+   "label": "52-M breaker",
+   "anchor": [
+    236,
+    1.0,
+    105
+   ],
+   "taxonomy": {
+    "system": "mv_collection",
+    "subsystem": "switchgear",
+    "component": "breaker"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-SW-01",
+    "REQ-SW-02"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "state": "closed",
+    "last_update": "2026-07-14T11:00",
+    "data_age_min": 0
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/52-M/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/52-M/sensors.csv",
+    "points": [
+     "state"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/52-M/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "handle_closed"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/52-M/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "52-M body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 37.4,
+     "min_c": 37.0,
+     "mean_c": 37.2,
+     "max_xy": [
+      357,
+      221
+     ]
+    },
+    "frame": {
+     "max_c": 37.5,
+     "min_c": 31.5
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "B1": {
+   "kind": "pv_block",
+   "label": "B1 PV block",
+   "anchor": [
+    71.0,
+    1.2,
+    30
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "pv_array",
+    "component": "pv_block"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-PV-01",
+    "REQ-PV-02",
+    "REQ-PV-03"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "dc_kw": 1209.47,
+    "module_c": 57.9,
+    "yield_pct_of_peers": 132.4
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/B1/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/B1/sensors.csv",
+    "points": [
+     "dc_kw",
+     "module_c",
+     "yield_pct_of_peers"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/B1/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "array_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/B1/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "B1 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 57.7,
+     "min_c": 37.6,
+     "mean_c": 44.6,
+     "max_xy": [
+      398,
+      299
+     ]
+    },
+    "frame": {
+     "max_c": 57.7,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "B2": {
+   "kind": "pv_block",
+   "label": "B2 PV block",
+   "anchor": [
+    71.0,
+    1.2,
+    80
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "pv_array",
+    "component": "pv_block"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-PV-01",
+    "REQ-PV-02",
+    "REQ-PV-03"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "dc_kw": 1220.51,
+    "module_c": 57.9,
+    "yield_pct_of_peers": 133.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/B2/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/B2/sensors.csv",
+    "points": [
+     "dc_kw",
+     "module_c",
+     "yield_pct_of_peers"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/B2/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "array_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/B2/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "B2 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 57.7,
+     "min_c": 37.6,
+     "mean_c": 44.6,
+     "max_xy": [
+      402,
+      300
+     ]
+    },
+    "frame": {
+     "max_c": 57.7,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "B3": {
+   "kind": "pv_block",
+   "label": "B3 PV block",
+   "anchor": [
+    71.0,
+    1.2,
+    130
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "pv_array",
+    "component": "pv_block"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-PV-01",
+    "REQ-PV-02",
+    "REQ-PV-03"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "dc_kw": 0.0,
+    "module_c": 57.9,
+    "yield_pct_of_peers": 0.0
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/B3/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/B3/sensors.csv",
+    "points": [
+     "dc_kw",
+     "module_c",
+     "yield_pct_of_peers"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/B3/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "splat_render",
+     "station": "b3_array",
+     "state": "array_normal",
+     "file": "assets/splats/renders/b3_array/array_normal.jpg"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/B3/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "B3 body",
+     "box": [
+      248,
+      167,
+      552,
+      410
+     ],
+     "max_c": 58.3,
+     "min_c": 35.5,
+     "mean_c": 43.8,
+     "max_xy": [
+      402,
+      295
+     ]
+    },
+    "frame": {
+     "max_c": 58.3,
+     "min_c": 21.0
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "B4": {
+   "kind": "pv_block",
+   "label": "B4 PV block",
+   "anchor": [
+    71.0,
+    1.2,
+    180
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "pv_array",
+    "component": "pv_block"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-PV-01",
+    "REQ-PV-02",
+    "REQ-PV-03"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "dc_kw": 1223.7,
+    "module_c": 57.9,
+    "yield_pct_of_peers": 134.0
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/B4/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/B4/sensors.csv",
+    "points": [
+     "dc_kw",
+     "module_c",
+     "yield_pct_of_peers"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/B4/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "splat_render",
+     "station": "b4_array",
+     "state": "array_normal",
+     "file": "assets/splats/renders/b4_array/array_normal.jpg"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/B4/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "B4 body",
+     "box": [
+      248,
+      167,
+      552,
+      410
+     ],
+     "max_c": 58.1,
+     "min_c": 35.4,
+     "mean_c": 43.7,
+     "max_xy": [
+      407,
+      292
+     ]
+    },
+    "frame": {
+     "max_c": 58.1,
+     "min_c": 21.0
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "BESS-1": {
+   "kind": "pv_block",
+   "label": "BESS-1 PV block",
+   "anchor": [
+    150,
+    1.3,
+    222
+   ],
+   "taxonomy": {
+    "system": "energy_storage",
+    "subsystem": "bess",
+    "component": "battery_system"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-PV-01",
+    "REQ-PV-02",
+    "REQ-PV-03",
+    "REQ-ESS-01"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "soc_pct": 60,
+    "p_kw": 0.0,
+    "max_cell_c": 27.0,
+    "rack_alarm": 0,
+    "last_update": "2026-07-14T11:00",
+    "data_age_min": 0
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/BESS-1/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/BESS-1/sensors.csv",
+    "points": [
+     "soc_pct",
+     "p_kw",
+     "max_cell_c",
+     "rack_alarm"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/BESS-1/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "healthy"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/BESS-1/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "BESS-1 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 37.4,
+     "min_c": 37.0,
+     "mean_c": 37.2,
+     "max_xy": [
+      290,
+      324
+     ]
+    },
+    "frame": {
+     "max_c": 37.4,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-1.1": {
+   "kind": "combiner",
+   "label": "CB-1.1 combiner box",
+   "anchor": [
+    25.166666666666664,
+    1.2,
+    16
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-1.1/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-1.1/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-1.1/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-1.1/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-1.1 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.1,
+     "mean_c": 37.5,
+     "max_xy": [
+      388,
+      291
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-1.2": {
+   "kind": "combiner",
+   "label": "CB-1.2 combiner box",
+   "anchor": [
+    43.5,
+    1.2,
+    16
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-1.2/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-1.2/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-1.2/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-1.2/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-1.2 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.1,
+     "mean_c": 37.5,
+     "max_xy": [
+      406,
+      295
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-1.3": {
+   "kind": "combiner",
+   "label": "CB-1.3 combiner box",
+   "anchor": [
+    61.833333333333336,
+    1.2,
+    16
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-1.3/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-1.3/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-1.3/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-1.3/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-1.3 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.1,
+     "mean_c": 37.5,
+     "max_xy": [
+      411,
+      301
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-1.4": {
+   "kind": "combiner",
+   "label": "CB-1.4 combiner box",
+   "anchor": [
+    80.16666666666667,
+    1.2,
+    16
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-1.4/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-1.4/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-1.4/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-1.4/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-1.4 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.0,
+     "mean_c": 37.5,
+     "max_xy": [
+      392,
+      304
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.5
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-1.5": {
+   "kind": "combiner",
+   "label": "CB-1.5 combiner box",
+   "anchor": [
+    98.5,
+    1.2,
+    16
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-1.5/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-1.5/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-1.5/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "splat_render",
+     "station": "cb15_box",
+     "state": "connector_normal",
+     "file": "assets/splats/renders/cb15_box/connector_normal.jpg"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-1.5/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-1.5 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 41.8,
+     "min_c": 33.5,
+     "mean_c": 36.8,
+     "max_xy": [
+      382,
+      371
+     ]
+    },
+    "frame": {
+     "max_c": 41.8,
+     "min_c": 20.9
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-1.6": {
+   "kind": "combiner",
+   "label": "CB-1.6 combiner box",
+   "anchor": [
+    116.83333333333333,
+    1.2,
+    16
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-1.6/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-1.6/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-1.6/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-1.6/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-1.6 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.0,
+     "mean_c": 37.5,
+     "max_xy": [
+      396,
+      288
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-2.1": {
+   "kind": "combiner",
+   "label": "CB-2.1 combiner box",
+   "anchor": [
+    25.166666666666664,
+    1.2,
+    66
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-2.1/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-2.1/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-2.1/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-2.1/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-2.1 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.1,
+     "mean_c": 37.5,
+     "max_xy": [
+      411,
+      303
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-2.2": {
+   "kind": "combiner",
+   "label": "CB-2.2 combiner box",
+   "anchor": [
+    43.5,
+    1.2,
+    66
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-2.2/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-2.2/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-2.2/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-2.2/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-2.2 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.0,
+     "mean_c": 37.5,
+     "max_xy": [
+      390,
+      304
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-2.3": {
+   "kind": "combiner",
+   "label": "CB-2.3 combiner box",
+   "anchor": [
+    61.833333333333336,
+    1.2,
+    66
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-2.3/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-2.3/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-2.3/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "splat_render",
+     "station": "cb23_box",
+     "state": "connector_normal",
+     "file": "assets/splats/renders/cb23_box/connector_normal.jpg"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-2.3/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-2.3 body",
+     "box": [
+      247,
+      178,
+      551,
+      421
+     ],
+     "max_c": 41.6,
+     "min_c": 33.4,
+     "mean_c": 36.5,
+     "max_xy": [
+      387,
+      371
+     ]
+    },
+    "frame": {
+     "max_c": 41.6,
+     "min_c": 21.0
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-2.4": {
+   "kind": "combiner",
+   "label": "CB-2.4 combiner box",
+   "anchor": [
+    80.16666666666667,
+    1.2,
+    66
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-2.4/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-2.4/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-2.4/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-2.4/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-2.4 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.0,
+     "mean_c": 37.5,
+     "max_xy": [
+      411,
+      298
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.4
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-2.5": {
+   "kind": "combiner",
+   "label": "CB-2.5 combiner box",
+   "anchor": [
+    98.5,
+    1.2,
+    66
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-2.5/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-2.5/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-2.5/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-2.5/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-2.5 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.1,
+     "mean_c": 37.5,
+     "max_xy": [
+      402,
+      304
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-2.6": {
+   "kind": "combiner",
+   "label": "CB-2.6 combiner box",
+   "anchor": [
+    116.83333333333333,
+    1.2,
+    66
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-2.6/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-2.6/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-2.6/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-2.6/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-2.6 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.1,
+     "mean_c": 37.5,
+     "max_xy": [
+      404,
+      292
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-3.1": {
+   "kind": "combiner",
+   "label": "CB-3.1 combiner box",
+   "anchor": [
+    25.166666666666664,
+    1.2,
+    116
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {},
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-3.1/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-3.1/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-3.1/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-3.1/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-3.1 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.0,
+     "mean_c": 37.5,
+     "max_xy": [
+      406,
+      290
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-3.2": {
+   "kind": "combiner",
+   "label": "CB-3.2 combiner box",
+   "anchor": [
+    43.5,
+    1.2,
+    116
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {},
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-3.2/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-3.2/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-3.2/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-3.2/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-3.2 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.0,
+     "mean_c": 37.5,
+     "max_xy": [
+      409,
+      302
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.7
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-3.3": {
+   "kind": "combiner",
+   "label": "CB-3.3 combiner box",
+   "anchor": [
+    61.833333333333336,
+    1.2,
+    116
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {},
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-3.3/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-3.3/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-3.3/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-3.3/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-3.3 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.0,
+     "mean_c": 37.5,
+     "max_xy": [
+      395,
+      313
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-3.4": {
+   "kind": "combiner",
+   "label": "CB-3.4 combiner box",
+   "anchor": [
+    80.16666666666667,
+    1.2,
+    116
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {},
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-3.4/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-3.4/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-3.4/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-3.4/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-3.4 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.1,
+     "mean_c": 37.5,
+     "max_xy": [
+      392,
+      308
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.5
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-3.5": {
+   "kind": "combiner",
+   "label": "CB-3.5 combiner box",
+   "anchor": [
+    98.5,
+    1.2,
+    116
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {},
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-3.5/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-3.5/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-3.5/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-3.5/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-3.5 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.1,
+     "mean_c": 37.5,
+     "max_xy": [
+      397,
+      311
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-3.6": {
+   "kind": "combiner",
+   "label": "CB-3.6 combiner box",
+   "anchor": [
+    116.83333333333333,
+    1.2,
+    116
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {},
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-3.6/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-3.6/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-3.6/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-3.6/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-3.6 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.0,
+     "mean_c": 37.5,
+     "max_xy": [
+      400,
+      276
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-4.1": {
+   "kind": "combiner",
+   "label": "CB-4.1 combiner box",
+   "anchor": [
+    25.166666666666664,
+    1.2,
+    166
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-4.1/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-4.1/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-4.1/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-4.1/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-4.1 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.1,
+     "mean_c": 37.5,
+     "max_xy": [
+      392,
+      312
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.5
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-4.2": {
+   "kind": "combiner",
+   "label": "CB-4.2 combiner box",
+   "anchor": [
+    43.5,
+    1.2,
+    166
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-4.2/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-4.2/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-4.2/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "splat_render",
+     "station": "cb42_box",
+     "state": "connector_normal",
+     "file": "assets/splats/renders/cb42_box/connector_normal.jpg"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-4.2/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-4.2 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 42.2,
+     "min_c": 33.3,
+     "mean_c": 36.7,
+     "max_xy": [
+      386,
+      369
+     ]
+    },
+    "frame": {
+     "max_c": 42.2,
+     "min_c": 21.0
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-4.3": {
+   "kind": "combiner",
+   "label": "CB-4.3 combiner box",
+   "anchor": [
+    61.833333333333336,
+    1.2,
+    166
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-4.3/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-4.3/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-4.3/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-4.3/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-4.3 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.1,
+     "mean_c": 37.5,
+     "max_xy": [
+      379,
+      297
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.5
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-4.4": {
+   "kind": "combiner",
+   "label": "CB-4.4 combiner box",
+   "anchor": [
+    80.16666666666667,
+    1.2,
+    166
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-4.4/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-4.4/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-4.4/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-4.4/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-4.4 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.1,
+     "mean_c": 37.5,
+     "max_xy": [
+      383,
+      289
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.5
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-4.5": {
+   "kind": "combiner",
+   "label": "CB-4.5 combiner box",
+   "anchor": [
+    98.5,
+    1.2,
+    166
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-4.5/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-4.5/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-4.5/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-4.5/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-4.5 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.0,
+     "mean_c": 37.5,
+     "max_xy": [
+      410,
+      304
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.5
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "CB-4.6": {
+   "kind": "combiner",
+   "label": "CB-4.6 combiner box",
+   "anchor": [
+    116.83333333333333,
+    1.2,
+    166
+   ],
+   "taxonomy": {
+    "system": "pv_generation",
+    "subsystem": "dc_collection",
+    "component": "combiner_box"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-CB-01",
+    "REQ-CB-02",
+    "REQ-CB-03",
+    "REQ-CB-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "insulation_mohm": 55.0,
+    "string_a_max": 17.05,
+    "string_a_min": 17.05,
+    "string_a_total": 204.6
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/CB-4.6/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/CB-4.6/sensors.csv",
+    "points": [
+     "insulation_mohm",
+     "string_a_max",
+     "string_a_min",
+     "string_a_total"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-4.6/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "connector_normal"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/CB-4.6/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "CB-4.6 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 38.3,
+     "min_c": 37.1,
+     "mean_c": 37.5,
+     "max_xy": [
+      391,
+      304
+     ]
+    },
+    "frame": {
+     "max_c": 38.3,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "INV-1": {
+   "kind": "central_inverter",
+   "label": "INV-1 central inverter",
+   "anchor": [
+    150,
+    1.45,
+    30
+   ],
+   "taxonomy": {
+    "system": "power_conversion",
+    "subsystem": "central_inverters",
+    "component": "inverter"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-INV-01",
+    "REQ-INV-02",
+    "REQ-INV-03",
+    "REQ-INV-04",
+    "REQ-INV-05"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "ac_kw": 1188.91,
+    "dc_kw": 1209.47,
+    "dc_v": 998.8,
+    "heatsink_c": 40.1,
+    "fan_rpm": 2400,
+    "status": "running",
+    "curtail_pct": 0,
+    "last_update": "2026-07-14T11:00",
+    "data_age_min": 0
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/INV-1/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/INV-1/sensors.csv",
+    "points": [
+     "ac_kw",
+     "dc_kw",
+     "dc_v",
+     "heatsink_c",
+     "fan_rpm",
+     "status",
+     "curtail_pct"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/INV-1/camera.jpg",
+    "captured": "2026-07-14T11:00:04",
+    "source": {
+     "kind": "s06_case",
+     "file": "assets/demo/s06_case/agent/camera/INV-1_display.jpg"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/INV-1/infrared.png",
+    "captured": "2026-07-14T11:00:20",
+    "Bx1": {
+     "label": "cabinet",
+     "box": [
+      72,
+      12,
+      247,
+      205
+     ],
+     "max_c": 39.5,
+     "min_c": 33.1,
+     "mean_c": 36.9,
+     "Sp1": 39.2,
+     "Sp2": 37.4
+    },
+    "grid": [
+     320,
+     240
+    ],
+    "radiometric": "assets/demo/s06_case/agent/infrared/INV-1_ir.csv"
+   }
+  },
+  "INV-2": {
+   "kind": "central_inverter",
+   "label": "INV-2 central inverter",
+   "anchor": [
+    150,
+    1.45,
+    80
+   ],
+   "taxonomy": {
+    "system": "power_conversion",
+    "subsystem": "central_inverters",
+    "component": "inverter"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-INV-01",
+    "REQ-INV-02",
+    "REQ-INV-03",
+    "REQ-INV-04",
+    "REQ-INV-05"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "ac_kw": 1199.76,
+    "dc_kw": 1220.51,
+    "dc_v": 998.8,
+    "heatsink_c": 40.2,
+    "fan_rpm": 2400,
+    "status": "running",
+    "curtail_pct": 0,
+    "last_update": "2026-07-14T11:00",
+    "data_age_min": 0
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/INV-2/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/INV-2/sensors.csv",
+    "points": [
+     "ac_kw",
+     "dc_kw",
+     "dc_v",
+     "heatsink_c",
+     "fan_rpm",
+     "status",
+     "curtail_pct"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/INV-2/camera.jpg",
+    "captured": "2026-07-14T11:00:04",
+    "source": {
+     "kind": "s06_case",
+     "file": "assets/demo/s06_case/agent/camera/INV-2_display.jpg"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/INV-2/infrared.png",
+    "captured": "2026-07-14T11:00:20",
+    "Bx1": {
+     "label": "cabinet",
+     "box": [
+      71,
+      13,
+      251,
+      212
+     ],
+     "max_c": 39.9,
+     "min_c": 32.7,
+     "mean_c": 36.9,
+     "Sp1": 38.6,
+     "Sp2": 37.6
+    },
+    "grid": [
+     320,
+     240
+    ],
+    "radiometric": "assets/demo/s06_case/agent/infrared/INV-2_ir.csv"
+   }
+  },
+  "INV-3": {
+   "kind": "central_inverter",
+   "label": "INV-3 central inverter",
+   "anchor": [
+    150,
+    1.45,
+    130
+   ],
+   "taxonomy": {
+    "system": "power_conversion",
+    "subsystem": "central_inverters",
+    "component": "inverter"
+   },
+   "status": "fault",
+   "reason": "Comms card dead: SCADA frozen since 2026-07-14T09:29, display dark, cabinet cold on IR",
+   "cta": {
+    "label": "Dispatch reseat_comms_card",
+    "steps": [
+     {
+      "tool": "dispatch_tech",
+      "asset": "INV-3",
+      "work_order": "reseat_comms_card"
+     }
+    ],
+    "work_order": "reseat_comms_card",
+    "minutes": 45,
+    "usd": 900,
+    "needs_deenergized": true,
+    "isolate_first": "52-I3"
+   },
+   "fault": "F6_stale_scada",
+   "requirements": [
+    "REQ-INV-01",
+    "REQ-INV-02",
+    "REQ-INV-03",
+    "REQ-INV-04",
+    "REQ-INV-05"
+   ],
+   "failing_requirements": [
+    "REQ-INV-04",
+    "REQ-INV-01"
+   ],
+   "latest": {
+    "ac_kw": 981.58,
+    "dc_kw": 998.55,
+    "dc_v": 994.7,
+    "heatsink_c": 32.2,
+    "fan_rpm": 2400,
+    "status": "running",
+    "curtail_pct": 0,
+    "last_update": "2026-07-14T09:29",
+    "data_age_min": 91
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/INV-3/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/INV-3/sensors.csv",
+    "points": [
+     "ac_kw",
+     "dc_kw",
+     "dc_v",
+     "heatsink_c",
+     "fan_rpm",
+     "status",
+     "curtail_pct"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/INV-3/camera.jpg",
+    "captured": "2026-07-14T11:00:04",
+    "source": {
+     "kind": "s06_case",
+     "file": "assets/demo/s06_case/agent/camera/INV-3_display.jpg"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/INV-3/infrared.png",
+    "captured": "2026-07-14T11:00:20",
+    "Bx1": {
+     "label": "cabinet",
+     "box": [
+      71,
+      4,
+      249,
+      212
+     ],
+     "max_c": 35.8,
+     "min_c": 29.0,
+     "mean_c": 32.3,
+     "Sp1": 29.7,
+     "Sp2": 34.2
+    },
+    "grid": [
+     320,
+     240
+    ],
+    "radiometric": "assets/demo/s06_case/agent/infrared/INV-3_ir.csv"
+   }
+  },
+  "INV-4": {
+   "kind": "central_inverter",
+   "label": "INV-4 central inverter",
+   "anchor": [
+    150,
+    1.45,
+    180
+   ],
+   "taxonomy": {
+    "system": "power_conversion",
+    "subsystem": "central_inverters",
+    "component": "inverter"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-INV-01",
+    "REQ-INV-02",
+    "REQ-INV-03",
+    "REQ-INV-04",
+    "REQ-INV-05"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "ac_kw": 1202.9,
+    "dc_kw": 1223.7,
+    "dc_v": 998.8,
+    "heatsink_c": 40.3,
+    "fan_rpm": 2400,
+    "status": "running",
+    "curtail_pct": 0,
+    "last_update": "2026-07-14T11:00",
+    "data_age_min": 0
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/INV-4/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/INV-4/sensors.csv",
+    "points": [
+     "ac_kw",
+     "dc_kw",
+     "dc_v",
+     "heatsink_c",
+     "fan_rpm",
+     "status",
+     "curtail_pct"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/INV-4/camera.jpg",
+    "captured": "2026-07-14T11:00:04",
+    "source": {
+     "kind": "s06_case",
+     "file": "assets/demo/s06_case/agent/camera/INV-4_display.jpg"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/INV-4/infrared.png",
+    "captured": "2026-07-14T11:00:20",
+    "Bx1": {
+     "label": "cabinet",
+     "box": [
+      74,
+      10,
+      248,
+      208
+     ],
+     "max_c": 40.0,
+     "min_c": 32.6,
+     "mean_c": 36.8,
+     "Sp1": 38.2,
+     "Sp2": 37.6
+    },
+    "grid": [
+     320,
+     240
+    ],
+    "radiometric": "assets/demo/s06_case/agent/infrared/INV-4_ir.csv"
+   }
+  },
+  "MET-1": {
+   "kind": "met_station",
+   "label": "MET-1 met station",
+   "anchor": [
+    300,
+    2.0,
+    232
+   ],
+   "taxonomy": {
+    "system": "monitoring",
+    "subsystem": "weather",
+    "component": "met_station"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [],
+   "failing_requirements": [],
+   "latest": {
+    "ghi_wm2": 855.9,
+    "poa_wm2": 941.5,
+    "ambient_c": 28.5,
+    "wind_ms": 2.0,
+    "last_update": "2026-07-14T11:00",
+    "data_age_min": 0
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/MET-1/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/MET-1/sensors.csv",
+    "points": [
+     "ghi_wm2",
+     "poa_wm2",
+     "ambient_c",
+     "wind_ms"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/MET-1/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "healthy"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/MET-1/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "MET-1 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 37.4,
+     "min_c": 37.0,
+     "mean_c": 37.2,
+     "max_xy": [
+      466,
+      388
+     ]
+    },
+    "frame": {
+     "max_c": 37.4,
+     "min_c": 31.5
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "POI-1": {
+   "kind": "revenue_meter",
+   "label": "POI-1 revenue meter",
+   "anchor": [
+    296,
+    1.2,
+    105
+   ],
+   "taxonomy": {
+    "system": "interconnection",
+    "subsystem": "revenue_metering",
+    "component": "revenue_meter"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-POI-01"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "export_kw": 3555.66,
+    "pf": 0.99,
+    "freq_hz": 60.0,
+    "plant_limit_kw": 5000,
+    "last_update": "2026-07-14T11:00",
+    "data_age_min": 0
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/POI-1/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/POI-1/sensors.csv",
+    "points": [
+     "export_kw",
+     "pf",
+     "freq_hz",
+     "plant_limit_kw"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/POI-1/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "placeholder",
+     "state": "healthy"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/POI-1/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "POI-1 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 37.4,
+     "min_c": 37.0,
+     "mean_c": 37.2,
+     "max_xy": [
+      272,
+      342
+     ]
+    },
+    "frame": {
+     "max_c": 37.4,
+     "min_c": 31.6
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  },
+  "XFMR-1": {
+   "kind": "transformer",
+   "label": "XFMR-1 step-up transformer",
+   "anchor": [
+    250,
+    1.1,
+    105
+   ],
+   "taxonomy": {
+    "system": "substation",
+    "subsystem": "step_up_transformer",
+    "component": "transformer"
+   },
+   "status": "ok",
+   "reason": "Within normal range",
+   "cta": null,
+   "fault": null,
+   "requirements": [
+    "REQ-XF-01",
+    "REQ-XF-02",
+    "REQ-XF-03",
+    "REQ-XF-04"
+   ],
+   "failing_requirements": [],
+   "latest": {
+    "oil_top_c": 52.5,
+    "load_pct": 64.6,
+    "winding_hot_c": 58.5,
+    "dga_h2_ppm": 40.0,
+    "dga_c2h2_ppm": 3.5,
+    "buchholz": "normal",
+    "last_update": "2026-07-14T11:00",
+    "data_age_min": 0
+   },
+   "alarms": [],
+   "sensors": {
+    "json": "assets/demo/asset_packs/s06_stale_scada/XFMR-1/sensors.json",
+    "csv": "assets/demo/asset_packs/s06_stale_scada/XFMR-1/sensors.csv",
+    "points": [
+     "oil_top_c",
+     "load_pct",
+     "winding_hot_c",
+     "dga_h2_ppm",
+     "dga_c2h2_ppm",
+     "buchholz"
+    ],
+    "from": "2026-07-14T09:01",
+    "to": "2026-07-14T11:00"
+   },
+   "camera": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/XFMR-1/camera.jpg",
+    "captured": "2026-07-14T11:00",
+    "source": {
+     "kind": "splat_render",
+     "station": "xfmr1_fence",
+     "state": "normal",
+     "file": "assets/splats/renders/xfmr1_fence/normal.jpg"
+    }
+   },
+   "infrared": {
+    "file": "assets/demo/asset_packs/s06_stale_scada/XFMR-1/infrared.png",
+    "captured": "2026-07-14T11:00",
+    "Bx1": {
+     "label": "XFMR-1 body",
+     "box": [
+      248,
+      178,
+      552,
+      421
+     ],
+     "max_c": 54.0,
+     "min_c": 33.1,
+     "mean_c": 42.6,
+     "max_xy": [
+      399,
+      304
+     ]
+    },
+    "frame": {
+     "max_c": 54.0,
+     "min_c": 20.9
+    },
+    "span_c": [
+     20,
+     65
+    ]
+   }
+  }
+ }
+}
