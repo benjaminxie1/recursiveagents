@@ -33,7 +33,11 @@ NEXT_STAGE = {
 MAX_ROUNDS = 3
 # Stages that may carry round 0, meaning "outside the contractor loop"; exempt from the forward-only rule.
 ROUNDLESS_STAGES = {"diagnose", "plan", "memory", "final"}
-CHECK_KINDS = {"telemetry", "visual", "jev"}
+CHECK_KINDS = {"telemetry", "visual", "jev"}  # every passing verdict needs one of each
+META_KIND = "meta"  # only a veto: the meta judge failing a fix the plant checks passed
+# Acceptance items the plant cannot prove (CONTRACT.md demo.workorder): power, temperature and latency bands.
+UNPROVABLE = re.compile(r"(\bk?w\b|\bmw\b|kilowatt|megawatt|power output|output power|°|\bdeg|temperat|heatsink|"
+                        r"latency|\bms\b|millisecond)", re.I)
 IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp", ".gif")
 
 # type -> (allowed actors, {key: kind}). Kinds: str, int, num, bool, dict, list, list[str], list[dict],
@@ -59,16 +63,17 @@ SCHEMA = {
     "demo.contractor": ({"contractor"}, {
         "wo_id": "str", "round": "int", "actions": "list[dict]", "shortcut": "bool", "note": "str"}),
     "demo.check": ({"verifier"}, {
-        "wo_id": "str", "round": "int", "kind": CHECK_KINDS, "name": "str", "pass": "bool",
+        "wo_id": "str", "round": "int", "kind": CHECK_KINDS | {META_KIND}, "name": "str", "pass": "bool",
         "detail": "any", "evidence": "any"}),
     "demo.jev": ({"verifier"}, {"wo_id": "str", "round": "int", "input": "dict", "output": "dict"}),
     "demo.diffusion": ({"verifier"}, {
         "wo_id": "str", "round": "int", "image": "str", "backend": {"diffusion", "photo_bank"},
-        "prompt": "str", "source": "any"}),
+        "prompt": "str", "source": "any", "seen": "str|null"}),
     "demo.verdict": ({"verifier"}, {"wo_id": "str", "round": "int", "pass": "bool", "failed": "list[str]"}),
     "demo.memory": ({"memory"}, {"op": {"recall", "write", "score", "stats"}, "lessons": "list[dict]", "effect": "any"}),
     "demo.final": ({"orchestrator"}, {
-        "status": {"VERIFIED", "ESCALATED"}, "rounds": "int", "summary": "str", "usd": "num", "wall_s": "num"}),
+        "status": {"VERIFIED", "ESCALATED", "FAILED"}, "rounds": "int", "summary": "str", "usd": "num|null",
+        "wall_s": "num"}),
 }
 SUBSCHEMA = {  # (event type, list or dict field) -> spec for each item
     ("demo.jev", "output"): {
@@ -81,6 +86,15 @@ SUBSCHEMA = {  # (event type, list or dict field) -> spec for each item
 # Stages an agent of each team may appear in (a plan agent may also re-plan during redispatch).
 TEAM_STAGES = {"diagnose": {"diagnose"}, "plan": {"plan", "redispatch"}, "verify": {"verify"}}
 MIN_PLAN_SUBAGENTS = 2
+
+
+def _verifier_bars(asset: str) -> list[str] | None:
+    """The verifier's own acceptance bars (gridtwin/demo/pipeline.py verifier_acceptance), if importable."""
+    try:
+        from gridtwin.demo.pipeline import verifier_acceptance
+    except Exception:  # noqa: BLE001 - the validator still runs without the product package
+        return None
+    return list(verifier_acceptance(asset))
 
 
 def _subagent_roles() -> set[str] | None:
@@ -186,6 +200,9 @@ class _Run:
         self.all_events = [e for e in events if isinstance(e, dict)]
         self.events = [e for e in self.all_events if str(e.get("type", "")).startswith("demo.")]
         self.stage_of: dict[int, str | None] = {}  # index in self.events -> enclosing stage
+        finals = [_data(e) for e in self.events if e.get("type") == "demo.final"]
+        # A crashed run (demo.final FAILED) stops anywhere: what happened must still be right, but nothing has to finish.
+        self.crashed = bool(finals) and finals[-1].get("status") == "FAILED"
 
     def bad(self, i: int | None, msg: str):
         if i is None:
@@ -282,6 +299,8 @@ class _Run:
                 elif open_stage[1] != rnd:
                     self.bad(i, f"stage {name!r} ends in round {rnd}, started in round {open_stage[1]}")
                 open_stage = None
+        if self.crashed:
+            return
         if open_stage:
             self.bad(open_stage[2], f"stage {open_stage[0]!r} never ends")
         if last_name != "final":
@@ -295,6 +314,8 @@ class _Run:
             key = {"demo.email": f"demo.email:{d.get('direction')}",
                    "demo.memory": f"demo.memory:{d.get('op')}"}.get(type_, type_)
             allowed = PLACEMENT.get(key)
+            if self.crashed and type_ == "demo.final":
+                continue
             if allowed and self.stage_of.get(i) not in allowed:
                 self.bad(i, f"emitted in stage {self.stage_of.get(i)!r}, expected one of {sorted(allowed)}")
 
@@ -388,7 +409,7 @@ class _Run:
                     self.bad(i, f"attachment {att.get('name')!r} is not in the .eml "
                                 f"(it has {sorted(n for n in names if n)})")
 
-        for i, d in self.of("demo.workorder"):
+        for i, d in self.of("demo.workorder") if not self.crashed else []:
             if not [j for j, _ in self.of("demo.email", direction="out", wo_id=d.get("wo_id"), round=d.get("round"))
                     if j > i]:
                 self.bad(i, f"work order {d.get('wo_id')!r} round {d.get('round')} has no outbound email after it")
@@ -396,7 +417,7 @@ class _Run:
             if not [j for j, _ in self.of("demo.email", direction="out", wo_id=d.get("wo_id"), round=d.get("round"))
                     if j < i]:
                 self.bad(i, f"reply for {d.get('wo_id')!r} round {d.get('round')} has no outbound email before it")
-        for i, d in self.of("demo.contractor"):
+        for i, d in self.of("demo.contractor") if not self.crashed else []:
             if not self.of("demo.email", direction="in", wo_id=d.get("wo_id"), round=d.get("round")):
                 self.bad(i, f"contractor round {d.get('round')} for {d.get('wo_id')!r} has no inbound email")
 
@@ -408,7 +429,7 @@ class _Run:
             if key in seen:
                 self.bad(i, f"second verdict for {key}")
             seen.add(key)
-        for i, d in self.of("demo.email", direction="in"):
+        for i, d in self.of("demo.email", direction="in") if not self.crashed else []:
             if not [j for j, _ in self.of("demo.verdict", wo_id=d.get("wo_id"), round=d.get("round")) if j > i]:
                 self.bad(i, f"reply for {d.get('wo_id')!r} round {d.get('round')} has no verdict after it")
 
@@ -423,6 +444,12 @@ class _Run:
                 if j < reply_at:
                     self.bad(j, "check runs before the contractor's reply, so it cannot be reading the fixed plant")
             failing = {c.get("name") for _, c in checks if c.get("pass") is not True}
+            plant_failed = any(c.get("pass") is not True for _, c in checks if c.get("kind") != META_KIND)
+            for j, c in checks:
+                if c.get("kind") == META_KIND and c.get("pass") is not False:
+                    self.bad(j, "meta check that passes; meta appears only as a veto")
+                if c.get("kind") == META_KIND and plant_failed:
+                    self.bad(j, "meta veto although a plant check already failed; meta only vetoes a passing fix")
             should_pass = bool(checks) and not failing
             if v.get("pass") is not should_pass:
                 self.bad(i, f"pass={v.get('pass')!r} but its {len(checks)} check(s) say pass={should_pass}")
@@ -459,6 +486,8 @@ class _Run:
                 if nxt == "redispatch":
                     self.bad(i, "passing verdict followed by a redispatch")
                 continue
+            if self.crashed and nxt is None:
+                continue
             if nxt not in ("redispatch", "memory", "final"):
                 self.bad(i, f"failed verdict followed by stage {nxt!r}, not redispatch, memory or final")
             if nxt != "redispatch":
@@ -492,9 +521,24 @@ class _Run:
             self.bad(i, "VERIFIED but the last verdict did not pass (done means done)")
         if f.get("status") == "ESCALATED" and last is not None and last.get("pass") is True:
             self.bad(i, "ESCALATED although the last verdict passed")
+        if f.get("status") == "FAILED":
+            if not isinstance(f.get("error"), str) or not f["error"]:
+                self.bad(i, "FAILED without an error saying why")
+            return
         rounds = len({(d.get("wo_id"), d.get("round")) for _, d in verdicts})
         if f.get("rounds") != rounds:
             self.bad(i, f"rounds={f.get('rounds')!r} but {rounds} round(s) have a verdict")
+
+    def acceptance(self):
+        for i, d in self.of("demo.workorder"):
+            items = d.get("acceptance") if isinstance(d.get("acceptance"), list) else []
+            bars = _verifier_bars(str(d.get("asset")))
+            if bars is not None and items[:len(bars)] != bars:
+                self.bad(i, f"acceptance does not start with the verifier's {len(bars)} bars")
+            extra = items[len(bars):] if bars is not None else items
+            for item in extra:
+                if isinstance(item, str) and UNPROVABLE.search(item):
+                    self.bad(i, f"acceptance item the plant cannot prove (power, temperature or latency): {item[:80]!r}")
 
     def memory(self):
         recalled = set()
@@ -533,7 +577,7 @@ class _Run:
         if not self.events:
             return self.problems + ["no demo.* events"]
         for step in (self.envelope_and_schema, self.stages, self.placement, self.agents, self.emails,
-                     self.verdicts, self.final, self.memory, self.images):
+                     self.verdicts, self.final, self.acceptance, self.memory, self.images):
             step()
         return self.problems
 
