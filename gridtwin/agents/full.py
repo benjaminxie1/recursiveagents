@@ -149,6 +149,9 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
                          ActorToolbox(toolbox, "verifier"), log, kb_dir=kb_dir, actor="verifier")
         failed_before += [v for v in pre if not v["pass"]]
         all_verdicts += pre
+        bad = [v["check_id"] for v in pre if not v["pass"] and v["check_id"] != "done_fix_applied"]
+        if bad:
+            sup.emit("replan", f"pre-check: {len(bad)} DONE check(s) fail before any work ({', '.join(bad)}); planner retargets the first tasks")
         first = planner.precheck_tasks(pre)
         if first:
             tasks = first
