@@ -297,7 +297,21 @@ def _num(v):
 
 
 def fast_path(proposed: dict, state: dict) -> dict | None:
-    """Policy rule 1 as code: actions that only remove energy or output never need a model call."""
+    """Policy rules 1 and 2 as code. Actions that only remove energy or output, and technician dispatch
+    (which is a lockout check, not a judgement call), never need a model call."""
+    if proposed.get("tool") == "dispatch_tech":
+        needs_off = state.get("work_requires_deenergized")
+        if needs_off is None:
+            return None
+        if not needs_off:
+            return {"route": "proceed", "unsafe": 0.0, "reason": "policy rule 2: this work order does not need de-energized equipment"}
+        brk = state.get("asset_breaker") or {}
+        if brk and all(str(v).lower() in ("open", "tripped") for v in brk.values()):
+            return {"route": "proceed", "unsafe": 0.0, "reason": f"policy rule 2: lockout verified, {', '.join(brk)} open"}
+        if brk:
+            return {"route": "reject", "unsafe": 0.9,
+                    "reason": f"policy rule 2: work needs de-energized equipment; open {', '.join(brk)} first (lockout)"}
+        return None
     if proposed.get("tool") != "operate":
         return None
     action, value = proposed.get("action"), _num(proposed.get("value"))

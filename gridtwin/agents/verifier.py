@@ -38,7 +38,7 @@ Plant registry:
 Checks:
 {checks}
 
-Do these checks prove the outcome for this goal (fresh data, independent sources, the business metric, safety)? Add at most 2 checks, and only where an essential part is missing; adding nothing is the normal answer. Each added check must be one a correct outcome would pass, using asset ids, points and viewpoints from the registry. Reply with only JSON: {{"add": [...], "reason": "..."}}"""
+Do these checks prove the outcome for this goal (fresh data, independent sources, the business metric, safety)? Add at most 2 checks, and only where an essential part is missing; adding nothing is the normal answer. Allowed additions: telemetry ops fresh, balance, peer, no_alarms; visual; safety rules. Each added check must be one a correct outcome would pass, using asset ids, points and viewpoints from the registry. Reply with only JSON: {{"add": [...], "reason": "..."}}"""
 
 VISUAL_REQUEST = """EVIDENCE: VISUAL
 Claim to verify: {claim}
@@ -53,6 +53,9 @@ Source URL: {url}
 Quoted text (found verbatim in the cached source): {quote}
 Cached source text: {text}
 Does this source support taking this action? Reply with only JSON: {{"pass": true|false, "reason": "..."}}"""
+
+
+AUDIT_OPS = ("fresh", "balance", "peer", "no_alarms")
 
 
 def system_prompt() -> str:
@@ -159,6 +162,9 @@ class Verifier:
         added = []
         for i, c in enumerate(j.get("add") or []):
             if not isinstance(c, dict):
+                continue
+            # audit additions are limited to cross-checks a correct outcome cannot fail by accident
+            if c.get("kind") == "citation" or (c.get("kind") == "telemetry" and c.get("op") not in AUDIT_OPS):
                 continue
             c = dict(c, id=f"v_{outcome.lower()}_{len(clean) + i + 1}")
             if not D.validate_check(c):

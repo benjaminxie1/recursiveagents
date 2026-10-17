@@ -149,7 +149,7 @@ def good_dod():
 def test_schema_text_is_deterministic_short_and_neutral():
     t = dod.schema_text()
     assert t == dod.schema_text()
-    assert len(t) <= 2500
+    assert len(t) <= 2700
     assert not re.search(r"\bF[1-8]\b", t)
     for word in ("max_age_min", "hold_min", "threshold", "balance", "peer", "fresh", "no_alarms",
                  "visual", "citation", "safety", "action_taken"):

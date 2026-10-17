@@ -201,9 +201,11 @@ class Planner:
         self.log = log
         self.messages = [{"role": "system", "content": system_prompt()}]
 
-    def _ask(self, content: str, max_tokens: int = 8192) -> str:
+    def _ask(self, content: str, max_tokens: int = 8192, low_effort: bool = False) -> str:
+        """low_effort: Nemotron Super's short-reasoning mode (about 5x faster), used for replans and lessons."""
         self.messages.append({"role": "user", "content": content})
-        resp = llm.chat("planner", self.messages, max_tokens=max_tokens, log=self.log, actor="planner")
+        kw = {"extra_body": {"chat_template_kwargs": {"enable_thinking": True, "low_effort": True}}} if low_effort else {}
+        resp = llm.chat("planner", self.messages, max_tokens=max_tokens, log=self.log, actor="planner", **kw)
         out = llm.text(resp)
         self.messages.append({"role": "assistant", "content": out})
         return out
@@ -233,7 +235,7 @@ class Planner:
         btxt = "\n".join(f"- [{p['worker']}] {p['text'][:300]}" for p in board_posts[-15:]) or "(no posts)"
         ids = {b: [c["id"] for c in dod["branches"][b]] for b in D.OUTCOMES}
         reply = self._ask(REPLAN_REQUEST.format(round=round_no, reason=reason, verdicts=vtxt, board=btxt, ids=json.dumps(ids)),
-                          max_tokens=12288)
+                          max_tokens=8192, low_effort=True)
         d = extract_json(reply)
         d = d if isinstance(d, dict) else {}
         added = {}
@@ -257,7 +259,7 @@ class Planner:
             f"LESSON. The run for goal '{goal}' was verified. Board:\n{btxt}\nChecks that failed before the fix:\n{ftxt}\n"
             "List 2 to 5 short observable symptoms that identified the problem (what the data or cameras showed), "
             "phrased so they match a similar incident on a different asset. Reply with only JSON: {\"symptoms\": [\"...\"]}",
-            max_tokens=2048)
+            max_tokens=2048, low_effort=True)
         d = extract_json(reply)
         syms = d.get("symptoms") if isinstance(d, dict) else None
         if isinstance(syms, list) and syms:

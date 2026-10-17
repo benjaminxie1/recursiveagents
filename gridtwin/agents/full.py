@@ -143,6 +143,9 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
     dod, tasks = p["dod"], p["tasks"]
     if weak_dod:
         dod = {**dod, "branches": {**dod["branches"], "DONE": [dict(c) for c in WEAK_DONE_CHECKS]}}
+    # floor (invariant): DONE means something was fixed; a healthy plant with nothing changed is NO_ACTION
+    if floors and not any(c.get("rule") == "fix_applied" for c in dod["branches"]["DONE"]):
+        dod, _ = D.merge_checks(dod, "DONE", [{"id": "done_fix_applied", "kind": "safety", "rule": "fix_applied", "params": {}}])
     log.emit("planner", "dod", {"checks": dod["branches"], "tasks": tasks, "repairs": p["repairs"],
                                 "lessons_used": [h["id"] for h in lessons],
                                 **({"ablation": {"weak_dod": weak_dod, "floors": floors}} if weak_dod or not floors else {})})
