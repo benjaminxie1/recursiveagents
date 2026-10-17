@@ -1,0 +1,16 @@
+# Viewpoints the extended faults need, until workstream 3 adds them to assets/photos/viewpoints.yaml
+# (entries there take precedence). Owner: workstream 1.
+viewpoints:
+  cb15_box: {asset: CB-1.5, modes: [rgb, thermal], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  cb23_box: {asset: CB-2.3, modes: [rgb, thermal], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  cb42_box: {asset: CB-4.2, modes: [rgb, thermal], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  b3_array: {asset: B3, modes: [rgb], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  b4_array: {asset: B4, modes: [rgb], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+  brk_52i4: {asset: 52-I4, modes: [rgb], pose: {position: [0, 0, 0], target: [0, 0, 0]}}
+states:
+  CB-1.5: [connector_normal, connector_burnt, thermal_normal, thermal_hotspot]
+  CB-2.3: [connector_normal, connector_burnt, thermal_normal, thermal_hotspot]
+  CB-4.2: [connector_normal, connector_burnt, thermal_normal, thermal_hotspot]
+  B3: [array_normal, array_soiled, array_overgrown]
+  B4: [array_normal, array_soiled, array_overgrown]
+  52-I4: [handle_closed, handle_open, handle_tripped]

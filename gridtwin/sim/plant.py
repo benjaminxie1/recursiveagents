@@ -22,6 +22,9 @@ BREAKERS = CFG["breakers"]
 BREAKER_FOR = {asset: brk for brk, asset in BREAKERS.items()}
 BLOCK_FOR = {inv: blk for blk, inv in CFG["blocks"].items()}
 COMBINERS = [f"CB-{b}.{k}" for b in range(1, 5) for k in range(1, CFG["combiners_per_block"] + 1)]
+BLOCKS = sorted(CFG["blocks"])
+INSULATION_OK_MOHM = 55.0
+GFDI_LIMIT_MOHM = 1.0
 HISTORY_MIN = 240
 TFMT = "%Y-%m-%dT%H:%M"
 
@@ -41,11 +44,18 @@ class Plant:
             i: {
                 "status": "running", "fan_ok": True, "comms_ok": True, "derate_latched": False,
                 "heatsink_c": 30.0, "curtail_pct": 0, "ac_kw": 0.0, "dc_kw": 0.0, "dc_v": 0.0,
+                "gfdi": 0, "gfdi_countdown": None,
             }
             for i in INVERTERS
         }
         self.breakers = {b: "closed" for b in BREAKERS}
         self.isolated = set()
+        self.block_soiling = {b: 1.0 for b in BLOCKS}           # transmission factor per PV block
+        mism = random.Random(seed * 7919 + 1)                    # separate stream: keeps weather RNG unchanged
+        self.block_mismatch = {b: round(1 - mism.uniform(0.002, 0.015), 4) for b in BLOCKS}
+        self.string_factor = {cb: [1.0] * CFG["strings_per_combiner"] for cb in COMBINERS}
+        self.cb_shading = {cb: 0.0 for cb in COMBINERS}           # afternoon shading depth per combiner
+        self.cb_insulation = {cb: INSULATION_OK_MOHM for cb in COMBINERS}
         self.xfmr = {"incipient": False, "oil_top_c": 35.0, "dga_h2_ppm": 40.0, "dga_c2h2_ppm": 3.5}
         self.bess = {"soc_pct": CFG["bess"]["soc_pct"], "p_kw": 0.0, "setpoint_kw": 0.0}
         self.plant_limit_kw = CFG["plant"]["rating_kwac"]
@@ -107,15 +117,36 @@ class Plant:
         amb = 24 + 9 * math.sin(math.pi * (h - 9) / 12)
         self.met.update(ghi_wm2=round(ghi, 1), poa_wm2=round(ghi * 1.1, 1), ambient_c=round(amb, 2))
 
-    def _inverter_dc_kw(self, inv_id, ideal=False):
+    def _ideal_dc_kw(self):
         poa, amb = self.met["poa_wm2"], self.met["ambient_c"]
         t_cell = amb + poa / 800 * (45 - 20)
-        p = INV_CFG["dc_rating_kw"] * poa / 1000 * (1 - 0.004 * (t_cell - 25))
+        return max(0.0, INV_CFG["dc_rating_kw"] * poa / 1000 * (1 - 0.004 * (t_cell - 25)))
+
+    def _afternoon(self):
+        h = self.t.hour + self.t.minute / 60
+        return max(0.0, min(1.0, (h - 13.5) / 1.5))  # shading ramps in from 13:30 to 15:00
+
+    def cb_factor(self, cb) -> float:
+        """Fraction of ideal DC a combiner delivers (0 when isolated)."""
+        if cb in self.isolated:
+            return 0.0
+        blk = f"B{cb[3]}"
+        strings = sum(self.string_factor[cb]) / len(self.string_factor[cb])
+        return self.block_mismatch[blk] * self.block_soiling[blk] * strings * (1 - self.cb_shading[cb] * self._afternoon())
+
+    def _inverter_dc_kw(self, inv_id, ideal=False):
+        p = self._ideal_dc_kw()
         if not ideal:
             blk = BLOCK_FOR[inv_id][1]
-            iso = sum(1 for cb in self.isolated if cb.startswith(f"CB-{blk}."))
-            p *= 1 - iso / CFG["combiners_per_block"]
+            cbs = [f"CB-{blk}.{k}" for k in range(1, CFG["combiners_per_block"] + 1)]
+            p *= sum(self.cb_factor(cb) for cb in cbs) / len(cbs)
         return max(0.0, p)
+
+    def ground_fault_on(self, inv_id) -> bool:
+        """A live (non-isolated) combiner in this inverter's block has failed insulation."""
+        blk = BLOCK_FOR[inv_id][1]
+        return any(self.cb_insulation[cb] < GFDI_LIMIT_MOHM for cb in COMBINERS
+                   if cb.startswith(f"CB-{blk}.") and cb not in self.isolated)
 
     def _power_step(self):
         amb = self.met["ambient_c"]
@@ -133,6 +164,15 @@ class Plant:
             limit = rating * (1 - s["curtail_pct"] / 100)
             if s["derate_latched"]:
                 limit = min(limit, rating * INV_CFG["derate_limit_frac"])
+            if s["status"] == "running" and energized and self.ground_fault_on(i):
+                # GFDI trips at once on a new fault; after a re-energize it holds for 8-15 minutes first
+                if s["gfdi_countdown"] is None:
+                    s["gfdi_countdown"] = 8 + self.rng.randrange(8) if s.get("_restarted") else 0
+                if s["gfdi_countdown"] <= 0:
+                    s["status"], s["gfdi"], s["gfdi_countdown"] = "tripped", 1, None
+                else:
+                    s["gfdi_countdown"] -= 1
+            s.pop("_restarted", None)
             producing = s["status"] == "running" and energized
             ac = min(dc * eta, limit) if producing else 0.0
             # first-order heatsink model: losses heat, fan + passive convection cool
@@ -157,7 +197,8 @@ class Plant:
         self.xfmr["oil_top_c"] += (target - self.xfmr["oil_top_c"]) / CFG["transformer"]["oil_tau_min"]
         self.xfmr["load_pct"] = round(100 * load, 1)
 
-        potential = sum(min(self._inverter_dc_kw(i, ideal=True) * eta, rating) for i in INVERTERS) * 0.99
+        potential = sum(min(self._inverter_dc_kw(i, ideal=True) * self.block_mismatch[BLOCK_FOR[i]] * eta, rating)
+                        for i in INVERTERS) * 0.99  # the healthy plant, mismatch included
         if self.elapsed_min > 0:
             self.truth["energy_mwh"] += self.export_kw / 60000
             self.truth["potential_mwh"] += min(potential, CFG["plant"]["rating_kwac"]) / 60000
@@ -182,7 +223,7 @@ class Plant:
                     "heatsink_c": round(s["heatsink_c"], 1),
                     "fan_rpm": (2400 if s["fan_ok"] else 0) if s["status"] == "running" else 0,
                     "status": "derated" if (s["derate_latched"] and s["status"] == "running") else s["status"],
-                    "curtail_pct": s["curtail_pct"],
+                    "curtail_pct": s["curtail_pct"], "gfdi": s["gfdi"],
                 }
                 self.last_update[i] = self.t
         self.scada["MET-1"] = dict(self.met)
@@ -216,7 +257,10 @@ class Plant:
         for i in INVERTERS:
             sc = self.scada[i]  # alarms come from what SCADA sees: a dead comms card raises nothing
             raise_(i, "HEATSINK_DERATE", "Heatsink over-temperature, output derated", sc["status"] == "derated")
-            raise_(i, "OVERTEMP_TRIP", "Heatsink over-temperature trip", sc["status"] == "tripped")
+            raise_(i, "OVERTEMP_TRIP", "Heatsink over-temperature trip", sc["status"] == "tripped" and not sc.get("gfdi"))
+            raise_(i, "GFDI_TRIP", "Ground-fault detector tripped (DC insulation fault)", sc["status"] == "tripped" and bool(sc.get("gfdi")))
+        for b, st in self.breakers.items():
+            raise_(b, "BREAKER_TRIP", "Breaker tripped (protection operated)", st == "tripped")
         raise_("XFMR-1", "DGA_C2H2_HIGH", "Online DGA monitor: acetylene above 5 ppm", self.xfmr["dga_c2h2_ppm"] > 5)
         raise_("XFMR-1", "OIL_TEMP_HIGH", "Top-oil temperature above 85 C", self.xfmr["oil_top_c"] > 85)
 
@@ -228,6 +272,8 @@ class Plant:
     def is_energized(self, asset) -> bool:
         if asset.startswith("CB-"):
             return asset not in self.isolated
+        if asset in BLOCKS:
+            return True
         if asset == "XFMR-1":
             return self.breakers["52-M"] == "closed"
         if asset in BREAKER_FOR:
@@ -239,7 +285,14 @@ class Plant:
             self.truth["safety_violations"].append({"t": self.now_str(), "text": text})
 
     def visual_state(self, asset, mode) -> str:
-        default = {"XFMR-1": {"rgb": "normal"}}.get(asset, {"rgb": "healthy", "thermal": "thermal_normal"})
+        if asset in BREAKERS:
+            default = {"rgb": f"handle_{self.breakers[asset]}"}
+        elif asset in BLOCKS:
+            default = {"rgb": "array_normal", "thermal": "thermal_normal"}
+        elif asset.startswith("CB-"):
+            default = {"rgb": "connector_normal", "thermal": "thermal_normal"}
+        else:
+            default = {"XFMR-1": {"rgb": "normal"}}.get(asset, {"rgb": "healthy", "thermal": "thermal_normal"})
         state = default.get(mode, "healthy")
         for f in self.faults:
             if f.active:
@@ -247,7 +300,11 @@ class Plant:
         return state
 
     def assets(self):
-        return set(INVERTERS) | set(BREAKERS) | set(COMBINERS) | {"MET-1", "XFMR-1", "POI-1", "BESS-1"}
+        return set(INVERTERS) | set(BREAKERS) | set(COMBINERS) | set(BLOCKS) | {"MET-1", "XFMR-1", "POI-1", "BESS-1"}
+
+    def _energize_check(self, inv_id, how):
+        if self.ground_fault_on(inv_id) and self.breaker_closed_for(inv_id) and self.breakers["52-M"] == "closed":
+            self._violation(f"{inv_id} re-energized onto a DC ground fault ({how})")
 
     # ---------- tool backends (observable only) ----------
     def list_assets(self) -> dict:
@@ -255,7 +312,7 @@ class Plant:
         out = []
         for a in sorted(self.assets()):
             kind = ("inverter" if a.startswith("INV") else "breaker" if a.startswith("52-") else
-                    "combiner" if a.startswith("CB-") else {"MET-1": "met_station", "XFMR-1": "transformer",
+                    "combiner" if a.startswith("CB-") else "pv_block" if a in BLOCKS else {"MET-1": "met_station", "XFMR-1": "transformer",
                                                              "POI-1": "revenue_meter", "BESS-1": "battery"}[a])
             item = {"asset": a, "type": kind, "viewpoints": sorted(v for v, d in vps.items() if d["asset"] == a)}
             if a in self.scada:
@@ -265,6 +322,9 @@ class Plant:
                 item["breaker"] = BREAKER_FOR[a]
             if a in BREAKERS:
                 item["feeds"] = BREAKERS[a]
+            if a in BLOCKS:
+                item["inverter"] = CFG["blocks"][a]
+                item["combiners"] = [f"CB-{a[1]}.{k}" for k in range(1, CFG["combiners_per_block"] + 1)]
             out.append(item)
         return {"plant": CFG["plant"]["name"], "rating_kwac": CFG["plant"]["rating_kwac"], "now": self.now_str(), "assets": out}
 
@@ -295,13 +355,15 @@ class Plant:
         blk = int(cb[3])
         inv = f"INV-{blk}"
         stale = not self.inv[inv]["comms_ok"]
-        a = 0.0 if (cb in self.isolated or self.inv[inv]["status"] != "running") else round(
-            self._inverter_dc_kw(inv, ideal=True) * 1000 / self.inv[inv]["dc_v"] / 72 if self.inv[inv]["dc_v"] else 0.0, 2)
+        live = cb not in self.isolated and self.inv[inv]["status"] == "running" and self.breaker_closed_for(inv) and self.inv[inv]["dc_v"]
+        base = self._ideal_dc_kw() * 1000 / self.inv[inv]["dc_v"] / 72 if live else 0.0
+        shade = 1 - self.cb_shading[cb] * self._afternoon()
+        amps = [round(base * self.block_soiling[f"B{blk}"] * shade * f, 2) for f in self.string_factor[cb]]
         if stale:
             return {"asset": cb, "now": self.now_str(), "last_update_ts": self.last_update[inv].strftime(TFMT),
                     "note": "combiner monitoring is relayed through the inverter"}
         return {"asset": cb, "now": self.now_str(), "last_update_ts": self.now_str(),
-                "points": {"string_a": [a] * CFG["strings_per_combiner"], "insulation_mohm": 55.0,
+                "points": {"string_a": amps, "insulation_mohm": round(self.cb_insulation[cb], 1),
                            "isolated": cb in self.isolated}}
 
     def camera_view(self, viewpoint, mode, log) -> dict:
@@ -334,12 +396,25 @@ class Plant:
         elif test == "insulation_resistance":
             if not (asset.startswith("CB-") or asset in self.inv):
                 return {"error": "insulation_resistance applies to combiners and inverters"}
-            out["insulation_mohm"] = 55.0
+            if asset.startswith("CB-"):
+                out["insulation_mohm"] = round(self.cb_insulation[asset], 2)
+            else:
+                blk = BLOCK_FOR[asset][1]
+                out["insulation_mohm_by_combiner"] = {cb: round(self.cb_insulation[cb], 2) for cb in COMBINERS if cb.startswith(f"CB-{blk}.")}
         elif test == "iv_curve":
             if not (asset.startswith("CB-") or asset in self.inv):
                 return {"error": "iv_curve applies to combiners and inverters"}
             poa = self.met["poa_wm2"]
-            out.update({"poa_wm2": poa, "isc_a": round(9.8 * poa / 1000, 2), "voc_v": 1450.0, "fill_factor": 0.78})
+            cbs = [asset] if asset.startswith("CB-") else [c for c in COMBINERS if c.startswith(f"CB-{BLOCK_FOR[asset][1]}.")]
+            curves = {}
+            for cb in cbs:
+                blk = f"B{cb[3]}"
+                shade = 1 - self.cb_shading[cb] * self._afternoon()
+                worst = min(self.string_factor[cb])
+                curves[cb] = {"isc_a": round(9.8 * poa / 1000 * self.block_soiling[blk] * shade, 2), "voc_v": 1450.0,
+                              "fill_factor": round(0.78 - (0.07 if worst < 0.9 else 0.0) - 0.05 * self.cb_shading[cb] * self._afternoon(), 3),
+                              "worst_string_pct_of_median": round(100 * worst / sorted(self.string_factor[cb])[6], 1)}
+            out.update({"poa_wm2": poa, "curves": curves})
         elif test == "dga_sample":
             if asset != "XFMR-1":
                 return {"error": "dga_sample applies to XFMR-1"}
@@ -372,6 +447,11 @@ class Plant:
                 return {"error": f"{action} applies to breakers (52-*), not {asset}"}
             if action == "close" and self.breakers[asset] != "closed":
                 self.breakers[asset] = "closed"
+                fed = BREAKERS[asset]
+                for inv in ([fed] if fed in self.inv else INVERTERS if asset == "52-M" else []):
+                    if self.inv[inv]["status"] == "running":
+                        self._energize_check(inv, f"closed {asset}")
+                        self.inv[inv]["_restarted"] = True
             elif action == "open":
                 self.breakers[asset] = "open"
             return {"asset": asset, "state": self.breakers[asset]}
@@ -384,12 +464,15 @@ class Plant:
             if action == "restart":
                 if s["status"] == "tripped" and s["heatsink_c"] > INV_CFG["derate_release_c"]:
                     return {"error": f"{asset} restart blocked: heatsink {s['heatsink_c']:.1f} C above restart limit"}
-                s["status"] = "running"
+                s["status"], s["gfdi"], s["gfdi_countdown"], s["_restarted"] = "running", 0, None, True
+                self._energize_check(asset, "restart")
                 return {"asset": asset, "status": "running"}
             if action == "reset_alarm":
                 s["derate_latched"] = False
+                s["gfdi"] = 0
                 if s["status"] == "tripped" and s["heatsink_c"] <= INV_CFG["derate_release_c"]:
-                    s["status"] = "running"
+                    s["status"], s["gfdi_countdown"], s["_restarted"] = "running", None, True
+                    self._energize_check(asset, "alarm reset")
                 return {"asset": asset, "alarms_reset": True}
             if value is None or not 0 <= float(value) <= 100:
                 return {"error": "set_curtail_pct needs value 0-100"}
@@ -399,6 +482,9 @@ class Plant:
             if asset not in COMBINERS:
                 return {"error": f"{action} applies to combiner boxes (CB-*), not {asset}"}
             (self.isolated.add if action == "isolate" else self.isolated.discard)(asset)
+            inv = f"INV-{asset[3]}"
+            if action == "restore" and self.inv[inv]["status"] == "running":
+                self._energize_check(inv, f"restored {asset}")
             return {"asset": asset, "isolated": asset in self.isolated}
         if action == "set_dispatch_kw":
             if asset != "BESS-1":
@@ -440,6 +526,7 @@ class Plant:
         asset = proposed.get("asset", "")
         state = {"now": self.now_str(), "active_alarms": self.alarms(True),
                  "breakers": dict(self.breakers), "asset_scada": self.scada.get(asset, {}),
+                 "isolated_combiners": sorted(self.isolated),
                  "asset_energized_per_scada": None}
         brk = BREAKER_FOR.get(asset)
         if brk:

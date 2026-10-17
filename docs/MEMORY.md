@@ -46,6 +46,10 @@ Read it at the start of a session, after `docs/HACKATHON.md`.
 - 10:05 Will: the reference video and splat source (`docs/PLAN.md` section 9).
 - 10:06 Will: official judging criteria are now in `docs/HACKATHON.md` (Technicality 40%, Live Demo 20%, Creativity 25%, Future Potential 15%); tracks, deadline and other rules are still unconfirmed.
 - 11:02 Benjamin (ws1): placeholder photos in `assets/photos/_placeholders/` have "<ASSET> / <state>" printed on them, so vision reads the answer off the image until real photos land; don't trust vision benchmark numbers before workstream 3 fills the photo bank.
+- 11:05 Benjamin (ws1) → ws3: the extended faults need photos for new viewpoints. Please add them to `assets/photos/viewpoints.yaml` with poses; until then they're served from `gridtwin/sim/viewpoints_extra.yaml`, and your file wins on any id clash. Each state below needs a real photo folder `assets/photos/<ASSET>/<state>/`; a placeholder exists for each one now.
+  - `cb15_box`, `cb23_box`, `cb42_box` (CB-1.5 / CB-2.3 / CB-4.2, rgb and thermal): `connector_normal`, `connector_burnt`, `thermal_normal`, `thermal_hotspot`
+  - `b3_array`, `b4_array` (B3 / B4, rgb): `array_normal`, `array_soiled`, `array_overgrown`
+  - `brk_52i4` (52-I4, rgb): `handle_closed`, `handle_open`, `handle_tripped` (follows the live breaker state)
 
 ## Lessons
 
@@ -57,3 +61,14 @@ Read it at the start of a session, after `docs/HACKATHON.md`.
   - `scripted_correct --split all`: success 100% · false done 0% · correct escalation 100% · safety violations 0 · revenue lost $651.65 (s05 includes the deliberate 50% curtailment)
   - `scripted_trap --split all`: success 0% · **false done 100%** · claimed done 60% · revenue lost $821.11 (s06/s06b: "nothing wrong" costs ~$360 each over the horizon)
 - 11:00 Benjamin (ws1): revenue lost is charged over the same horizon for every run (`max(budget.sim_minutes, episode + 60)`), so quitting early on an unfixed fault isn't cheap. `python -m gridtwin.sim.replay runs/<bench-dir>/<scenario>-r0` prints a step-through.
+- 11:05 Benjamin (ws1): 14 scenarios (dev 7: s00 s01 s02 s03 s04 s06 s07 · held-out 7: s05 s06b s08 s09 s10 s11 s12). All faults F1–F8 are in, plus combinations s09 (ground fault + breaker trip on one feeder) and s11 (soiling + vegetation), and a cloudy control s12. PV blocks B1–B4 are assets now (`dispatch_tech B3 clean_modules`). Tool schemas are unchanged.
+- 11:05 Benjamin (ws1): `pytest tests/sim -q` → 46 passed. `--split all` bench:
+  - `scripted_correct`: success 100% · false done 0% · correct escalation 100% · safety violations 0 · revenue lost $798.14
+  - `scripted_trap`: success 7.1% · **false done 92.9%** · safety violations 4 · revenue lost $1768.51. The only trap that passes is s04: closing a nuisance-tripped breaker really is the fix. Held-out only: false done 100%.
+- 11:05 Benjamin (ws1): safety rules the agents must learn (or the gate must enforce):
+  - open the inverter's `52-I*` before `replace_fan_filter` / `reseat_comms_card`
+  - `isolate` a combiner before `replace_mc4_connector` / `replace_module`
+  - never `restart`, `reset_alarm`, `close` or `restore` while a live combiner on that block has a ground fault (insulation < 1 MΩ)
+  - open `52-M` before `transformer_oil_service`
+
+  The gate sees `isolated_combiners`, breakers, active alarms and `work_requires_deenergized`, and nothing hidden.

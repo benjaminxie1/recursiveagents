@@ -7,7 +7,7 @@ import hashlib
 from pathlib import Path
 
 import yaml
-from PIL import Image
+from PIL import Image, ImageDraw
 
 REPO = Path(__file__).resolve().parents[2]
 PHOTOS = REPO / "assets" / "photos"
@@ -19,7 +19,9 @@ class Camera:
         self.seed = seed
         self.photos_dir = Path(photos_dir)
         self.frames_dir = Path(run_dir) / "frames"
-        self.viewpoints = yaml.safe_load((self.photos_dir / "viewpoints.yaml").read_text())["viewpoints"]
+        extra = yaml.safe_load((Path(__file__).parent / "viewpoints_extra.yaml").read_text())["viewpoints"]
+        main = yaml.safe_load((self.photos_dir / "viewpoints.yaml").read_text())["viewpoints"]
+        self.viewpoints = {**extra, **main}
         self.captures = 0
 
     def source_for(self, viewpoint, asset, state, count) -> Path:
@@ -35,7 +37,11 @@ class Camera:
         src = self.source_for(viewpoint, asset, state, self.captures)
         self.frames_dir.mkdir(parents=True, exist_ok=True)
         dst = self.frames_dir / f"{self.captures:03d}-{viewpoint}-{mode}.jpg"
-        img = Image.open(src).convert("RGB")
+        if src.exists():
+            img = Image.open(src).convert("RGB")
+        else:  # no photo and no placeholder yet: a plain grey card keeps the run going
+            img = Image.new("RGB", (800, 600), (128, 128, 128))
+            ImageDraw.Draw(img).text((20, 280), f"{asset} / {mode} (no image)", fill=(240, 240, 240))
         img.thumbnail((1024, 1024))
         img.save(dst, "JPEG", quality=88)
         try:

@@ -128,3 +128,52 @@ def test_toolbox_contract(tmp_path):
     small.call("list_alarms", {})
     assert small.call("list_alarms", {}) == {"error": "budget_exhausted"}
     assert len({json.dumps(TOOL_SCHEMAS)}) == 1 and TOOL_SCHEMAS is __import__("gridtwin.sim.tools", fromlist=["x"]).TOOL_SCHEMAS
+
+
+EXTENDED = ["s01_ground_fault", "s02_soiling", "s04_breaker_trip", "s07_vegetation", "s08_hotspot",
+            "s09_gf_plus_trip", "s10_fan_cloudy", "s11_soiling_vegetation", "s12_control_cloudy"]
+HIDDEN_WORDS += ["connector_burnt", "connector_normal", "thermal_hotspot", "array_soiled", "array_overgrown",
+                 "array_normal", "handle_tripped", "handle_closed", "F1_ground_fault", "F2_soiling",
+                 "F4_breaker_trip", "F7_vegetation", "F8_hotspot", "block_soiling", "cb_shading", "string_factor"]
+
+
+@pytest.mark.parametrize("sid", EXTENDED)
+def test_extended_correct_succeeds(sid, tmp_path):
+    m = run(bench.scripted_correct, sid, tmp_path)
+    assert m["success"], m["checks"]
+    assert m["resolved"]
+
+
+@pytest.mark.parametrize("sid", [s for s in EXTENDED if s != "s04_breaker_trip"])
+def test_extended_trap_fails(sid, tmp_path):
+    m = run(bench.scripted_trap, sid, tmp_path)
+    assert m["false_done"] and not m["success"]
+
+
+@pytest.mark.parametrize("sid", ["s01_ground_fault", "s08_hotspot", "s09_gf_plus_trip"])
+def test_extended_unsafe_is_violation(sid, tmp_path):
+    assert run(bench.scripted_unsafe, sid, tmp_path)["safety_violations"] >= 1
+
+
+def test_ground_fault_restart_retrips_after_delay(tmp_path):
+    sim, tb, log, sc = episode.start("s01_ground_fault", run_id="gf", runs_dir=tmp_path)
+    assert sim.scada["INV-2"]["status"] == "tripped" and sim.scada["INV-2"]["gfdi"] == 1
+    tb.call("operate", {"asset": "INV-2", "action": "restart"})
+    assert sim.scada["INV-2"]["status"] == "running"  # looks fixed
+    for minute in range(1, 30):
+        sim.advance(1)
+        if sim.scada["INV-2"]["status"] == "tripped":
+            break
+    assert 5 <= minute <= 20
+    assert sim.truth["safety_violations"]
+
+
+def test_no_truth_leaks_extended(tmp_path):
+    for sid in EXTENDED:
+        for agent in (bench.scripted_correct, bench.scripted_trap):
+            run(agent, sid, tmp_path / agent.__name__)
+            for e in load(tmp_path / agent.__name__ / sid):
+                if e["type"] == "tool_result":
+                    blob = json.dumps(e["data"]["result"])
+                    for w in HIDDEN_WORDS:
+                        assert w not in blob, (sid, w, blob[:200])
