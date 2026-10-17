@@ -47,6 +47,7 @@ Read it at the start of a session, after `docs/HACKATHON.md`.
 - 11:19 Benjamin: splat pitched as spatial map plus verifier-chosen viewpoints; we admit sim state is painted in, and the real-world story is nightly drone recapture. Sun ray-tracing for shading is dropped (`docs/JUDGE_QA.md`).
 - 11:19 Benjamin: benchmark gets a third arm, a self-verify baseline (same workers told to verify, same token budget).
 - 11:19 Benjamin: in the live demo, judges pick one of 3–4 pre-tested scenarios.
+- 12:04 Will: task split (sent to Jonathan on Alike as final): Jonathan's agents own the loop until the 3:30 freeze with F6 first, add 2-3 named viewpoints per demo asset plus the rule that a visual check uses a viewpoint no worker called, and push s13, s14 and `scripts/validate_scenarios.py` once tests and both scripted benches pass; recursion (one sub-agent per suspected cause) only after F6 passes, dropped if not working by 2:30. Splat: static stage with pins, photo bank as visual state, no renderer today (supersedes Benjamin's 11:44 line; Benjamin, please confirm in person). Will owns every Crusoe bench run (runs from a separate worktree), the README and "Built during the hackathon" section (ws3), the pitch and demo script, and the 4:00 backup recording.
 
 ## Open questions
 
