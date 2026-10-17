@@ -63,4 +63,22 @@ These two sources disagree on whether tracks and weights exist, so confirm with 
 
 ## What past winners did
 
-See `docs/research/past-winners.md`.
+Full report with sources: `docs/research/past-winners.md` (researched Oct 17 2026).
+The only full Cerebral Valley rubric on record (Built with Opus 4.6) was Demo 30%, Impact 25%, model use 25%, Depth and Execution 20%, and finalists played pre-recorded 3-minute videos.
+If today's 40% technicality figure holds, engineering counts about twice as much here.
+
+What won, across Cerebral Valley, Crusoe, NVIDIA and other agent hackathons:
+- A measured before-and-after number beat more polished demos (Nemotron Seoul grand prize).
+- A checker inside the loop: winners graded their output against something outside the model, or used a second model to check the first.
+- Crusoe's earlier track winners (Argus, Leavitt) were ops agents that kept working through failures.
+- One concrete problem with a named user, done end to end, beat broad platforms.
+- Deep use of the sponsor stack, with each model's role explained, beat a basic integration.
+
+What that means for GridTwin:
+- Lead with the false-done rate from real runs, baseline against our loop, over several runs.
+- Show the verifier rejecting a "done" claim and the team recovering, live.
+- Inject a failure on stage (kill a sub-agent, force a 429) and let judges watch the supervisor route around it.
+- Start the goal at the top of the pitch, walk away, and come back to a verified result and a run log.
+- Keep Nemotron in the core roles, say why each model was picked, and report cost or tokens per finished task.
+- Show memory as fewer steps on a second, similar incident.
+- Record a clean backup run early, and make the README carry the architecture, results table and "Built during the hackathon" section in case judging is async.
