@@ -22,6 +22,7 @@ _logger = logging.getLogger("gridtwin.llm")
 # Patchable in tests so throttle and backoff waits are instant.
 _sleep = time.sleep
 _now = time.monotonic
+_clock = time.perf_counter  # times the successful HTTP request (latency_s in usage records)
 
 MAX_BACKOFF_S = 60.0
 MAX_TOKENS_CAP = 16384
@@ -104,7 +105,7 @@ THROTTLE = Throttle()
 
 # ---------- usage totals ----------
 
-_ZERO = {"calls": 0, "prompt": 0, "cached": 0, "completion": 0, "usd": 0.0}
+_ZERO = {"calls": 0, "prompt": 0, "cached": 0, "completion": 0, "usd": 0.0, "latency_sum_s": 0.0}
 
 
 def cost_usd(model: str, prompt: int, cached: int, completion: int) -> float:
@@ -123,7 +124,7 @@ class Usage:
         self._lock = threading.Lock()
         self._by_role: dict[str, dict] = {}
 
-    def add(self, role: str, model: str, usage) -> dict:
+    def add(self, role: str, model: str, usage, latency_s: float | None = None) -> dict:
         prompt = int(_get(usage, "prompt_tokens", 0) or 0)
         completion = int(_get(usage, "completion_tokens", 0) or 0)
         cached = int(_get(_get(usage, "prompt_tokens_details"), "cached_tokens", 0) or 0)
@@ -135,8 +136,12 @@ class Usage:
             r["cached"] += cached
             r["completion"] += completion
             r["usd"] += usd
-        return {"role": role, "prompt": prompt, "cached": cached, "completion": completion,
-                "model": model, "usd": usd}
+            r["latency_sum_s"] += latency_s or 0.0
+        rec = {"role": role, "prompt": prompt, "cached": cached, "completion": completion,
+               "model": model, "usd": usd}
+        if latency_s is not None:
+            rec["latency_s"] = round(latency_s, 4)
+        return rec
 
     def _totals(self, role=None) -> dict:
         with self._lock:
@@ -211,9 +216,11 @@ def backoff_delay(attempt: int, err=None) -> float:
 
 
 def _request(model: str, messages: list, max_tokens: int, max_tries: int, kwargs: dict):
+    """Returns (parsed response, seconds the successful attempt took; excludes throttle and backoff)."""
     tries = max(1, int(max_tries))
     for attempt in range(tries):
         THROTTLE.wait(model)
+        t0 = _clock()
         try:
             raw = client().chat.completions.with_raw_response.create(
                 model=model, messages=messages, max_tokens=max_tokens, **kwargs
@@ -230,7 +237,8 @@ def _request(model: str, messages: list, max_tokens: int, max_tries: int, kwargs
             _sleep(delay)
             continue
         THROTTLE.learn(model, raw.headers.get("x-ratelimit-limit-requests"))
-        return raw.parse()
+        resp = raw.parse()
+        return resp, _clock() - t0
     raise RuntimeError("unreachable")
 
 
@@ -241,7 +249,7 @@ def chat(role: str, messages: list, max_tokens: int = 2048, *, log=None, actor=N
     """Call the model assigned to `role` (or a raw model ID). Returns the parsed ChatCompletion.
 
     Reasoning models spend max_tokens on thinking, so keep it >= 1024.
-    log: an EventLog; one `usage` event is emitted per API response.
+    log: an EventLog; one `usage` event is emitted per API response (tokens, usd, latency_s).
     thinking: True/False sets chat_template_kwargs.enable_thinking on nvidia/* models.
     """
     model = ROLES.get(role, role)
@@ -255,8 +263,8 @@ def chat(role: str, messages: list, max_tokens: int = 2048, *, log=None, actor=N
 
     retried_empty = False
     while True:
-        resp = _request(model, messages, max_tokens, max_tries, kwargs)
-        rec = USAGE.add(role, model, getattr(resp, "usage", None))
+        resp, latency = _request(model, messages, max_tokens, max_tries, kwargs)
+        rec = USAGE.add(role, model, getattr(resp, "usage", None), latency)
         if log is not None:
             try:
                 log.emit(actor, "usage", rec)
