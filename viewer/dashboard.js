@@ -196,8 +196,8 @@ function renderPhases(S) {
 }
 
 function renderAssets(S) {
-  const bad = Object.values(S.assets).filter((a) => a.cls === 'bad').length;
-  $('#health').textContent = `${TILES.length - bad} of ${TILES.length} healthy`;
+  const off = TILES.filter((t) => ['bad', 'work', 'warn', 'iso'].includes(S.assets[t]?.cls)).length;
+  $('#health').textContent = `${TILES.length - off} of ${TILES.length} healthy`;
   $('#assets').innerHTML = TILES.map((t) => {
     const a = S.assets[t];
     return `<div class="asset ${a?.cls || ''}" data-asset="${t}"><span class="id">${t}</span><span class="bar"></span><span class="st">${esc(a?.st || 'running')}</span></div>`;

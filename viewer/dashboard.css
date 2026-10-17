@@ -73,7 +73,7 @@ h3 { font-size: 34px; line-height: 1.08; letter-spacing: -.025em; text-wrap: bal
 .view { position: absolute; inset: 0; }
 .view canvas { display: block; }
 .twin-tl { position: absolute; top: 14px; left: 16px; pointer-events: none; color: #fff; }
-.pass { font-size: 15px; font-weight: 500; margin-bottom: 8px; text-shadow: 0 1px 6px rgba(0, 0, 0, .5); }
+.twin-tl .pass { font-size: 15px; font-weight: 500; margin-bottom: 8px; text-shadow: 0 1px 6px rgba(0, 0, 0, .5); }
 .drones { display: flex; gap: 4px; }
 .drones i { width: 44px; height: 2px; background: rgba(255, 255, 255, .3); position: relative; overflow: hidden; }
 .drones i b { position: absolute; inset: 0; width: 0; background: #fff; }
