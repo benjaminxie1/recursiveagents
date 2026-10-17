@@ -18,7 +18,7 @@ REFS = REPO / "kb" / "refs"
 COLLECTIONS = [
     ("ca", "California codes"),
     ("national", "National standards"),
-    ("federal", "Federal regulations and guidance"),
+    ("federal", "Federal and guidance"),
     ("oem", "OEM manuals"),
 ]
 
@@ -51,7 +51,7 @@ PUBLICATIONS = [
     ("IEC61724", "IEC 61724-1", "IEC 61724-1: Photovoltaic system performance monitoring", "national", r"61724", None, {}),
     ("OSHA1910", "OSHA 29 CFR 1910", "OSHA 29 CFR 1910 Subpart S and 1910.269: electrical safety and lockout/tagout", "federal",
      r"\bOSHA\b|1910\.", r"1910\.\d+(?:\([a-z0-9]+\))*", {}),
-    ("OEMCB", "Combiner and connector manuals", "Combiner box and PV connector OEM manuals (SMA String-Combiner, Stäubli MC4)", "oem",
+    ("OEMCB", "Combiner manuals", "Combiner box and PV connector OEM manuals (SMA String-Combiner, Stäubli MC4)", "oem",
      r"String-Combiner|St(?:ä|a)ubli|MC4", None, {"OEM-CB-MANUAL": ""}),
     ("OEMINV", "Inverter manuals", "Inverter OEM installation and O&M manuals (SMA Sunny Central / Highpower / Tripower, Solis)", "oem",
      r"\bSMA\b|Solis|Sunny", None, {"OEM-INV-MANUAL": ""}),

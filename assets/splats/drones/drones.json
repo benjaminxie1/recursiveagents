@@ -1,0 +1,9 @@
+[
+ {
+  "id": "drone1",
+  "row": "B1",
+  "file": "assets/splats/drones/drone1.mp4",
+  "seconds": 6.0,
+  "altitude_m": 20
+ }
+]

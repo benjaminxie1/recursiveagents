@@ -5,11 +5,13 @@ truth.jsonl is never served (contract C2: only the judge reads hidden truth).
 GET /api/runs lists every run folder that has an events.jsonl, newest first.
 GET /api/viewpoints lists the camera stations (contract C5) for the inspection wall, without the photo states.
 GET /api/requirements returns the requirement catalog and standards titles (dashboard.html).
+POST /api/reprompt appends the operator's note for a running full loop (dashboard.html).
 GET /api/codes returns the codes & standards library: publications, clauses with cached kb/refs text, requirements and assets (codes.html).
 Each station also gets a reference_image: a repo image of it in a no-fault state, for the wall to show when a run took none.
 """
 import argparse
 import json
+import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -136,6 +138,25 @@ class Handler(SimpleHTTPRequestHandler):
             self.wfile.write(body)
             return
         super().do_GET()
+
+    def do_POST(self):
+        """POST /api/reprompt {"run": <run id>, "text": ...}: the operator's note, appended to runs/<id>/reprompt.jsonl.
+        The full loop reads it at the start of each round and replans with it."""
+        if urlsplit(self.path).path != "/api/reprompt":
+            return self.send_error(404)
+        try:
+            body = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length") or 0), 8192)) or b"{}")
+            parts = [p for p in str(body.get("run") or "").split("/") if p]
+            text = str(body.get("text") or "").strip()[:500]
+            run = ROOTS["runs"].joinpath(*parts)
+            if not parts or any(p in ("..", ".") or p.startswith(".") for p in parts) or not text or not (run / "events.jsonl").exists():
+                return self.send_error(400)
+            with open(run / "reprompt.jsonl", "a") as f:
+                f.write(json.dumps({"text": text, "wall_ts": time.time()}) + "\n")
+        except (ValueError, OSError):
+            return self.send_error(400)
+        self.send_response(204)
+        self.end_headers()
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-store")  # the 1 s poll must see appends

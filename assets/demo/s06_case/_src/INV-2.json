@@ -1,0 +1,7 @@
+{
+  "unit": "INV-2",
+  "source": "assets/photos/INV-3/healthy/01_ai_generated.jpg",
+  "model": "gpt-image-1.5",
+  "input_fidelity": "high",
+  "prompt": "Keep the camera position, lens, framing and the cabinet's size and place in the frame exactly as in the input photo. Keep the same industrial central inverter cabinet model: grey steel double doors, louvred vents, a display panel on the right door, concrete pad, gravel yard, chain-link fence and solar panel rows behind. Bright late-morning summer sun, clear sky with a few light clouds. Photorealistic, like a fixed site security camera. Add a small yellow engraved equipment tag on the upper left door that reads 'INV-2' in black letters. The display is lit and shows 'INV-2' on the top line and '1200 kW' in large digits, with a small rising power graph. Make the background a little different from the input: a light pole on the right and an extra panel row."
+}

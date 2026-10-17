@@ -23,6 +23,7 @@ All events go through the existing EventLog (`log.emit(actor, type, data)`) into
 | type | actor | data |
 |---|---|---|
 | `demo.stage` | `orchestrator` | `{stage, status: "start"|"end", round}`; stage in `diagnose, plan, dispatch, contractor, verify, redispatch, memory, final` |
+| `demo.twin` | `diagnoser` | `{asset, action: "open", twin_url?, reason?}`: the diagnoser opens the suspect in the splat twin; the embedded `twin.html` flies to it, opens its data and marks it red until a passing `demo.verdict` |
 | `demo.sensor` | `diagnoser` | `{asset, data_age_min, last_update_ts, latest: {point: value}, stale: bool}` |
 | `demo.camera` | `diagnoser` or `verifier` | `{viewpoint, asset, mode, image (path under repo, served as /<path>), description, round}` |
 | `demo.diagnosis` | `planner` | `{asset, fault, confidence, summary, evidence: [str]}` |

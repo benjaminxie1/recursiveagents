@@ -22,7 +22,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-from gridtwin.demo.contractors import SHORTCUT_WORDS, contractor_for
+from gridtwin.demo.contractors import SHORTCUT_FORBID_PREFIX, contractor_for, forbids_shortcut
 from gridtwin.kb import BM25, KB, tokenize
 from gridtwin.sim.camera import REPO
 
@@ -321,9 +321,8 @@ def apply_to_work_order(wo: dict, lessons: list[dict], contractor_name: str,
         acceptance += [str(s) for s in l.get("acceptance") or []]
     notes = memory.contractor_notes(contractor_name) if memory else []
     took = [n for n in notes if "shortcut" in n]
-    if took and not any(w in " ".join(forbid).lower() for w in SHORTCUT_WORDS):
-        forbid.append(f"Do not substitute an inspect-only visit or a power-cycle for the work order "
-                      f"({contractor_name} did on {took[-1].split(':')[0]}).")
+    if took and not forbids_shortcut({"forbid": forbid}):
+        forbid.append(f"{SHORTCUT_FORBID_PREFIX} ({contractor_name} did on {took[-1].split(':')[0]}).")
     new["forbid"] = _uniq(forbid)
     new["acceptance"] = _uniq(acceptance)
     new["lessons_applied"] = _uniq(list(new.get("lessons_applied") or []) + applied)

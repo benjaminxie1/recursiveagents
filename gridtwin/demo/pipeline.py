@@ -20,7 +20,8 @@ from gridtwin.agents.common import minutes_between, tel_latest
 from gridtwin.demo import brains as B
 from gridtwin.demo import memory as M
 from gridtwin.demo import recursion as R
-from gridtwin.demo.contractors import OPS_ADDR, Contractor, Mailbox, contractor_for, rel, work_order_email
+from gridtwin.demo.contractors import (OPS_ADDR, SHORTCUT_FORBID, Contractor, Mailbox, contractor_for, rel,
+                                       work_order_email)
 from gridtwin.demo.events import SUBAGENT_ROLES, LockedLog
 from gridtwin.sim import episode
 from gridtwin.sim.camera import REPO
@@ -34,14 +35,29 @@ VISUAL_CONF = 0.7       # the verifier's bar for a camera check (same as the ful
 MAX_ROUNDS = 3
 POINTS = ["ac_kw", "dc_kw", "status", "heatsink_c"]
 HEALTHY_CLAIM = "The inverter's front display or touchscreen is lit and showing live readings; it is not dark or blank."
-SHORTCUT_FORBID = "Do not substitute an inspect-only visit or a power-cycle for the work order; it does not restore a failed comms card."
-TWIN_SCENE = os.environ.get("GRIDTWIN_TWIN_SCENE", "_dev")
+def _default_scene() -> str:
+    """The demo's Gaussian-splat twin: the tugboat engine-room scan when it is here, else the synthetic _dev scene."""
+    return "tugboat.splat" if (REPO / "assets" / "splats" / "tugboat.registration.json").exists() else "_dev"
+
+
+TWIN_SCENE = os.environ.get("GRIDTWIN_TWIN_SCENE") or _default_scene()
+# The simulated case data the twin opens when an inverter is clicked (SCADA, display camera and infrared at 11:00),
+# one pack per scenario. Any other scenario passes an empty case, so the twin shows no case data rather than another
+# scenario's (s06's healthy INV-2 under s06b's failed INV-2).
+CASE_PACKS = {"s06_stale_scada": "assets/demo/s06_case"}
+
+
+def twin_url(scenario_id: str, run_id: str) -> str:
+    pack = CASE_PACKS.get(scenario_id)
+    case = pack if pack and (REPO / pack / "agent" / "objects.json").exists() else ""
+    return f"twin.html?scene={TWIN_SCENE}&run={run_id}&case={case}"
 
 
 # ---------- optional pieces (built in parallel; each has a fallback so the demo never depends on it) ----------
 
 def _registration(scene: str):
-    p = REPO / "assets" / "splats" / f"{scene}.registration.json"
+    base = scene[: -len(".splat")] if scene.endswith(".splat") else scene  # twin.html wants tugboat.splat; the file is tugboat.registration.json
+    p = REPO / "assets" / "splats" / f"{base}.registration.json"
     if not p.exists():
         alt = Path.home() / "claude" / "recursiveagents" / "assets" / "splats" / p.name
         p = alt if alt.exists() else p
@@ -72,11 +88,20 @@ def verifier_acceptance(asset: str) -> list[str]:
             "JEV verdict 'verified' from the registered camera stations and the sensor state"]
 
 
+# Planner items that restate one of the verifier's bars (freshness, status, ping, the display, JEV) add nothing but noise.
+_COVERED = re.compile(r"(data_age|fresh|stale|scada|telemetry|status|running|ping|comms|display|screen|camera|photo|jev)", re.I)
+
+
 def ground_acceptance(items, asset: str) -> tuple[list[str], list[str]]:
-    """(acceptance, dropped): the verifier's bars first, then the planner's items the plant can prove."""
+    """(acceptance, dropped): the verifier's bars first, then the planner's items the plant can prove and the bars
+    do not already cover. dropped lists the unprovable ones (power, temperature, latency ranges)."""
     kept, dropped = [], []
     for s in _as_list(items):
-        (dropped if _UNPROVABLE.search(s) else kept).append(s.strip())
+        s = s.strip()
+        if _UNPROVABLE.search(s):
+            dropped.append(s)
+        elif not _COVERED.search(s):
+            kept.append(s)
     return list(dict.fromkeys(verifier_acceptance(asset) + kept)), dropped
 
 
@@ -188,7 +213,7 @@ class Demo:
         self.viewpoints = {vp: info.get("asset") for vp, info in self.sim.camera.viewpoints.items()
                            if "rgb" in (info.get("modes") or ["rgb"])}
         self.used_viewpoints: set[str] = set()
-        self.twin_url = f"twin.html?scene={TWIN_SCENE}&run={self.run_id}"
+        self.twin_url = twin_url(self.sc["id"], self.run_id)
 
     # ----- helpers -----
     def emit(self, actor, type_, data):
@@ -223,11 +248,17 @@ class Demo:
             sensors.append(s)
             self.emit("diagnoser", "demo.sensor", s)
         suspects = [s["asset"] for s in sensors if s["stale"]] or [INVERTERS[0]]
+        # the diagnoser opens the suspect in the splat twin to pull its data; the embedded twin flies to it
+        self.emit("diagnoser", "demo.twin", {"asset": suspects[0], "action": "open", "twin_url": self.twin_url,
+                                             "reason": "stale SCADA" if any(s["stale"] for s in sensors) else "no stale feed; first inverter"})
         diags = {a: self.tb.call("run_diagnostic", {"asset": a, "test": "comms_ping"}) for a in suspects}
-        healthy = next((s["asset"] for s in sensors if not s["stale"]), None)
         shots = [self.photo(self.vps_for(a)[0], "diagnoser", 0, asset=a) for a in suspects if self.vps_for(a)]
-        if healthy and self.vps_for(healthy):
-            shots.append(self.photo(self.vps_for(healthy)[0], "diagnoser", 0, asset=healthy))
+        # one healthy peer for contrast, preferably seen through a display camera (the question is "is the display lit?")
+        healthy = [s["asset"] for s in sensors if not s["stale"]]
+        peer = (next(((a, vp) for a in healthy for vp in self.vps_for(a) if "display" in vp), None)
+                or next(((a, self.vps_for(a)[0]) for a in healthy if self.vps_for(a)), None))
+        if peer:
+            shots.append(self.photo(peer[1], "diagnoser", 0, asset=peer[0]))
         q = "Is the inverter's display or touchscreen lit and showing readings? Describe what you see."
         with ThreadPoolExecutor(max_workers=max(1, len(shots))) as ex:
             descs = list(ex.map(lambda s: self.eyes.describe(s["image"], s["asset"], q) if s["image"] else s["error"], shots))

@@ -133,7 +133,7 @@ function renderLinks() {
   const comps = {};
   D.requirements.forEach((r) => { if (r.assets.some((a) => hits.has(a))) comps[r.component_code] = r; });
   $('#links').innerHTML = `<section class="lsec"><div class="head"><span class="label">${esc(title)}</span><span class="mono dim">${reqs.length}</span></div>
-      ${reqs.map(reqHtml).join('') || '<div class="dim">No requirement cites this yet.</div>'}</section>
+      ${reqs.map(reqHtml).join('') || '<div class="dim">None</div>'}</section>
     <section class="lsec"><div class="head"><span class="label">Applies to</span><span class="mono dim">${hits.size} assets</span></div>
       ${Object.values(comps).sort((a, b) => a.component_code.localeCompare(b.component_code)).map((r) => `<div class="comp"><span class="cc">${esc(r.component_code)}</span>
         <span>${esc(r.component.replace(/_/g, ' '))}</span><span class="ids">${esc(assetGroups(r.assets.filter((a) => hits.has(a))).join(' '))}</span></div>`).join('')}
@@ -146,12 +146,12 @@ function renderReqView() {
   reqs.forEach((r) => { if (n[statusOf(r.id)] !== undefined) n[statusOf(r.id)]++; });
   const tot = reqs.length || 1;
   const pubOf = (sid) => PUB[STD[sid]?.publication]?.name || '';
-  $('#reqView').innerHTML = `<div class="dhead"><div class="label">Requirements engine · codes × components</div>
+  $('#reqView').innerHTML = `<div class="dhead"><div class="label">Requirements</div>
     <h1>${plural(reqs.length, 'requirement')}</h1>
-    <div class="t">${S.run ? `Evidence from run <span class="mono">${esc(S.run)}</span>` : 'Each one is proven by the verifier with evidence before an incident can close.'}</div>
+    <div class="t">${S.run ? `Run <span class="mono">${esc(S.run)}</span>` : 'Codes × components'}</div>
     ${S.run ? `<div class="progress"><i class="p" style="width:${(100 * n.pass) / tot}%"></i><i class="f" style="width:${(100 * n.fail) / tot}%"></i><i class="w" style="width:${(100 * n.pending) / tot}%"></i></div>
     <div class="legend"><span><i class="dot pass"></i>${n.pass} verified</span><span><i class="dot fail"></i>${n.fail} failed</span><span><i class="dot pending"></i>${n.pending} pending</span>
-      <span><i class="dot"></i>${reqs.length - n.pass - n.fail - n.pending} not checked this run</span></div>` : ''}</div>
+      <span><i class="dot"></i>${reqs.length - n.pass - n.fail - n.pending} not checked</span></div>` : ''}</div>
     <table><thead><tr><th>ID</th><th>Requirement</th><th>Component</th><th>Citations</th><th>Assets</th><th>Evidence</th></tr></thead><tbody>
     ${reqs.map((r) => `<tr class="row" data-req="${esc(r.id)}"><td class="id">${hl(r.id)}</td>
       <td>${hl(r.title)}<div class="how">${esc(r.verify_by?.kind || '')} · ${hl(r.verify_by?.how || '')}</div></td>
@@ -219,7 +219,7 @@ async function main() {
   let runs = [];
   try { runs = await (await fetch('/api/runs')).json(); } catch { /* no api */ }
   const sel = $('#runPick');
-  sel.innerHTML = `<option value="">Evidence: none</option>${runs.map((r) => `<option value="${esc(r.id)}"${r.id === S.run ? ' selected' : ''}>${esc(r.id)}</option>`).join('')}`;
+  sel.innerHTML = `<option value="">No run</option>${runs.map((r) => `<option value="${esc(r.id)}"${r.id === S.run ? ' selected' : ''}>${esc(r.id)}</option>`).join('')}`;
   sel.onchange = async () => { S.run = sel.value || null; await loadRun(); render(); };
   sel.hidden = !runs.length;
   if (S.run) $('#navDash').href = `dashboard.html?run=${encodeURIComponent(S.run).replace(/%2F/g, '/')}`;

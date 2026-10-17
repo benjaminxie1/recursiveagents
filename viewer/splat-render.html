@@ -13,12 +13,28 @@
 <div id="view"></div>
 <script type="module">
 // One frame of the plant splat from a viewpoint's pose, with an optional state overlay painted on its asset.
-// ?vp=<viewpoint id>&overlay=<assets/splats/overlays/... path>  Sets window.__frame = {ok, anchor_px} when drawn.
+// ?vp=<viewpoint id> (or ?pos=x,y,z&target=x,y,z&fov=deg for a free camera)&overlay=<assets/splats/overlays/... path>  Sets window.__frame = {ok, anchor_px} when drawn.
+// ?cam=1  Loads the plant once at 640x360 and exposes window.shootCam(position, target, fov, frames) for the drone
+// feeds (scripts/render_drone_feeds.py); sets window.__ready = true (or window.__error) when loaded.
 import { PlantView, loadScene } from './splat.js';
 const q = new URLSearchParams(location.search);
-try {
+if (q.get('cam')) {
+  try {
+    const scene = await loadScene();
+    const el = document.getElementById('view');
+    el.style.width = '640px'; el.style.height = '360px';
+    const view = new PlantView(el, { interactive: false, width: 640, height: 360 });
+    await view.load(undefined, scene.sky);
+    window.shootCam = async (position, target, fov, frames = 3) => { view.look(position, target, fov); await view.renderFrames(frames); return true; };
+    window.__ready = true;
+  } catch (err) {
+    window.__error = String(err);
+  }
+} else try {
   const scene = await loadScene();
-  const st = scene.stations[q.get('vp')];
+  const num = (k) => q.get(k).split(',').map(Number);
+  const st = q.get('pos') ? { position: num('pos'), target: num('target'), fov: Number(q.get('fov') || 50), asset: 'XFMR-1' }
+                          : scene.stations[q.get('vp')];
   if (!st) throw new Error(`unknown viewpoint ${q.get('vp')}`);
   const view = new PlantView(document.getElementById('view'), { interactive: false, width: 1024, height: 768 });
   await view.load(undefined, scene.sky);

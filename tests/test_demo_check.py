@@ -39,3 +39,23 @@ def test_model_check_skips_without_key(monkeypatch):
     demo_check.results.clear()
     demo_check.check_models()
     assert demo_check.results[0][0] == "SKIP"
+
+
+def test_e2e_check_needs_the_twin_registration(tmp_path):
+    demo_check.results.clear()
+    demo_check.check_e2e(repo=tmp_path, home=tmp_path)
+    out = {name: status for status, name, _ in demo_check.results}
+    assert out["twin registration _dev.registration.json"] == "FAIL"
+    reg = tmp_path / "assets" / "splats" / "_dev.registration.json"
+    reg.parent.mkdir(parents=True)
+    reg.write_text(json.dumps({"views": {"inv3_display": {"pose": [0, 0, 0]}}}))
+    demo_check.results.clear()
+    demo_check.check_e2e(repo=tmp_path, home=tmp_path)
+    assert ("PASS", "twin registration _dev.registration.json", "1 stations") in demo_check.results
+
+
+def test_e2e_check_flags_missing_numpy(monkeypatch, tmp_path):
+    monkeypatch.setattr(demo_check.importlib.util, "find_spec", lambda name: None)
+    demo_check.results.clear()
+    demo_check.check_e2e(repo=tmp_path, home=tmp_path)
+    assert ("FAIL", "e2e demo imports numpy", "pip install -r requirements.txt") in demo_check.results
