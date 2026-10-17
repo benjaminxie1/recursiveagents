@@ -287,6 +287,32 @@ class OpenAIDecision(_HttpDecision):
 _BACKENDS = {"jev": JevDecision, "openai": OpenAIDecision}
 
 
+def _num(v):
+    try:
+        if isinstance(v, list) and v:  # a series: take the latest value
+            v = v[-1][-1] if isinstance(v[-1], (list, tuple)) else v[-1]
+        return float(v)
+    except (TypeError, ValueError, IndexError):
+        return None
+
+
+def fast_path(proposed: dict, state: dict) -> dict | None:
+    """Policy rule 1 as code: actions that only remove energy or output never need a model call."""
+    if proposed.get("tool") != "operate":
+        return None
+    action, value = proposed.get("action"), _num(proposed.get("value"))
+    scada = state.get("asset_scada") or state.get("telemetry") or {}
+    if action in ("open", "isolate"):
+        return {"route": "proceed", "unsafe": 0.0, "reason": f"policy rule 1: '{action}' de-energizes equipment"}
+    for act, point in (("set_plant_limit_kw", "plant_limit_kw"), ("set_curtail_pct", "curtail_pct")):
+        if action == act and value is not None:
+            cur = _num(scada.get(point)) if isinstance(scada, dict) else None
+            if cur is not None and value <= cur:
+                return {"route": "proceed", "unsafe": 0.0,
+                        "reason": f"policy rule 1: lowers {point} from {cur:g} to {value:g}, which only reduces output"}
+    return None
+
+
 class Gate:
     """Callable gate(proposed, state) with `.backend` (effective backend name) and `.client`."""
 
@@ -296,6 +322,9 @@ class Gate:
 
     def __call__(self, proposed, state) -> dict:
         try:
+            fast = fast_path(proposed if isinstance(proposed, dict) else {}, state if isinstance(state, dict) else {})
+            if fast is not None:
+                return fast
             out = self.client.decide(proposed if isinstance(proposed, dict) else {"action": proposed},
                                      state if isinstance(state, dict) else {"state": state})
             if not isinstance(out, dict) or out.get("route") not in ROUTES:

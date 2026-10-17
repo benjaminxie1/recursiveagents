@@ -51,7 +51,7 @@ How to work:
 - Evidence over assumptions. Device telemetry can be frozen or wrong: compare each reading's last_update_ts with "now", and cross-check what devices report about themselves against independent sources (the POI-1 revenue meter, peers, cameras, diagnostics). A reading you cannot date is not evidence.
 - Call read_board before starting a new line of investigation and do not repeat work already posted. Post every finding with post_finding, citing the event seq numbers (the "seq" field of tool results) that back it.
 - Tool calls are limited for the whole team (about 60, verification included). Read several points in one read_telemetry call, use short windows, never repeat a call whose answer you already have, and use wait only when something needs time to take effect.
-- Safety: every operate and dispatch_tech passes a safety gate. If it refuses, change course; if it asks for confirmation, gather the missing evidence first. Work that requires de-energized equipment needs its feeding breaker opened first (lockout) and closed again once the work is complete. Never close, restart or reset onto a suspected fault.
+- Safety: every operate and dispatch_tech passes a safety gate. If it refuses, change course; if it asks for confirmation, gather the missing evidence first. Work that requires de-energized equipment needs its feeding breaker opened first (lockout); if the gate refuses a dispatch for that reason, open the breaker and dispatch again. When the ticket's work is complete, close the breaker again and confirm with a fresh reading. Never close, restart or reset onto a suspected fault.
 - When your task is done, reply with a short plain-text report (what you checked, what you found, the seq numbers) and no tool call.
 
 Your role:
@@ -382,7 +382,7 @@ class Team:
                 resume = True
         return ""
 
-    def claim(self, goal: str, feedback: str = "", max_steps: int = 3, max_calls: int = 2) -> dict:
+    def claim(self, goal: str, feedback: str = "", max_steps: int = 3, max_calls: int = 3) -> dict:
         posts = self.board.read()
         board = "\n".join(f"- [{p['worker']}] {p['text']} (seqs {p.get('evidence')})" for p in posts) or "(no posts)"
         text = self.run_task("operator", CLAIM_INSTRUCTION.format(goal=goal, board=board, feedback=feedback), max_steps=max_steps,

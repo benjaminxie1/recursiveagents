@@ -19,7 +19,7 @@ from gridtwin.kb import KB
 
 HOLD_MIN = 30          # wait this long after a full pass, then re-verify (catches relapses)
 VERIFY_RESERVE = 12    # tool calls kept back for the verifier
-MAX_ROUNDS = 5
+MAX_ROUNDS = 6
 STATE_TOOLS = ("operate", "dispatch_tech")
 # Ablation (docs/JUDGE_QA.md Q2): the weakest plausible DONE checklist, "the alarms are gone".
 WEAK_DONE_CHECKS = [{"id": "weak_no_alarms", "kind": "telemetry", "op": "no_alarms", "max_age_min": 60}]
@@ -99,6 +99,31 @@ def write_lesson(kb: KB, planner: Planner, goal: str, status: str, checks: list,
     return kb.write_lesson(lesson, actor=actor)
 
 
+def open_tickets(log) -> list[dict]:
+    """Dispatched work orders whose ETA is still in the future (from tool results only)."""
+    from gridtwin.agents.common import last_t_sim, minutes_between
+
+    now, out = last_t_sim(log), []
+    for e in read_events(log):
+        d = e.get("data") or {}
+        if e.get("type") == "tool_result" and d.get("name") == "dispatch_tech" and ok(d.get("result")):
+            r = d["result"]
+            left = minutes_between(now, r.get("eta"))
+            if left is not None and left > 0:
+                out.append({"ticket": r.get("ticket"), "asset": r.get("asset"), "work_order": r.get("work_order"), "minutes_left": left})
+    return out
+
+
+def wait_for_tickets(toolbox, log, sup) -> list[dict]:
+    """Work in flight is not done: let open tickets finish before anyone claims."""
+    tickets = open_tickets(log)
+    if tickets:
+        mins = int(max(t["minutes_left"] for t in tickets)) + 1
+        sup.emit("wait_for_ticket", f"{len(tickets)} ticket(s) in progress ({', '.join(str(t['ticket']) for t in tickets)}); waiting {mins} sim-min before the claim")
+        ActorToolbox(toolbox, "supervisor").call("wait", {"minutes": min(240, mins)})
+    return tickets
+
+
 def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = None, max_rounds: int = MAX_ROUNDS,
         weak_dod: bool = False, floors: bool = True) -> dict:
     """`weak_dod` swaps the planner's DONE checks for WEAK_DONE_CHECKS; `floors=False` also turns off the
@@ -161,6 +186,10 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
             replan(rnd, reason)
             continue
 
+        done_tickets = wait_for_tickets(toolbox, log, sup)
+        if done_tickets:
+            feedback = (feedback + "\n" if feedback else "") + "Completed while you waited: " + "; ".join(
+                f"{t['ticket']} {t['work_order']} on {t['asset']}" for t in done_tickets) + ". Restore anything you locked out and confirm with a fresh reading before claiming."
         claim = team.claim(goal, feedback)
         if claim["status"] == "CONTINUE":
             feedback = ""
