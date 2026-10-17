@@ -6,7 +6,9 @@ deterministic fallback (the stale sensor wins, else a confidence-weighted vote).
 
 verify_team: a verification lead (depth 0) spawns three deterministic judges (telemetry, visual, jev) and one LLM
 meta judge from a different model family than the planner. The rule that decides the verdict lives here, in code:
-the meta judge can veto a fix but can never pass one that a deterministic judge failed (done means done).
+the meta judge can veto a fix but can never pass one that a deterministic judge failed (done means done), and its veto
+counts only when it names a ground from veto_grounds: a failed judge, or a plant reading code found to contradict the fix.
+A veto on anything else (a numeric target a sub-agent wrote into the work order) is overruled.
 
 The depth cap is brains.Agent.spawn's (MAX_DEPTH = 1): leads spawn, sub-agents and judges cannot.
 brains_mode "stub" gives the same shapes with no network, for tests and offline rehearsal.
@@ -319,13 +321,49 @@ def diagnose_team(evidence: dict, lessons: list[dict] | None, brains_mode, on_ag
 
 META_SYS = """You are the meta judge of a solar plant's verification team, from a different model family than the planner.
 Three deterministic judges checked the plant itself: SCADA telemetry, a camera view read by a vision model, and the JEV spatial verdict.
-You also see the contractor's claim. The claim is not evidence: only the plant's own readings and images count.
-Decide whether the evidence, taken together, proves the fix is real. Say "fail" if a judge failed, if the evidence is missing,
-thin or contradictory, or if the claim asserts something the evidence does not show. Say "pass" only if the evidence proves it.
-plant_readings holds the extra readings the verifier took from the plant (for example comms_ping and the latest SCADA values);
-use them for acceptance criteria. Acceptance items about how the contractor worked (procedure, tools) are not plant evidence:
-do not fail a fix on them unless a plant reading contradicts the fix.
-Reply with JSON only: {"verdict": "pass" | "fail", "reason": "<1-2 sentences citing the numbers>"}"""
+plant_readings holds the other readings the verifier took from the plant (comms_ping, the latest SCADA values).
+The contractor's claim is not evidence: only the plant's own readings and images count.
+The bar for done is fixed and the judges already apply it: SCADA data_age_min at most 5 with status running, the display lit
+in a camera view (confidence 0.7 or more), and JEV verified. Numeric targets (ping latency, temperature, power ranges) are not part
+of the bar: normal plant variation in them never fails a fix.
+veto_grounds lists, by key, every failed judge and every plant reading that code found to contradict the fix.
+You may say "fail" only by naming one of those keys as "grounds"; with no grounds, say "pass". A veto that names anything else is overruled.
+Reply with JSON only: {"verdict": "pass" | "fail", "grounds": "<a veto_grounds key>" or null, "reason": "<1-2 sentences citing the numbers>"}"""
+
+GROUNDED = "grounded"  # meta["veto"] value for a veto code accepted
+
+
+def _num(v):
+    try:
+        return None if v is None or isinstance(v, bool) else float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def veto_grounds(evidence: dict, checks: list[dict], asset: str | None = None) -> dict[str, str]:
+    """The only things the meta judge may veto on, found in code: a failed judge, or a plant reading that contradicts the fix.
+    The catalogue is closed on purpose: a numeric target a sub-agent wrote into the work order is never a ground."""
+    grounds = {c["name"]: f"judge failed: {c['detail']}"[:200] for c in checks if not c["pass"]}
+    pr = evidence.get("plant_readings") if isinstance(evidence.get("plant_readings"), dict) else {}
+    tel = evidence.get("telemetry") if isinstance(evidence.get("telemetry"), dict) else {}
+    ping = pr.get("comms_ping")
+    if isinstance(ping, dict) and (ping.get("reachable") is False or ping.get("ok") is False or ping.get("error")):
+        grounds["comms_ping_unreachable"] = f"comms_ping: {ping.get('error') or 'unreachable'}"
+    latest = pr.get("scada_latest") if isinstance(pr.get("scada_latest"), dict) else (tel.get("latest") or {})
+    status = latest.get("status")
+    if status is not None and str(status).lower() != "running":
+        grounds["scada_status_not_running"] = f"SCADA status {status}"
+    ac = _num(latest.get("ac_kw"))
+    if ac is not None and ac <= 0 and str(status).lower() == "running":
+        grounds["running_with_no_output"] = f"SCADA status running but ac_kw {ac:g}"
+    age = _num(pr.get("data_age_min", tel.get("data_age_min")))
+    if age is None or age > FRESH_MIN:
+        grounds["scada_stale"] = f"data_age_min {age} (bar {FRESH_MIN})"
+    for a in pr.get("alarms") or []:
+        if isinstance(a, dict) and a.get("active", True) and a.get("asset") in (None, asset):
+            grounds["active_alarm"] = f"active alarm {a.get('code') or a.get('name') or a}"[:200]
+            break
+    return grounds
 
 
 def telemetry_judge(tel: dict) -> dict:
@@ -375,15 +413,33 @@ def jev_judge(jev: dict) -> dict:
             "evidence": {"backend": out.get("backend"), "p_verified": out.get("p_verified")}}
 
 
-def _meta_stub(checks: list[dict], claim: str) -> dict:
-    failed = [c["name"] for c in checks if not c["pass"]]
-    if failed:
-        return {"verdict": "fail", "reason": f"(stub) failed: {', '.join(failed)}; the contractor's claim does not change that"}
-    return {"verdict": "pass", "reason": "(stub) all three plant checks pass"}
+def _meta_stub(checks: list[dict], grounds: dict[str, str]) -> dict:
+    if grounds:
+        g = next(iter(grounds))
+        return {"verdict": "fail", "grounds": g, "reason": f"(stub) {g}: {grounds[g]}; the contractor's claim does not change that"}
+    return {"verdict": "pass", "grounds": None, "reason": "(stub) all three plant checks pass and no plant reading contradicts the fix"}
+
+
+def ground_meta(raw: dict, grounds: dict[str, str], model: str) -> dict:
+    """The meta judge's answer under the rule: a "fail" is a veto only when it names a key of veto_grounds; else it is overruled."""
+    verdict = str(raw.get("verdict", "")).strip().lower()
+    named = raw.get("grounds")
+    named = [str(g).strip() for g in (named if isinstance(named, list) else [named]) if g not in (None, "", "null")]
+    reason = _plain(raw.get("reason"), 500) or "no reason given"
+    meta = {"verdict": verdict, "grounds": None, "reason": reason, "model": model}
+    if verdict == "pass":
+        return meta
+    if verdict == "fail":
+        hit = next((g for g in named if g in grounds), None)
+        if hit:
+            return {**meta, "grounds": hit, "veto": GROUNDED, "ground_detail": grounds[hit]}
+        return {**meta, "verdict": "overruled", "model_verdict": "fail", "claimed_grounds": named or None,
+                "veto": f"overruled: named {', '.join(named) or 'no ground'}, not a failed judge or a contradicting plant reading"}
+    return {**meta, "verdict": "abstain", "reason": f"unreadable verdict {raw.get('verdict')!r}; the plant checks decide. {reason}"}
 
 
 def decide(checks: list[dict], meta: dict) -> bool:
-    """Done means done: pass only if every deterministic judge passed and the meta judge did not veto."""
+    """Done means done: pass only if every deterministic judge passed and the meta judge did not veto (an overruled veto is no veto)."""
     return bool(checks) and all(c["pass"] for c in checks) and meta.get("verdict") != "fail"
 
 
@@ -414,19 +470,19 @@ def verify_team(wo: dict, round_no: int, evidence: dict, lessons: list[dict] | N
     meta_agent = _spawn(lead, "meta_judge", "Read the judges and the contractor's claim: does the evidence prove the fix?",
                         "stub" if stub else META_ROLE)
     on_agent(meta_agent, "spawned", None)
-    user = json.dumps({"work_order": {k: (wo or {}).get(k) for k in ("wo_id", "asset", "work_order", "acceptance")},
+    grounds = veto_grounds(evidence, checks, asset)
+    # The work order's acceptance items are not sent: sub-agents write numeric targets (ping latency, heatsink and power ranges)
+    # the plant never promised, and a judge that reads them vetoes a fixed plant (runs e2e-tt3-1, e2e-wfa-1, e2e-s06-...-144420).
+    user = json.dumps({"work_order": {k: (wo or {}).get(k) for k in ("wo_id", "asset", "work_order")},
                        "round": round_no, "judges": [{k: c[k] for k in ("kind", "name", "pass", "detail")} for c in checks],
-                       "contractor_claim": claim,
                        "plant_readings": evidence.get("plant_readings") or {},
-                       "lessons": [{k: l.get(k) for k in ("id", "fix", "forbid", "acceptance") if l.get(k)} for l in lessons or []]},
+                       "veto_grounds": grounds,
+                       "contractor_claim": claim,
+                       "lessons": [{k: l.get(k) for k in ("id", "fix", "forbid") if l.get(k)} for l in lessons or []]},
                       default=str)
     try:
-        raw = _meta_stub(checks, claim) if stub else _ask(META_ROLE, META_SYS, user, log, "subagent:meta_judge", max_tokens=2048)
-        verdict = str(raw.get("verdict", "")).strip().lower()
-        meta = {"verdict": verdict if verdict in ("pass", "fail") else "fail",
-                "reason": _plain(raw.get("reason"), 500) or "no reason given", "model": meta_agent.model}
-        if verdict not in ("pass", "fail"):
-            meta["reason"] = f"unreadable verdict {raw.get('verdict')!r}; treated as a veto. {meta['reason']}"
+        raw = _meta_stub(checks, grounds) if stub else _ask(META_ROLE, META_SYS, user, log, "subagent:meta_judge", max_tokens=2048)
+        meta = ground_meta(raw, grounds, meta_agent.model)
         on_agent(meta_agent, "done", meta)
     except Exception as e:  # noqa: BLE001 - the deterministic judges still decide; the meta judge only abstains
         meta = {"verdict": "abstain", "reason": f"meta judge call failed ({type(e).__name__}); the plant checks decide",
@@ -436,9 +492,12 @@ def verify_team(wo: dict, round_no: int, evidence: dict, lessons: list[dict] | N
     ok = decide(checks, meta)
     det_ok = all(c["pass"] for c in checks)
     if det_ok and not ok:
-        rule = "meta judge vetoed a fix the plant checks passed"
+        rule = f"meta judge vetoed a fix the plant checks passed, on {meta.get('grounds')}: {meta.get('ground_detail')}"
     elif not det_ok and meta["verdict"] == "pass":
         rule = "meta judge said pass but a plant check failed; done means done, so the fix fails"
+    elif meta["verdict"] == "overruled":
+        rule = ("meta judge's veto overruled: it named no failed judge and no plant reading that contradicts the fix; "
+                + ("the plant checks pass" if det_ok else "a plant check failed, so the fix fails anyway"))
     else:
         rule = "plant checks and meta judge agree" if meta["verdict"] != "abstain" else "plant checks decide; meta judge abstained"
     meta["rule"] = rule

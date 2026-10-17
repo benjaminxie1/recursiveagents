@@ -140,3 +140,54 @@ def test_planner_overrides_a_repair_subagent_that_picks_the_wrong_fix(tmp_path, 
     planner_done = [a for a in of(evs, "demo.agent") if a["id"] == "planner" and a["status"] == "done"][0]
     assert "replace_module" in planner_done["output"]["override"]
     assert res["status"] == "VERIFIED" and res["judge"]["success"] is True
+
+
+# ---------- hardening from the 15:00 live sweep and review ----------
+
+def test_work_order_acceptance_demands_only_what_the_verifier_proves():
+    from gridtwin.demo.pipeline import ground_acceptance, verifier_acceptance
+    invented = ["Heatsink temperature for INV-3 reads between 40.0 C and 41.0 C", "AC power output at least 1150 kW",
+                "Ping latency under 10 ms", "INV-3 display shows live readings after the visit"]
+    acc, dropped = ground_acceptance(invented, "INV-3")
+    assert acc[:4] == verifier_acceptance("INV-3")
+    assert "INV-3 display shows live readings after the visit" in acc
+    assert set(dropped) == set(invented[:3])
+    assert ground_acceptance("INV-3 answers comms_ping", "INV-3")[0][-1] == "INV-3 answers comms_ping"
+
+
+def test_model_fields_given_as_strings_stay_whole_steps():
+    from gridtwin.demo.pipeline import _as_list
+    assert _as_list("Open 52-I3") == ["Open 52-I3"]
+    assert _as_list(None) == [] and _as_list({"a": 1}) == [] and _as_list(["a", None, " ", 3]) == ["a", "3"]
+
+
+def test_fresh_memory_also_resets_scores_and_contractor_history(tmp_path):
+    from gridtwin.demo import memory as M
+    from gridtwin.demo import run as R
+    kb = tmp_path / "kb"
+    first = R.main(["--stub", "--memory", str(kb), "--run-id", "fm1", "--runs-dir", str(tmp_path / "runs")])
+    assert first == 0 and M.Memory(kb).contractor_notes("Mesa Electrical Field Services")  # it remembers the shortcut
+    R.main(["--stub", "--fresh-memory", "--memory", str(kb), "--run-id", "fm2", "--runs-dir", str(tmp_path / "runs")])
+    evs = events(tmp_path / "runs" / "fm2")
+    assert of(evs, "demo.contractor")[0]["shortcut"] is True  # a fresh store shows the catch again
+    assert [r["run_id"] for r in M.Memory(kb).ledger.read()["runs"]] == ["fm2"]
+
+
+def test_a_crash_still_ends_the_log_with_final_and_result(tmp_path, monkeypatch):
+    from gridtwin.demo.pipeline import Demo
+
+    def boom(self, goal=None):
+        raise RuntimeError("planner exploded")
+    monkeypatch.setattr(Demo, "_run", boom)
+    demo = Demo(stub=True, memory_dir=tmp_path / "kb", run_id="crash", runs_dir=tmp_path / "runs")
+    with pytest.raises(RuntimeError):
+        demo.run()
+    final = of(events(tmp_path / "runs" / "crash"), "demo.final")
+    assert final and final[-1]["status"] == "FAILED" and "planner exploded" in final[-1]["error"]
+    assert json.loads((tmp_path / "runs" / "crash" / "result.json").read_text())["status"] == "FAILED"
+
+
+def test_redispatch_image_says_which_photo_the_verifier_saw(two_runs):
+    runs, _, _ = two_runs
+    diff = of(events(runs / "r1"), "demo.diffusion")
+    assert diff and "seen" in diff[0]
