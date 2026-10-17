@@ -5,6 +5,7 @@ truth.jsonl is never served (contract C2: only the judge reads hidden truth).
 GET /api/runs lists every run folder that has an events.jsonl, newest first.
 GET /api/viewpoints lists the camera stations (contract C5) for the inspection wall, without the photo states.
 GET /api/requirements returns the requirement catalog and standards titles (dashboard.html).
+GET /api/codes returns the codes & standards library: publications, clauses with cached kb/refs text, requirements and assets (codes.html).
 Each station also gets a reference_image: a repo image of it in a no-fault state, for the wall to show when a run took none.
 """
 import argparse
@@ -89,6 +90,12 @@ def list_requirements():
     return {"requirements": doc.get("requirements") or [], "standards": doc.get("standards") or {}}
 
 
+def list_codes():
+    from gridtwin.codes import build
+
+    return build()
+
+
 class Handler(SimpleHTTPRequestHandler):
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map,
                       ".jsonl": "text/plain; charset=utf-8", ".js": "text/javascript"}
@@ -102,7 +109,8 @@ class Handler(SimpleHTTPRequestHandler):
         return str(VIEWER.joinpath(*parts))
 
     def do_GET(self):
-        api = {"/api/runs": list_runs, "/api/viewpoints": list_viewpoints, "/api/requirements": list_requirements}.get(urlsplit(self.path).path)
+        api = {"/api/runs": list_runs, "/api/viewpoints": list_viewpoints, "/api/requirements": list_requirements,
+               "/api/codes": list_codes}.get(urlsplit(self.path).path)
         if api:
             body = json.dumps(api()).encode()
             self.send_response(200)

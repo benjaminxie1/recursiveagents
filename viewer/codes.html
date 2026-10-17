@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GridTwin · Codes & standards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="codes.css">
+</head>
+<body>
+<header class="bar">
+  <a class="brand" href="dashboard.html"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.8l7.2 4.1v8.2L10 18.2l-7.2-4.1V5.9z"/><path d="M2.8 5.9L10 10l7.2-4.1M10 10v8.2"/></svg>GridTwin</a>
+  <nav class="nav">
+    <a href="dashboard.html" id="navDash">Operations</a>
+    <a class="on">Codes & standards</a>
+  </nav>
+  <label class="search"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.6"/><path d="M10.4 10.4L14 14"/></svg>
+    <input id="q" type="search" placeholder="Search codes, clauses, requirements, assets" autocomplete="off" spellcheck="false"><kbd>/</kbd></label>
+  <div class="bar-r">
+    <span id="assetChip" class="fchip" hidden></span>
+    <div class="seg"><button id="vLib" class="on">Library</button><button id="vReq">Requirements</button></div>
+    <select id="runPick" aria-label="Evidence from run"></select>
+  </div>
+</header>
+
+<main id="lib" class="grid">
+  <aside class="pubs" id="pubs"></aside>
+  <section class="doc" id="doc"></section>
+  <aside class="links" id="links"></aside>
+</main>
+
+<main id="reqView" class="reqview" hidden></main>
+
+<script type="module" src="codes.js"></script>
+</body>
+</html>
