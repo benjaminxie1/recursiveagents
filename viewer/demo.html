@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GridTwin demo</title>
+<link rel="stylesheet" href="demo.css">
+<script>
+  // Theme before first paint: ?theme=dark|light wins, then the toggle's last choice, else the OS setting.
+  (function () {
+    var t = new URLSearchParams(location.search).get('theme');
+    try { t = t || localStorage.getItem('gridtwin-demo-theme'); } catch (e) { /* storage blocked */ }
+    if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t;
+  })();
+</script>
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <div class="brand">
+      <span class="wordmark">GridTwin</span>
+      <span id="scenario" class="scenario"></span>
+    </div>
+    <div class="actions">
+      <span id="replayCtl" class="replay" hidden>
+        <button id="btnRestart" class="icon" type="button" title="Restart from the first event" aria-label="Restart">
+          <svg viewBox="0 0 20 20"><path d="M5 4v12M16 4.5 8 10l8 5.5z"/></svg></button>
+        <button id="btnPlay" class="icon" type="button" title="Play or pause (space)" aria-label="Play or pause">
+          <svg viewBox="0 0 20 20" class="i-pause"><path d="M7 4v12M13 4v12"/></svg>
+          <svg viewBox="0 0 20 20" class="i-play"><path d="M6 4l10 6-10 6z"/></svg></button>
+        <button id="btnStep" class="icon" type="button" title="Next event (right arrow)" aria-label="Next event">
+          <svg viewBox="0 0 20 20"><path d="M4 4.5 12 10l-8 5.5zM15 4v12"/></svg></button>
+        <select id="speed" aria-label="Replay speed">
+          <option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option><option value="4">4x</option>
+        </select>
+      </span>
+      <span id="state" class="state"></span>
+      <span class="meter"><span class="k">Cost</span><span id="cost" class="v">-</span></span>
+      <span class="meter"><span class="k">Wall time</span><span id="wall" class="v">-</span></span>
+      <select id="runPick" class="runpick" aria-label="Run"></select>
+      <button id="btnRun" class="run" type="button">Run demo</button>
+      <button id="btnTheme" class="icon" type="button" title="Switch light or dark" aria-label="Switch light or dark">
+        <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="6.5"/><path d="M10 3.5a6.5 6.5 0 0 1 0 13z" class="fill"/></svg></button>
+    </div>
+  </div>
+  <nav id="rail" class="rail" aria-label="Stages"></nav>
+  <div id="notice" class="notice" role="status" hidden></div>
+</header>
+
+<div id="final" class="final" hidden></div>
+
+<main id="story" class="story">
+  <section id="sec-diagnose" class="band" data-stage="diagnose">
+    <div class="gutter"><h2><span class="n">1</span>Diagnose</h2><p class="gloss">Sensors, cameras and the 3D twin, read by Nemotron on Crusoe.</p></div>
+    <div class="body" id="diagnose"></div>
+  </section>
+  <section id="sec-plan" class="band" data-stage="plan">
+    <div class="gutter"><h2><span class="n">2</span>Plan</h2><p class="gloss">One planner, three sub-agents, one work order.</p></div>
+    <div class="body" id="plan"></div>
+  </section>
+  <div id="rounds"></div>
+  <section id="sec-memory" class="band" data-stage="memory">
+    <div class="gutter"><h2><span class="n" id="memN">4</span>Memory</h2><p class="gloss">Only verified fixes become lessons.</p></div>
+    <div class="body" id="memory"></div>
+  </section>
+</main>
+
+<footer class="legend">
+  <p><span class="chip sim">Simulated</span> the plant and its sensors, the contractor, and the email (written as .eml files, never sent).</p>
+  <p><span class="chip real">Real</span> Nemotron on Crusoe (planner, sub-agents, Omni vision), the gpt-oss-120b verifier, and the JEV decision (TypeSafe Jev, or its local fallback).</p>
+  <p class="cursor" id="cursor"></p>
+</footer>
+<script src="demo.js"></script>
+</body>
+</html>
