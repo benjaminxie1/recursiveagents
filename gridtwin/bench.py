@@ -1,8 +1,17 @@
 """Benchmark harness: run an agent over scenarios, judge each episode with hidden truth, tabulate.
 
-python -m gridtwin.bench --agent scripted_correct|scripted_trap|baseline|full --split dev|heldout|all --runs N [--kb kb/snapshots/<name>]
+python -m gridtwin.bench --agent scripted_correct|scripted_trap|baseline|full --split dev|heldout|all --runs N
+    [--kb kb/snapshots/<name>] [--memory off|frozen|learn] [--scenario ID | --scenarios a,b,...]
+
+Memory modes (what the agent finds in kb_dir/lessons/):
+    off     each episode gets a fresh copy of the snapshot with lessons/ emptied
+    frozen  each episode gets a fresh copy of the snapshot; lessons written during it are thrown away (default)
+    learn   one copy is shared by the episodes, run in the given order, so lessons accumulate
+Without --kb every mode starts from an empty KB. The snapshot itself is never written.
+Memory-poisoning run: --memory learn --scenarios s03_fan_relapse,s03b_fan_relapse_day2
 """
 import argparse
+import contextlib
 import importlib
 import json
 import shutil
@@ -12,6 +21,8 @@ import traceback
 from pathlib import Path
 
 from gridtwin.sim import episode
+
+MEMORY_MODES = ("off", "frozen", "learn")
 
 AGENTS = {
     "baseline": "gridtwin.agents.baseline:run",
@@ -151,22 +162,69 @@ def load_agent(name):
     return getattr(importlib.import_module(mod), fn)
 
 
-def run_episode(agent, scenario_id, run_id, runs_dir=None, kb=None):
+def prepare_kb(dest, kb=None, memory="frozen"):
+    """Fill `dest` with a copy of the snapshot `kb` (or an empty KB). `off` leaves lessons/ empty."""
+    dest = Path(dest)
+    if kb:
+        shutil.copytree(kb, dest)
+    else:
+        dest.mkdir(parents=True)
+    if memory == "off":
+        shutil.rmtree(dest / "lessons", ignore_errors=True)
+    (dest / "lessons").mkdir(exist_ok=True)
+    return dest
+
+
+def lesson_ids(log):
+    """Lesson ids the episode read, wrote and superseded, from its `lesson` events, in first-seen order."""
+    out = {"lessons_read": [], "lessons_written": [], "lessons_superseded": []}
+    key = {"read": "lessons_read", "write": "lessons_written", "supersede": "lessons_superseded"}
+    for e in log.of_type("lesson"):
+        k, lid = key.get(e["data"].get("op")), e["data"].get("id")
+        if k and lid and lid not in out[k]:
+            out[k].append(lid)
+    return out
+
+
+def run_episode(agent, scenario_id, run_id, runs_dir=None, kb=None, memory="frozen", kb_dir=None):
+    """Run and judge one episode. With `kb_dir` the agent works in that folder in place (learn mode
+    shares one across episodes); otherwise it gets a fresh temp copy of `kb` made by `prepare_kb`."""
+    # no notifier: bench runs never page a real phone
     sim, tb, log, sc = episode.start(scenario_id, run_id=run_id, runs_dir=runs_dir)
     log.emit("operator", "goal", {"text": sc["goal"], "scenario_id": scenario_id})
-    with tempfile.TemporaryDirectory() as tmp:
-        kb_dir = Path(tmp) / "kb"
-        if kb:
-            shutil.copytree(kb, kb_dir)
-        else:
-            kb_dir.mkdir()
+    with contextlib.ExitStack() as stack:
+        if kb_dir is None:
+            kb_dir = prepare_kb(Path(stack.enter_context(tempfile.TemporaryDirectory())) / "kb", kb, memory)
+        lessons_at_start = len(list((Path(kb_dir) / "lessons").glob("*.json")))
         try:
             result = agent(sc["goal"], tb, log, sc.get("budget", {}), kb_dir)
         except Exception as e:
             result = {"status": "ERROR", "summary": f"{type(e).__name__}: {e}", "traceback": traceback.format_exc()}
     if not log.of_type("final"):  # agents normally emit their own; keep every log self-contained
         log.emit("operator", "final", {"status": result.get("status"), "summary": result.get("summary", "")})
-    return episode.finish(sim, log, result)
+    metrics = episode.finish(sim, log, result)
+    return {**metrics, "memory": memory, "lessons_at_start": lessons_at_start, **lesson_ids(log)}
+
+
+def run_bench(agent, scenario_ids, runs=1, runs_dir=None, kb=None, memory="frozen"):
+    """Run every scenario `runs` times in the given order. In learn mode one KB copy is shared by all
+    episodes and saved to <runs_dir>/kb-learned/ at the end."""
+    if memory not in MEMORY_MODES:
+        raise ValueError(f"memory must be one of {MEMORY_MODES}, got {memory!r}")
+    rows = []
+    with tempfile.TemporaryDirectory() as tmp:
+        shared = prepare_kb(Path(tmp) / "kb", kb, memory) if memory == "learn" else None
+        for sid in scenario_ids:
+            for r in range(runs):
+                m = run_episode(agent, sid, run_id=f"{sid}-r{r}", runs_dir=runs_dir, kb=kb, memory=memory, kb_dir=shared)
+                rows.append(m)
+                print(f"{sid} r{r}: status={m['status']} success={m['success']} false_done={m['false_done']} "
+                      f"tools={m['tool_calls']} read={m['lessons_read']} wrote={m['lessons_written']}")
+        if shared is not None and runs_dir is not None:
+            dest = Path(runs_dir) / "kb-learned"
+            shutil.rmtree(dest, ignore_errors=True)
+            shutil.copytree(shared, dest)
+    return rows
 
 
 def totals(rows):
@@ -180,22 +238,32 @@ def totals(rows):
         "correct_escalation_pct": pct("correct_escalation"),
         "safety_violations": sum(r["safety_violations"] for r in rows),
         "revenue_lost_usd": round(sum(r["revenue_lost_usd"] for r in rows), 2),
+        "tool_calls": sum(r["tool_calls"] for r in rows),
         "tokens_prompt": sum(r["usage"]["prompt"] for r in rows),
         "tokens_cached": sum(r["usage"]["cached"] for r in rows),
         "tokens_completion": sum(r["usage"]["completion"] for r in rows),
     }
 
 
-def to_markdown(agent_name, split, rows, tot):
-    lines = [f"### `{agent_name}` on `{split}` ({tot['episodes']} episodes)", "",
-             "| scenario | status | expected | success | false done | resolved | safety | revenue lost $ |",
-             "|---|---|---|---|---|---|---|---|"]
+def _ids(ids):
+    return ", ".join(ids) or "—"
+
+
+def to_markdown(agent_name, split, rows, tot, memory="frozen"):
+    lines = [f"### `{agent_name}` on `{split}`, memory `{memory}` ({tot['episodes']} episodes)", "",
+             "| scenario | status | expected | success | false done | resolved | safety | revenue lost $ | tools | lessons read | lessons written |",
+             "|---|---|---|---|---|---|---|---|---|---|---|"]
     for r in rows:
+        written = _ids(r["lessons_written"])
+        if r["lessons_superseded"]:
+            written += f"; superseded {_ids(r['lessons_superseded'])}"
         lines.append(f"| {r['scenario_id']} | {r['status']} | {r['expected_status']} | {'✅' if r['success'] else '❌'} | "
-                     f"{'⚠️' if r['false_done'] else ''} | {r['resolved']} | {r['safety_violations']} | {r['revenue_lost_usd']} |")
+                     f"{'⚠️' if r['false_done'] else ''} | {r['resolved']} | {r['safety_violations']} | {r['revenue_lost_usd']} | "
+                     f"{r['tool_calls']} | {_ids(r['lessons_read'])} | {written} |")
     lines += ["", f"**claimed done {tot['claimed_done_pct']}% · success {tot['success_pct']}% · "
               f"false done {tot['false_done_pct']}% · correct escalation {tot['correct_escalation_pct']}% · "
               f"safety violations {tot['safety_violations']} · revenue lost ${tot['revenue_lost_usd']} · "
+              f"tool calls {tot['tool_calls']} · "
               f"tokens {tot['tokens_prompt']}/{tot['tokens_cached']} cached/{tot['tokens_completion']} out**"]
     return "\n".join(lines) + "\n"
 
@@ -205,24 +273,36 @@ def main(argv=None):
     ap.add_argument("--agent", required=True)
     ap.add_argument("--split", default="all", choices=["dev", "heldout", "all"])
     ap.add_argument("--runs", type=int, default=1)
-    ap.add_argument("--kb", default=None)
-    ap.add_argument("--scenario", default=None, help="run a single scenario id")
+    ap.add_argument("--kb", default=None, help="KB snapshot folder, e.g. kb/snapshots/<name>")
+    ap.add_argument("--memory", default="frozen", choices=MEMORY_MODES,
+                    help="off: no lessons; frozen: fresh snapshot copy per episode; learn: one copy shared, in order")
+    pick = ap.add_mutually_exclusive_group()
+    pick.add_argument("--scenario", default=None, help="run a single scenario id")
+    pick.add_argument("--scenarios", default=None, help="comma-separated scenario ids, run in this order")
     a = ap.parse_args(argv)
+    if a.kb and not Path(a.kb).is_dir():
+        ap.error(f"--kb {a.kb} is not a folder")
+    if a.scenarios:
+        ids = [s.strip() for s in a.scenarios.split(",") if s.strip()]
+    elif a.scenario:
+        ids = [a.scenario]
+    else:
+        ids = episode.list_scenarios(a.split)
+    known = set(episode.list_scenarios("all"))
+    unknown = [s for s in ids if s not in known]
+    if unknown or not ids:
+        ap.error(f"unknown scenario ids: {', '.join(unknown)}" if unknown else "no scenarios to run")
 
     agent = load_agent(a.agent)
     ts = time.strftime("%Y%m%d-%H%M%S")
     out = episode.RUNS / f"bench-{ts}-{a.agent}"
-    ids = [a.scenario] if a.scenario else episode.list_scenarios(a.split)
-    rows = []
-    for sid in ids:
-        for r in range(a.runs):
-            m = run_episode(agent, sid, run_id=f"{sid}-r{r}", runs_dir=out, kb=a.kb)
-            rows.append(m)
-            print(f"{sid} r{r}: status={m['status']} success={m['success']} false_done={m['false_done']}")
+    label = ",".join(ids) if (a.scenario or a.scenarios) else a.split
+    rows = run_bench(agent, ids, runs=a.runs, runs_dir=out, kb=a.kb, memory=a.memory)
     tot = totals(rows)
     out.mkdir(parents=True, exist_ok=True)
-    (out / "results.json").write_text(json.dumps({"agent": a.agent, "split": a.split, "rows": rows, "totals": tot}, indent=2))
-    md = to_markdown(a.agent, a.split, rows, tot)
+    (out / "results.json").write_text(json.dumps({"agent": a.agent, "split": a.split, "scenarios": ids, "kb": a.kb,
+                                                  "memory": a.memory, "rows": rows, "totals": tot}, indent=2))
+    md = to_markdown(a.agent, label, rows, tot, a.memory)
     (out / "results.md").write_text(md)
     print("\n" + md)
     print(f"wrote {out}/results.md")

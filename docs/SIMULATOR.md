@@ -191,6 +191,7 @@ In the viewer, clicking a pin opens the photo the agent actually saw at that mom
 | `sim_minutes_to_resolve`, `tool_calls`, `tokens`, `$ inference` | Efficiency |
 
 `python -m gridtwin.bench --agent baseline|full --split heldout` runs every scenario and writes a markdown table plus a JSON file for the slide.
+Add `--kb kb/snapshots/<name> --memory off|frozen|learn` to compare memory: `off` empties `lessons/`, `frozen` gives each episode a fresh snapshot copy, `learn` shares one copy across episodes in the order `--scenarios a,b,...` gives.
 
 ---
 
