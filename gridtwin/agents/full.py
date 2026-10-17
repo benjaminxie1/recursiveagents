@@ -125,7 +125,7 @@ def wait_for_tickets(toolbox, log, sup) -> list[dict]:
 
 
 def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = None, max_rounds: int = MAX_ROUNDS,
-        weak_dod: bool = False, floors: bool = True) -> dict:
+        weak_dod: bool = False, floors: bool = True, precheck: bool = True) -> dict:
     """`weak_dod` swaps the planner's DONE checks for WEAK_DONE_CHECKS; `floors=False` also turns off the
     checks the planner can't weaken (the verifier's audit and the post-pass hold). Both are ablations only."""
     kb_dir = Path(kb_dir)
@@ -155,6 +155,19 @@ def run(goal: str, toolbox, log, budget: dict, kb_dir, chaos: Chaos | None = Non
     verifier = Verifier(toolbox, log, kb_dir, registry)
     sup = Supervisor(goal, budget, log, toolbox)
     all_verdicts, failed_before, feedback = [], [], ""
+
+    # DoD pre-check: the verifier runs the DONE checks once before any work (red before green).
+    # Its failing checks are the planner's first evidence; workers can reuse its reads for free.
+    if floors and precheck and hasattr(planner, "precheck_tasks"):
+        sup.emit("precheck", "verifier runs the DONE checks before any work; failing checks show what is wrong")
+        pre = D.evaluate([D.sanitize_check(c) for c in dod["branches"]["DONE"] if c.get("kind") != "visual"],
+                         ActorToolbox(toolbox, "verifier"), log, kb_dir=kb_dir, actor="verifier")
+        failed_before += [v for v in pre if not v["pass"]]
+        all_verdicts += pre
+        first = planner.precheck_tasks(pre)
+        if first:
+            tasks = first
+            log.emit("planner", "dod", {"checks": dod["branches"], "tasks": tasks, "precheck_failing": [v["check_id"] for v in pre if not v["pass"]]})
     final = None
 
     def escalate(reason: str) -> dict:
