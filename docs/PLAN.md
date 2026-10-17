@@ -65,6 +65,7 @@ Nemotron Omni Lightning      Lightning +     Lightning →
 4. **Supervisor.** Hard rules plus a small LLM judgment: loop detection (action hash repeats), progress (fraction of checks passing over time), budget, and escalation. "Ping a human" is a real channel, e.g. a push notification or Slack, with a one-paragraph brief.
 5. **Shared Brain (Alike MCP).** Each agent reads the plant profile and relevant past incidents before acting, then writes back a lesson after the verifier's verdict. Only *verified* outcomes get written, which keeps memory lean and free of conflicts.
 6. **Splat twin and viewer.** A web viewer (Spark or `@mkkellogg/gaussian-splats-3d`) loads the plant splat. Named camera viewpoints map to equipment IDs. Agent findings show up as 3D pins, and the verifier's render requests use the same viewpoints, so "visual" checks are reproducible.
+   - **Re-rendered, not static (Benjamin, 11:44; supersedes the 10:30 static-stage decision).** `get_camera_view` renders the splat from the viewpoint's camera pose, and the verifier picks its own viewpoints, including ones the workers never looked from, so workers can't cherry-pick evidence. In the sim the hidden fault state is painted into the render, and the pitch says so. In a real plant the splat is refreshed by a nightly drone capture, with pan-tilt and fixed cameras carrying the state in between (`docs/JUDGE_QA.md` Q4–Q5).
 
 ## 3. The number that wins: claimed done vs. actually done
 

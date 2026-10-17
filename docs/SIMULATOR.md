@@ -172,7 +172,13 @@ The splat is the **spatial index and the visual stage**: one 3D scene of "the pl
 2. **Image to 3D from a real photo.** World-model tools (for example World Labs Marble) can turn a single real-world photo into a Gaussian splat you can explore. We'd build the plant scene from a CC-licensed aerial photo of a solar farm. Check the tool's terms for output rights.
 3. **Capture our own stand-in:** a tabletop mock-up or any electrical room we're allowed to film, recorded with Scaniverse or Polycam (both export splat PLY files on the phone, in minutes).
 
-In the viewer, clicking a pin opens the photo the agent actually saw at that moment, plus the verifier's verdict. The splat stays static. **The photos carry the state.**
+**The splat is re-rendered (Benjamin, 11:44; supersedes the static-stage decision of 10:30).**
+- `get_camera_view` renders the splat from the viewpoint's pose in `viewpoints.yaml`. The hidden state is painted into that render at the asset, using the photo bank as the source of what each state looks like. The photo bank is also the fallback while no renderer exists.
+- The verifier chooses its own viewpoints for `visual` checks, including ones no worker used, so a worker can't cherry-pick the evidence.
+- C1 is unchanged: the tool still returns an opaque path under `runs/<run_id>/frames/` and never the state name.
+- Open: whether the verifier can ask for a free camera pose (a C1 schema change) or picks from a larger set of named viewpoints.
+
+In the viewer, clicking a pin opens the frame the agent actually saw at that moment, plus the verifier's verdict.
 
 ---
 
