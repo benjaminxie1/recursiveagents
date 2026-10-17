@@ -40,6 +40,7 @@ def main(argv=None):
     ap.add_argument("--frames", type=int, default=72)
     ap.add_argument("--fps", type=int, default=12)
     ap.add_argument("--crf", type=int, default=28)
+    ap.add_argument("--only", help="comma-separated drone numbers, e.g. 2,3,4; the others keep their drones.json entries")
     a = ap.parse_args(argv)
     from playwright.sync_api import sync_playwright
 
@@ -59,8 +60,11 @@ def main(argv=None):
         if page.evaluate("window.__error || null"):
             raise SystemExit(f"splat-render failed: {page.evaluate('window.__error')}")
         page.evaluate("([p, t, f]) => window.shootCam(p, t, f, 6)", [*pose(ROWS[0][1], 0), FOV])   # warm-up: first sort
-        feeds = []
+        index = OUT / "drones.json"
+        feeds = {f["id"]: f for f in json.loads(index.read_text())} if a.only and index.exists() else {}
         for i, (row, z) in enumerate(ROWS, 1):
+            if a.only and str(i) not in a.only.split(","):
+                continue
             frames = Path(tmp) / f"drone{i}"
             frames.mkdir()
             page.evaluate("([p, t, f]) => window.shootCam(p, t, f, 6)", [*pose(z, 0), FOV])     # settle on the new row
@@ -73,12 +77,12 @@ def main(argv=None):
             subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-framerate", str(a.fps), "-i", str(frames / "%03d.png"),
                             "-c:v", "libx264", "-preset", "slow", "-crf", str(a.crf), "-pix_fmt", "yuv420p",
                             "-movflags", "+faststart", "-an", str(dst)], check=True)
-            feeds.append({"id": f"drone{i}", "row": row, "file": dst.relative_to(REPO).as_posix(),
-                          "seconds": round(a.frames / a.fps, 2), "altitude_m": ALT})
+            feeds[f"drone{i}"] = {"id": f"drone{i}", "row": row, "file": dst.relative_to(REPO).as_posix(),
+                                  "seconds": round(a.frames / a.fps, 2), "altitude_m": ALT}
+            index.write_text(json.dumps(sorted(feeds.values(), key=lambda f: f["id"]), indent=1) + "\n")
             print(f"drone{i} ({row}): {dst.stat().st_size / 1024:.0f} KB, {time.time() - t0:.0f} s elapsed")
         browser.close()
     server.shutdown()
-    (OUT / "drones.json").write_text(json.dumps(feeds, indent=1) + "\n")
     print(f"{len(feeds)} feeds -> {OUT.relative_to(REPO)} in {time.time() - t0:.0f} s")
 
 
