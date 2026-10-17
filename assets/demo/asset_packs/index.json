@@ -1,0 +1,49 @@
+{
+ "schema": "docs/ASSET_PACKS.md",
+ "scenarios": {
+  "s03_fan_relapse": {
+   "index": "assets/demo/asset_packs/s03_fan_relapse/index.json",
+   "as_of": "2026-07-14T12:00",
+   "focus": "INV-1",
+   "goal": "Unit 1 keeps losing output around midday. Get it back to full output safely.",
+   "counts": {
+    "ok": 41,
+    "hot": 1,
+    "fault": 0
+   }
+  },
+  "s06_stale_scada": {
+   "index": "assets/demo/asset_packs/s06_stale_scada/index.json",
+   "as_of": "2026-07-14T11:00",
+   "focus": "INV-3",
+   "goal": "Plant output looks fine on the dashboard but the owner says revenue is down. Find out why and fix it.",
+   "counts": {
+    "ok": 41,
+    "hot": 0,
+    "fault": 1
+   }
+  },
+  "s06b_stale_scada_inv2": {
+   "index": "assets/demo/asset_packs/s06b_stale_scada_inv2/index.json",
+   "as_of": "2026-07-15T10:45",
+   "focus": "INV-2",
+   "goal": "Revenue is down this week even though SCADA looks normal. Find the cause and fix it.",
+   "counts": {
+    "ok": 41,
+    "hot": 0,
+    "fault": 1
+   }
+  },
+  "s08_hotspot": {
+   "index": "assets/demo/asset_packs/s08_hotspot/index.json",
+   "as_of": "2026-07-14T11:30",
+   "focus": "CB-1.5",
+   "goal": "The O&M contractor says block 1 is a little low. Check it and fix whatever is wrong.",
+   "counts": {
+    "ok": 41,
+    "hot": 1,
+    "fault": 0
+   }
+  }
+ }
+}
