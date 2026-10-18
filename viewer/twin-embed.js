@@ -24,6 +24,7 @@ const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 const V3 = THREE.Vector3;
 const params = new URLSearchParams(location.search);
 let runId = params.get('run');
+const controlled = params.get('controlled') === '1';  // the parent owns the replay cursor; never read future events
 
 const KIND = [[/^INV-/, 'Inverter'], [/^CB-/, 'Combiner box'], [/^B\d$/, 'PV array block'], [/^52-/, 'Breaker'],
   [/^XFMR-/, 'Main transformer'], [/^BESS-/, 'Battery enclosure'], [/^POI-/, 'Revenue meter'], [/^MET-/, 'Met station']];
@@ -34,14 +35,28 @@ const send = (msg) => { try { if (parent !== window) parent.postMessage({ source
 let view, scene, orbit, selected = null, mode = 'orbit', thermal = params.get('thermal') === '1';
 let fromRun = {}, override = {};
 // frontloaded per-asset evidence (SCADA, camera, infrared), ?case= or Will's s06 case; null until loaded or if missing
-const CASE = params.get('case') || 'assets/demo/s06_case';
+const normalizeCase = (root) => !root || root === 'none' ? null : root;
+let caseRoot = normalizeCase(params.get('case') || 'assets/demo/s06_case');
 let caseData = null;
+let caseRevision = 0;
+async function setCase(root) {
+  caseRoot = normalizeCase(root);
+  const revision = ++caseRevision;
+  caseData = null;
+  if (scene) refresh();
+  const data = caseRoot ? await loadCase(caseRoot).catch(() => null) : null;
+  if (revision !== caseRevision) return;
+  caseData = data;
+  if (scene) refresh();
+}
 const INSIDE = ['INV-1', 'INV-2', 'INV-3', 'INV-4', 'XFMR-1', 'CB-1.5'];  // labelled in tugboat.registration.json
 function goInside(asset) {
   const here = new URL(location.href);
+  here.searchParams.set('case', caseRoot || 'none');
   if (asset) here.searchParams.set('asset', asset); else here.searchParams.delete('asset');
   if (mode === 'walk') here.searchParams.set('mode', 'walk');
-  const q = new URLSearchParams({ scene: 'tugboat.splat', tour: '1', run: runId || 'none' });
+  const q = new URLSearchParams({ scene: 'tugboat.splat', tour: '1', run: controlled ? 'none' : runId || 'none', case: caseRoot || '' });
+  if (controlled) q.set('controlled', '1');
   if (asset) q.set('open', asset);
   q.set('back', `twin-embed.html${here.search}`);
   send({ type: 'scene', scene: 'interior', asset: asset || null });
@@ -104,7 +119,7 @@ const runPath = (id) => id.split('/').map(encodeURIComponent).join('/');
 let nEvents = -1, pollTimer = null, autoSeq = null;
 async function poll() {
   clearTimeout(pollTimer);
-  if (!runId) return;
+  if (controlled || !runId || runId === 'none') return;
   try {
     const res = await fetch(`/runs/${runPath(runId)}/events.jsonl`, { cache: 'no-store' });
     if (res.ok) {
@@ -440,12 +455,13 @@ addEventListener('message', (e) => {
   else if (m.type === 'thermal') setThermalMode(m.on);
   else if (m.type === 'home') { select(null, false); home(); }
   else if (m.type === 'status' && m.assets) { override = { ...m.assets }; refresh(); }
+  else if (m.type === 'case') setCase(m.case);
   else if (m.type === 'inside') goInside(m.asset || null);
-  else if (m.type === 'run') { runId = m.run || null; nEvents = -1; fromRun = {}; refresh(); poll(); }
+  else if (m.type === 'run') { runId = m.run || null; nEvents = -1; fromRun = {}; override = {}; refresh(); poll(); }
 });
 
 async function main() {
-  const casing = loadCase(CASE).catch(() => null);
+  const casing = setCase(caseRoot);
   scene = await loadScene();
   const ids = Object.keys(scene.anchors).sort((a, b) => b.length - a.length).map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   mentionRe = new RegExp(`(?<![\\w.-])(${ids.join('|')})(?![\\w-]|\\.\\d)`, 'g');
@@ -460,7 +476,7 @@ async function main() {
   let pct = 0;
   const bump = setInterval(() => { pct = Math.min(92, pct + (92 - pct) * 0.08); $('#bar').style.width = `${pct}%`; $('#pct').textContent = `Loading twin ${Math.round(pct)}%`; }, 120);
   await view.load(undefined, scene.sky);
-  caseData = await casing;
+  await casing;
   clearInterval(bump);
   $('#bar').style.width = '100%';
   view.camera.position.copy(OVERVIEW.pos);

@@ -2,11 +2,13 @@
 // agent's thinking and context, an operator reprompt box, then four drone feeds, the interactive 3D model, assets and
 // checks. Reads runs/<id>/events.jsonl (contract C2) only; the reprompt box posts to /api/reprompt.
 // ?run=<id> picks a run (default: newest), &replay=1 plays it back on its own, &speed=2 speeds playback up.
+import { mountFastDemo } from './fast-demo.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const clip = (s, n = 90) => { s = typeof s === 'string' ? s : JSON.stringify(s ?? ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
 const params = new URLSearchParams(location.search);
+const preloaded = params.get('preload') === '1' || params.get('present') === '1';
 const replay = params.get('replay') === '1';
 const speed = +(params.get('speed') || 1);
 let runId = params.get('run');
@@ -105,7 +107,10 @@ function derive(evs) {
       }
       case 'final': S.final = d; mark(4, i, e); break;
       // the end-to-end demo pipeline (gridtwin/demo): recursive agent teams, plant checks, memory flywheel
-      case 'demo.stage': if (d.status === 'start' && STAGE[d.stage] != null) mark(STAGE[d.stage], i, e); S.stage = d.stage; S.rounds = Math.max(S.rounds, d.round || 0); break;
+      case 'demo.stage':
+        if (d.status === 'start' && STAGE[d.stage] != null) mark(STAGE[d.stage], i, e);
+        if (d.stage === 'verify' && d.status === 'start') S.verdicts = {};
+        S.stage = d.stage; S.rounds = Math.max(S.rounds, d.round || 0); break;
       case 'demo.agent': S.dagents[d.id] = { ...d, t: e.t_sim, i }; S.lastAgent = d.id; break;
       case 'demo.diagnosis': S.dfocus = d.asset; S.findings.push({ data: { text: d.summary || `${d.asset} ${d.fault}` } }); set(d.asset, 'bad', String(d.fault || 'fault').replace(/_/g, ' ')); break;
       case 'demo.workorder': S.acts.push({ data: { name: 'dispatch_tech', args: { asset: d.asset, work_order: d.wo_id } } }); set(d.asset, 'work', d.wo_id); break;
@@ -179,7 +184,7 @@ function renderHero(S) {
   const kpi = (k, v, u = '') => `<div><dt>${k}</dt><dd>${v}${u ? `<small> ${u}</small>` : ''}</dd></div>`;
   $('#kpis').innerHTML = kpi('Checks passing', vs.length ? `${passed}/${n || vs.length}` : '—')
     + kpi('Sim time', S.first ? mins : '—', S.first ? 'min' : '')
-    + kpi('Agent cost', S.usd ? `$${S.usd.toFixed(2)}` : '—')
+    + kpi('Agent cost', S.usd ? `$${S.usd.toFixed(S.usd < 0.01 ? 4 : 2)}` : '—')
     + kpi('Tokens', S.usage ? (S.usage / 1000).toFixed(1) : '—', S.usage ? `k · ${Math.round((100 * S.cached) / Math.max(1, Object.values(S.roles).reduce((a, r) => a + r.prompt, 0)))}% cached` : '');
   $('#clock').textContent = (S.last?.t_sim || '').replace('T', ' ');
   // the operator's one action: what is left for a person once the agents are done
@@ -490,6 +495,7 @@ function syncTwin() {
 // once the agents name the faulted asset, jump to the twin and open it there, no clicks (demo: the asset's data panel)
 let focused = null, pendingFocus = null;
 function autoFocus(S) {
+  if (preloaded) return; // Keep the graph in view; asset clicks still open the twin.
   const diagnosed = S.dfocus || (S.findings.length && S.focus);
   if (!diagnosed || diagnosed === focused || (!replay && S.final && !focused && cursor === events.length && params.get('focus') !== '1')) return;
   focused = diagnosed;
@@ -497,7 +503,8 @@ function autoFocus(S) {
 }
 
 function initTwin() {
-  $('#twin').src = `twin-embed.html?mode=orbit${runId ? `&run=${encodeURIComponent(runId)}` : ''}`;
+  $('#twin').src = preloaded ? 'twin-embed.html?mode=orbit&run=none&controlled=1&case=assets/demo/s06_case'
+    : `twin-embed.html?mode=orbit${runId ? `&run=${encodeURIComponent(runId)}` : ''}`;
   addEventListener('message', (e) => {
     const m = e.data;
     if (!m || m.source !== 'gridtwin-twin') return;
@@ -516,7 +523,7 @@ function render() {
   S0 = S;
   const st = $('#state');
   st.className = `live mono ${S.final ? (S.final.status === 'DONE' ? 'ok' : 'warn') : events.length ? 'work' : ''}`;
-  st.textContent = `${replay ? 'Replay' : S.final ? 'Closed' : events.length ? 'Live' : 'Idle'}${S.first ? ` · sim ${S.first.t_sim.slice(0, 10)}` : ''}`;
+  st.textContent = `${preloaded ? 'Preloaded replay' : replay ? 'Replay' : S.final ? 'Closed' : events.length ? 'Live' : 'Idle'}${S.first ? ` · sim ${S.first.t_sim.slice(0, 10)}` : ''}`;
   autoFocus(S);
   renderHero(S); renderPhases(S); renderFlow(S); renderMind(S); renderAssets(S); renderIncident(S); renderLedger(S); syncTwin();
 }
@@ -552,7 +559,7 @@ async function main() {
   if (!runId && runs.length) runId = runs[0].id;
   const sel = $('#runPick');
   sel.innerHTML = runs.map((r) => `<option value="${esc(r.id)}"${r.id === runId ? ' selected' : ''}>${esc(r.id)}</option>`).join('');
-  sel.onchange = () => { params.set('run', sel.value); location.search = params.toString(); };
+  sel.onchange = () => { params.set('run', sel.value); params.delete('preload'); params.delete('present'); location.search = params.toString(); };
   const pick = (e) => { const el = e.target.closest('[data-asset]'); if (el) flyTo(el.dataset.asset); };
   $('#assets').onclick = pick;
   $('#flow').onclick = (e) => { const n = e.target.closest('[data-lane]'); if (n) { selLane = selLane === n.dataset.lane ? null : n.dataset.lane; render(); } };
@@ -573,6 +580,25 @@ async function main() {
   addEventListener('resize', () => S0 && render());
   initDrones();
   initTwin();
+  if (preloaded) {
+    await mountFastDemo({
+      show(run, count, reset = false) {
+        if (reset || runId !== run.id) {
+          runId = run.id; focused = pendingFocus = picked = null; selLane = null; signed = false; twinStatus = '';
+          twin()?.postMessage({ type: 'status', assets: {} }, '*');
+          twin()?.postMessage({ type: 'case', case: run.id.endsWith('golden1') ? 'assets/demo/s06_case' : 'none' }, '*');
+          twin()?.postMessage({ type: 'home' }, '*');
+          $('#runPick').value = run.id;
+        }
+        events = run.events; cursor = count; render();
+      },
+      async ready() {
+        const until = performance.now() + 30000;
+        while (!twinReady && performance.now() < until) await new Promise((resolve) => setTimeout(resolve, 100));
+      },
+    });
+    return;
+  }
   render();
   if (!runId) return;
   if (!replay) { poll(); return; }

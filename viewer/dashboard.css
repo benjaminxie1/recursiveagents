@@ -288,6 +288,8 @@ h1 .status { font-size: .5em; letter-spacing: -.02em; vertical-align: .55em; pad
 .flow .node.esc .t { color: var(--fault); }
 .flow .node .t { white-space: nowrap; min-width: 0; } .flow .node .t .m { flex: 0 1 auto; min-width: 0; }
 .twin iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+#fastDemo { border: 1px solid var(--ink); background: var(--ink); color: var(--paper); font: 500 13px var(--sans); padding: 8px 14px; white-space: nowrap; cursor: pointer; }
+#fastDemo:disabled { opacity: .5; cursor: default; }
 .twin { height: 620px; }
 .asset.picked { outline: 2px solid var(--ink); outline-offset: 2px; }
 .feed-tile img.pan { display: block; width: 100%; height: 100%; object-fit: cover; animation: pan 14s ease-in-out infinite alternate; }
