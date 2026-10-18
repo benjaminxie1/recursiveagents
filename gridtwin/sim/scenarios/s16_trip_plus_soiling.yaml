@@ -1,7 +1,7 @@
-id: s15_trip_plus_soiling
+id: s16_trip_plus_soiling
 goal: "Revenue is down this morning. Get the plant back to full output."
 split: dev
-seed: 15
+seed: 16
 start: "2026-07-14T10:30"
 preroll_min: 180
 weather: {clouds: clear}
