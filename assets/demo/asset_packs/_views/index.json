@@ -1,0 +1,800 @@
+{
+ "52-B1": {
+  "anchor_px": [
+   400,
+   300
+  ],
+  "file": "assets/demo/asset_packs/_views/52-B1.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   184,
+   2.4,
+   217
+  ],
+  "target": [
+   186,
+   1.0,
+   222
+  ]
+ },
+ "52-I1": {
+  "anchor_px": [
+   400,
+   300.0
+  ],
+  "file": "assets/demo/asset_packs/_views/52-I1.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   184,
+   2.4,
+   25
+  ],
+  "target": [
+   186,
+   1.0,
+   30
+  ]
+ },
+ "52-I2": {
+  "anchor_px": [
+   400.0,
+   300.0
+  ],
+  "file": "assets/demo/asset_packs/_views/52-I2.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   184,
+   2.4,
+   75
+  ],
+  "target": [
+   186,
+   1.0,
+   80
+  ]
+ },
+ "52-I3": {
+  "anchor_px": [
+   400,
+   300.0
+  ],
+  "file": "assets/demo/asset_packs/_views/52-I3.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   184,
+   2.4,
+   125
+  ],
+  "target": [
+   186,
+   1.0,
+   130
+  ]
+ },
+ "52-I4": {
+  "anchor_px": [
+   400.0,
+   300.0
+  ],
+  "file": "assets/demo/asset_packs/_views/52-I4.jpg",
+  "fov": 50,
+  "from_station": "brk_52i4",
+  "position": [
+   184,
+   2.4,
+   175
+  ],
+  "target": [
+   186,
+   1.0,
+   180
+  ]
+ },
+ "52-M": {
+  "anchor_px": [
+   400.0,
+   300
+  ],
+  "file": "assets/demo/asset_packs/_views/52-M.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   234,
+   2.4,
+   100
+  ],
+  "target": [
+   236,
+   1.0,
+   105
+  ]
+ },
+ "B1": {
+  "anchor_px": [
+   400,
+   288.7
+  ],
+  "file": "assets/demo/asset_packs/_views/B1.jpg",
+  "fov": 38,
+  "from_station": null,
+  "position": [
+   51.0,
+   7.0,
+   52
+  ],
+  "target": [
+   71.0,
+   0.8,
+   30
+  ]
+ },
+ "B2": {
+  "anchor_px": [
+   400.0,
+   288.7
+  ],
+  "file": "assets/demo/asset_packs/_views/B2.jpg",
+  "fov": 38,
+  "from_station": null,
+  "position": [
+   51.0,
+   7.0,
+   102
+  ],
+  "target": [
+   71.0,
+   0.8,
+   80
+  ]
+ },
+ "B3": {
+  "anchor_px": [
+   400,
+   288.7
+  ],
+  "file": "assets/demo/asset_packs/_views/B3.jpg",
+  "fov": 38,
+  "from_station": "b3_array",
+  "position": [
+   51.0,
+   7.0,
+   152
+  ],
+  "target": [
+   71.0,
+   0.8,
+   130
+  ]
+ },
+ "B4": {
+  "anchor_px": [
+   400,
+   288.7
+  ],
+  "file": "assets/demo/asset_packs/_views/B4.jpg",
+  "fov": 38,
+  "from_station": "b4_array",
+  "position": [
+   51.0,
+   7.0,
+   202
+  ],
+  "target": [
+   71.0,
+   0.8,
+   180
+  ]
+ },
+ "BESS-1": {
+  "anchor_px": [
+   400,
+   300.0
+  ],
+  "file": "assets/demo/asset_packs/_views/BESS-1.jpg",
+  "fov": 45,
+  "from_station": null,
+  "position": [
+   141.0,
+   6.3,
+   235.0
+  ],
+  "target": [
+   150,
+   1.3,
+   222
+  ]
+ },
+ "CB-1.1": {
+  "anchor_px": [
+   400.5,
+   300.1
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-1.1.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   23.67,
+   2.4,
+   12.5
+  ],
+  "target": [
+   25.17,
+   1.2,
+   16
+  ]
+ },
+ "CB-1.2": {
+  "anchor_px": [
+   400.0,
+   300.0
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-1.2.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   42.0,
+   2.4,
+   12.5
+  ],
+  "target": [
+   43.5,
+   1.2,
+   16
+  ]
+ },
+ "CB-1.3": {
+  "anchor_px": [
+   399.5,
+   299.9
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-1.3.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   60.33,
+   2.4,
+   12.5
+  ],
+  "target": [
+   61.83,
+   1.2,
+   16
+  ]
+ },
+ "CB-1.4": {
+  "anchor_px": [
+   400.5,
+   300.1
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-1.4.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   78.67,
+   2.4,
+   12.5
+  ],
+  "target": [
+   80.17,
+   1.2,
+   16
+  ]
+ },
+ "CB-1.5": {
+  "anchor_px": [
+   400,
+   300
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-1.5.jpg",
+  "fov": 50,
+  "from_station": "cb15_box",
+  "position": [
+   97.0,
+   2.4,
+   12.5
+  ],
+  "target": [
+   98.5,
+   1.2,
+   16
+  ]
+ },
+ "CB-1.6": {
+  "anchor_px": [
+   399.5,
+   299.9
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-1.6.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   115.33,
+   2.4,
+   12.5
+  ],
+  "target": [
+   116.83,
+   1.2,
+   16
+  ]
+ },
+ "CB-2.1": {
+  "anchor_px": [
+   400.5,
+   300.1
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-2.1.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   23.67,
+   2.4,
+   62.5
+  ],
+  "target": [
+   25.17,
+   1.2,
+   66
+  ]
+ },
+ "CB-2.2": {
+  "anchor_px": [
+   400.0,
+   300.0
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-2.2.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   42.0,
+   2.4,
+   62.5
+  ],
+  "target": [
+   43.5,
+   1.2,
+   66
+  ]
+ },
+ "CB-2.3": {
+  "anchor_px": [
+   399.5,
+   299.9
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-2.3.jpg",
+  "fov": 50,
+  "from_station": "cb23_box",
+  "position": [
+   60.33,
+   2.4,
+   62.5
+  ],
+  "target": [
+   61.83,
+   1.2,
+   66
+  ]
+ },
+ "CB-2.4": {
+  "anchor_px": [
+   400.5,
+   300.1
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-2.4.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   78.67,
+   2.4,
+   62.5
+  ],
+  "target": [
+   80.17,
+   1.2,
+   66
+  ]
+ },
+ "CB-2.5": {
+  "anchor_px": [
+   400,
+   300.0
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-2.5.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   97.0,
+   2.4,
+   62.5
+  ],
+  "target": [
+   98.5,
+   1.2,
+   66
+  ]
+ },
+ "CB-2.6": {
+  "anchor_px": [
+   399.5,
+   299.9
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-2.6.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   115.33,
+   2.4,
+   62.5
+  ],
+  "target": [
+   116.83,
+   1.2,
+   66
+  ]
+ },
+ "CB-3.1": {
+  "anchor_px": [
+   400.5,
+   300.1
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-3.1.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   23.67,
+   2.4,
+   112.5
+  ],
+  "target": [
+   25.17,
+   1.2,
+   116
+  ]
+ },
+ "CB-3.2": {
+  "anchor_px": [
+   400.0,
+   300
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-3.2.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   42.0,
+   2.4,
+   112.5
+  ],
+  "target": [
+   43.5,
+   1.2,
+   116
+  ]
+ },
+ "CB-3.3": {
+  "anchor_px": [
+   399.5,
+   299.9
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-3.3.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   60.33,
+   2.4,
+   112.5
+  ],
+  "target": [
+   61.83,
+   1.2,
+   116
+  ]
+ },
+ "CB-3.4": {
+  "anchor_px": [
+   400.5,
+   300.1
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-3.4.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   78.67,
+   2.4,
+   112.5
+  ],
+  "target": [
+   80.17,
+   1.2,
+   116
+  ]
+ },
+ "CB-3.5": {
+  "anchor_px": [
+   400.0,
+   300
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-3.5.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   97.0,
+   2.4,
+   112.5
+  ],
+  "target": [
+   98.5,
+   1.2,
+   116
+  ]
+ },
+ "CB-3.6": {
+  "anchor_px": [
+   399.5,
+   299.9
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-3.6.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   115.33,
+   2.4,
+   112.5
+  ],
+  "target": [
+   116.83,
+   1.2,
+   116
+  ]
+ },
+ "CB-4.1": {
+  "anchor_px": [
+   400.5,
+   300.1
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-4.1.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   23.67,
+   2.4,
+   162.5
+  ],
+  "target": [
+   25.17,
+   1.2,
+   166
+  ]
+ },
+ "CB-4.2": {
+  "anchor_px": [
+   400.0,
+   300.0
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-4.2.jpg",
+  "fov": 50,
+  "from_station": "cb42_box",
+  "position": [
+   42.0,
+   2.4,
+   162.5
+  ],
+  "target": [
+   43.5,
+   1.2,
+   166
+  ]
+ },
+ "CB-4.3": {
+  "anchor_px": [
+   399.5,
+   299.9
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-4.3.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   60.33,
+   2.4,
+   162.5
+  ],
+  "target": [
+   61.83,
+   1.2,
+   166
+  ]
+ },
+ "CB-4.4": {
+  "anchor_px": [
+   400.5,
+   300.1
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-4.4.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   78.67,
+   2.4,
+   162.5
+  ],
+  "target": [
+   80.17,
+   1.2,
+   166
+  ]
+ },
+ "CB-4.5": {
+  "anchor_px": [
+   400.0,
+   300.0
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-4.5.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   97.0,
+   2.4,
+   162.5
+  ],
+  "target": [
+   98.5,
+   1.2,
+   166
+  ]
+ },
+ "CB-4.6": {
+  "anchor_px": [
+   399.5,
+   299.9
+  ],
+  "file": "assets/demo/asset_packs/_views/CB-4.6.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   115.33,
+   2.4,
+   162.5
+  ],
+  "target": [
+   116.83,
+   1.2,
+   166
+  ]
+ },
+ "INV-1": {
+  "anchor_px": [
+   400.0,
+   300.0
+  ],
+  "file": "assets/demo/asset_packs/_views/INV-1.jpg",
+  "fov": 50,
+  "from_station": "inv1_cabinet",
+  "position": [
+   143,
+   2.4,
+   34
+  ],
+  "target": [
+   150,
+   1.45,
+   30
+  ]
+ },
+ "INV-2": {
+  "anchor_px": [
+   400,
+   300.0
+  ],
+  "file": "assets/demo/asset_packs/_views/INV-2.jpg",
+  "fov": 50,
+  "from_station": "inv2_cabinet",
+  "position": [
+   143,
+   2.4,
+   84
+  ],
+  "target": [
+   150,
+   1.45,
+   80
+  ]
+ },
+ "INV-3": {
+  "anchor_px": [
+   400,
+   300.0
+  ],
+  "file": "assets/demo/asset_packs/_views/INV-3.jpg",
+  "fov": 50,
+  "from_station": "inv3_cabinet",
+  "position": [
+   143,
+   2.4,
+   134
+  ],
+  "target": [
+   150,
+   1.45,
+   130
+  ]
+ },
+ "INV-4": {
+  "anchor_px": [
+   400,
+   300.0
+  ],
+  "file": "assets/demo/asset_packs/_views/INV-4.jpg",
+  "fov": 50,
+  "from_station": null,
+  "position": [
+   143,
+   2.4,
+   184
+  ],
+  "target": [
+   150,
+   1.45,
+   180
+  ]
+ },
+ "MET-1": {
+  "anchor_px": [
+   400.0,
+   349.1
+  ],
+  "file": "assets/demo/asset_packs/_views/MET-1.jpg",
+  "fov": 45,
+  "from_station": null,
+  "position": [
+   296.5,
+   4.0,
+   238.0
+  ],
+  "target": [
+   300,
+   2.5,
+   232
+  ]
+ },
+ "POI-1": {
+  "anchor_px": [
+   400,
+   300.0
+  ],
+  "file": "assets/demo/asset_packs/_views/POI-1.jpg",
+  "fov": 45,
+  "from_station": null,
+  "position": [
+   288.0,
+   5.7,
+   116.0
+  ],
+  "target": [
+   296,
+   1.2,
+   105
+  ]
+ },
+ "XFMR-1": {
+  "anchor_px": [
+   400,
+   300
+  ],
+  "file": "assets/demo/asset_packs/_views/XFMR-1.jpg",
+  "fov": 38,
+  "from_station": "xfmr1_fence",
+  "position": [
+   250.0,
+   2.4,
+   96.0
+  ],
+  "target": [
+   250,
+   1.1,
+   105
+  ]
+ }
+}

@@ -60,8 +60,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/52-B1/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "handle_closed"
+     "kind": "splat_view",
+     "state": "handle_closed",
+     "file": "assets/demo/asset_packs/_views/52-B1.jpg"
     }
    },
    "infrared": {
@@ -75,17 +76,17 @@
       552,
       421
      ],
-     "max_c": 39.8,
-     "min_c": 39.4,
-     "mean_c": 39.6,
+     "max_c": 40.7,
+     "min_c": 34.5,
+     "mean_c": 37.6,
      "max_xy": [
-      531,
-      292
+      390,
+      288
      ]
     },
     "frame": {
-     "max_c": 39.8,
-     "min_c": 33.6
+     "max_c": 40.7,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -134,8 +135,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/52-I1/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "handle_closed"
+     "kind": "splat_view",
+     "state": "handle_closed",
+     "file": "assets/demo/asset_packs/_views/52-I1.jpg"
     }
    },
    "infrared": {
@@ -149,17 +151,17 @@
       552,
       421
      ],
-     "max_c": 39.8,
-     "min_c": 39.4,
-     "mean_c": 39.6,
+     "max_c": 40.8,
+     "min_c": 34.4,
+     "mean_c": 37.6,
      "max_xy": [
-      523,
-      216
+      361,
+      300
      ]
     },
     "frame": {
-     "max_c": 39.8,
-     "min_c": 33.6
+     "max_c": 40.8,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -208,8 +210,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/52-I2/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "handle_closed"
+     "kind": "splat_view",
+     "state": "handle_closed",
+     "file": "assets/demo/asset_packs/_views/52-I2.jpg"
     }
    },
    "infrared": {
@@ -223,17 +226,17 @@
       552,
       421
      ],
-     "max_c": 39.8,
-     "min_c": 39.4,
-     "mean_c": 39.6,
+     "max_c": 40.6,
+     "min_c": 34.6,
+     "mean_c": 37.6,
      "max_xy": [
-      538,
-      338
+      361,
+      264
      ]
     },
     "frame": {
-     "max_c": 39.9,
-     "min_c": 33.6
+     "max_c": 40.6,
+     "min_c": 22.7
     },
     "span_c": [
      22,
@@ -282,8 +285,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/52-I3/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "handle_closed"
+     "kind": "splat_view",
+     "state": "handle_closed",
+     "file": "assets/demo/asset_packs/_views/52-I3.jpg"
     }
    },
    "infrared": {
@@ -297,17 +301,17 @@
       552,
       421
      ],
-     "max_c": 39.8,
-     "min_c": 39.4,
-     "mean_c": 39.6,
+     "max_c": 40.6,
+     "min_c": 34.6,
+     "mean_c": 37.5,
      "max_xy": [
-      319,
-      363
+      390,
+      287
      ]
     },
     "frame": {
-     "max_c": 39.8,
-     "min_c": 33.7
+     "max_c": 40.6,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -432,8 +436,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/52-M/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "handle_closed"
+     "kind": "splat_view",
+     "state": "handle_closed",
+     "file": "assets/demo/asset_packs/_views/52-M.jpg"
     }
    },
    "infrared": {
@@ -447,17 +452,17 @@
       552,
       421
      ],
-     "max_c": 39.8,
-     "min_c": 39.4,
-     "mean_c": 39.6,
+     "max_c": 41.1,
+     "min_c": 34.5,
+     "mean_c": 37.6,
      "max_xy": [
-      405,
-      277
+      375,
+      279
      ]
     },
     "frame": {
-     "max_c": 39.8,
-     "min_c": 33.4
+     "max_c": 41.1,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -509,8 +514,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/B1/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "array_normal"
+     "kind": "splat_view",
+     "state": "array_normal",
+     "file": "assets/demo/asset_packs/_views/B1.jpg"
     }
    },
    "infrared": {
@@ -520,21 +526,21 @@
      "label": "B1 body",
      "box": [
       248,
-      178,
+      167,
       552,
-      421
+      410
      ],
-     "max_c": 61.9,
-     "min_c": 40.0,
-     "mean_c": 47.7,
+     "max_c": 62.4,
+     "min_c": 37.0,
+     "mean_c": 46.5,
      "max_xy": [
-      398,
-      298
+      401,
+      297
      ]
     },
     "frame": {
-     "max_c": 61.9,
-     "min_c": 33.5
+     "max_c": 62.4,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -586,8 +592,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/B2/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "array_normal"
+     "kind": "splat_view",
+     "state": "array_normal",
+     "file": "assets/demo/asset_packs/_views/B2.jpg"
     }
    },
    "infrared": {
@@ -597,21 +604,21 @@
      "label": "B2 body",
      "box": [
       248,
-      178,
+      167,
       552,
-      421
+      410
      ],
-     "max_c": 61.9,
-     "min_c": 40.0,
-     "mean_c": 47.7,
+     "max_c": 62.5,
+     "min_c": 37.9,
+     "mean_c": 46.7,
      "max_xy": [
-      401,
-      300
+      399,
+      298
      ]
     },
     "frame": {
-     "max_c": 61.9,
-     "min_c": 33.6
+     "max_c": 62.5,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -826,8 +833,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/BESS-1/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "healthy"
+     "kind": "splat_view",
+     "state": "healthy",
+     "file": "assets/demo/asset_packs/_views/BESS-1.jpg"
     }
    },
    "infrared": {
@@ -841,17 +849,17 @@
       552,
       421
      ],
-     "max_c": 39.8,
-     "min_c": 39.4,
-     "mean_c": 39.6,
+     "max_c": 39.1,
+     "min_c": 32.3,
+     "mean_c": 34.6,
      "max_xy": [
-      366,
-      277
+      550,
+      372
      ]
     },
     "frame": {
-     "max_c": 39.8,
-     "min_c": 33.6
+     "max_c": 40.3,
+     "min_c": 23.1
     },
     "span_c": [
      22,
@@ -906,8 +914,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-1.1/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-1.1.jpg"
     }
    },
    "infrared": {
@@ -921,17 +930,17 @@
       552,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.4,
+     "max_c": 44.8,
+     "min_c": 35.4,
      "mean_c": 39.9,
      "max_xy": [
-      389,
-      306
+      384,
+      373
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.5
+     "max_c": 44.8,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -986,8 +995,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-1.2/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-1.2.jpg"
     }
    },
    "infrared": {
@@ -1001,17 +1011,17 @@
       552,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.4,
+     "max_c": 44.9,
+     "min_c": 35.8,
      "mean_c": 39.9,
      "max_xy": [
-      404,
-      297
+      385,
+      372
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.6
+     "max_c": 44.9,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -1066,8 +1076,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-1.3/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-1.3.jpg"
     }
    },
    "infrared": {
@@ -1076,22 +1087,22 @@
     "Bx1": {
      "label": "CB-1.3 body",
      "box": [
-      248,
+      247,
       178,
-      552,
+      551,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.5,
-     "mean_c": 39.9,
+     "max_c": 44.7,
+     "min_c": 35.7,
+     "mean_c": 40.0,
      "max_xy": [
-      392,
-      285
+      410,
+      374
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.5
+     "max_c": 44.7,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -1146,8 +1157,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-1.4/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-1.4.jpg"
     }
    },
    "infrared": {
@@ -1161,17 +1173,17 @@
       552,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.5,
-     "mean_c": 39.9,
+     "max_c": 45.3,
+     "min_c": 35.9,
+     "mean_c": 40.1,
      "max_xy": [
-      390,
-      303
+      386,
+      371
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.4
+     "max_c": 45.3,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -1308,8 +1320,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-1.6/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-1.6.jpg"
     }
    },
    "infrared": {
@@ -1318,22 +1331,22 @@
     "Bx1": {
      "label": "CB-1.6 body",
      "box": [
-      248,
+      247,
       178,
-      552,
+      551,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.5,
-     "mean_c": 39.9,
+     "max_c": 45.0,
+     "min_c": 35.5,
+     "mean_c": 39.8,
      "max_xy": [
-      395,
-      299
+      385,
+      371
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.5
+     "max_c": 45.0,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -1388,8 +1401,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-2.1/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-2.1.jpg"
     }
    },
    "infrared": {
@@ -1403,17 +1417,17 @@
       552,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.5,
-     "mean_c": 39.9,
+     "max_c": 44.7,
+     "min_c": 35.2,
+     "mean_c": 39.8,
      "max_xy": [
-      399,
-      292
+      383,
+      371
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.6
+     "max_c": 44.7,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -1468,8 +1482,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-2.2/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-2.2.jpg"
     }
    },
    "infrared": {
@@ -1483,17 +1498,17 @@
       552,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.5,
-     "mean_c": 39.9,
+     "max_c": 44.4,
+     "min_c": 34.7,
+     "mean_c": 39.6,
      "max_xy": [
-      395,
-      292
+      381,
+      370
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.5
+     "max_c": 44.4,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -1630,8 +1645,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-2.4/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-2.4.jpg"
     }
    },
    "infrared": {
@@ -1645,17 +1661,17 @@
       552,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.5,
-     "mean_c": 39.9,
+     "max_c": 44.4,
+     "min_c": 35.1,
+     "mean_c": 39.4,
      "max_xy": [
-      405,
-      309
+      379,
+      368
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.5
+     "max_c": 44.4,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -1710,8 +1726,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-2.5/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-2.5.jpg"
     }
    },
    "infrared": {
@@ -1725,17 +1742,17 @@
       552,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.4,
-     "mean_c": 39.9,
+     "max_c": 43.9,
+     "min_c": 34.5,
+     "mean_c": 39.4,
      "max_xy": [
-      394,
-      291
+      383,
+      371
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.5
+     "max_c": 43.9,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -1790,8 +1807,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-2.6/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-2.6.jpg"
     }
    },
    "infrared": {
@@ -1800,22 +1818,22 @@
     "Bx1": {
      "label": "CB-2.6 body",
      "box": [
-      248,
+      247,
       178,
-      552,
+      551,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.5,
-     "mean_c": 39.9,
+     "max_c": 44.6,
+     "min_c": 35.1,
+     "mean_c": 39.7,
      "max_xy": [
-      407,
-      295
+      385,
+      370
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.5
+     "max_c": 44.6,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -1870,8 +1888,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-3.1/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-3.1.jpg"
     }
    },
    "infrared": {
@@ -1885,17 +1904,17 @@
       552,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.5,
-     "mean_c": 39.9,
+     "max_c": 44.4,
+     "min_c": 35.6,
+     "mean_c": 39.8,
      "max_xy": [
-      397,
-      292
+      411,
+      374
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.5
+     "max_c": 44.4,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -1950,8 +1969,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-3.2/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-3.2.jpg"
     }
    },
    "infrared": {
@@ -1965,17 +1985,17 @@
       552,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.4,
-     "mean_c": 39.9,
+     "max_c": 44.5,
+     "min_c": 35.1,
+     "mean_c": 39.7,
      "max_xy": [
-      396,
-      304
+      356,
+      362
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.6
+     "max_c": 44.5,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -2030,8 +2050,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-3.3/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-3.3.jpg"
     }
    },
    "infrared": {
@@ -2040,22 +2061,22 @@
     "Bx1": {
      "label": "CB-3.3 body",
      "box": [
-      248,
+      247,
       178,
-      552,
+      551,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.4,
-     "mean_c": 39.9,
+     "max_c": 44.5,
+     "min_c": 35.3,
+     "mean_c": 39.6,
      "max_xy": [
-      413,
-      310
+      389,
+      372
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.5
+     "max_c": 44.5,
+     "min_c": 22.9
     },
     "span_c": [
      22,
@@ -2110,8 +2131,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-3.4/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-3.4.jpg"
     }
    },
    "infrared": {
@@ -2125,17 +2147,17 @@
       552,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.5,
-     "mean_c": 39.9,
+     "max_c": 44.0,
+     "min_c": 34.9,
+     "mean_c": 39.4,
      "max_xy": [
-      405,
-      287
+      364,
+      365
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.5
+     "max_c": 44.0,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -2190,8 +2212,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-3.5/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-3.5.jpg"
     }
    },
    "infrared": {
@@ -2205,17 +2228,17 @@
       552,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.5,
-     "mean_c": 39.9,
+     "max_c": 44.4,
+     "min_c": 35.0,
+     "mean_c": 39.5,
      "max_xy": [
-      401,
-      294
+      380,
+      368
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.6
+     "max_c": 44.4,
+     "min_c": 22.9
     },
     "span_c": [
      22,
@@ -2270,8 +2293,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-3.6/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-3.6.jpg"
     }
    },
    "infrared": {
@@ -2280,22 +2304,22 @@
     "Bx1": {
      "label": "CB-3.6 body",
      "box": [
-      248,
+      247,
       178,
-      552,
+      551,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.5,
-     "mean_c": 39.9,
+     "max_c": 44.6,
+     "min_c": 34.8,
+     "mean_c": 39.7,
      "max_xy": [
-      399,
-      303
+      386,
+      370
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.6
+     "max_c": 44.6,
+     "min_c": 22.9
     },
     "span_c": [
      22,
@@ -2350,8 +2374,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-4.1/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-4.1.jpg"
     }
    },
    "infrared": {
@@ -2365,17 +2390,17 @@
       552,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.4,
-     "mean_c": 39.9,
+     "max_c": 44.4,
+     "min_c": 35.0,
+     "mean_c": 39.6,
      "max_xy": [
-      389,
-      280
+      388,
+      370
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.4
+     "max_c": 44.4,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -2512,8 +2537,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-4.3/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-4.3.jpg"
     }
    },
    "infrared": {
@@ -2522,22 +2548,22 @@
     "Bx1": {
      "label": "CB-4.3 body",
      "box": [
-      248,
+      247,
       178,
-      552,
+      551,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.5,
-     "mean_c": 39.9,
+     "max_c": 44.8,
+     "min_c": 35.7,
+     "mean_c": 39.7,
      "max_xy": [
-      382,
-      296
+      388,
+      370
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.4
+     "max_c": 44.8,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -2592,8 +2618,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-4.4/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-4.4.jpg"
     }
    },
    "infrared": {
@@ -2607,17 +2634,17 @@
       552,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.5,
-     "mean_c": 39.9,
+     "max_c": 44.6,
+     "min_c": 35.4,
+     "mean_c": 39.6,
      "max_xy": [
-      401,
-      301
+      380,
+      372
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.4
+     "max_c": 44.6,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -2672,8 +2699,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-4.5/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-4.5.jpg"
     }
    },
    "infrared": {
@@ -2687,17 +2715,17 @@
       552,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.5,
-     "mean_c": 39.9,
+     "max_c": 44.4,
+     "min_c": 34.9,
+     "mean_c": 39.5,
      "max_xy": [
-      397,
-      305
+      380,
+      368
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.4
+     "max_c": 44.4,
+     "min_c": 22.9
     },
     "span_c": [
      22,
@@ -2752,8 +2780,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/CB-4.6/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "connector_normal"
+     "kind": "splat_view",
+     "state": "connector_normal",
+     "file": "assets/demo/asset_packs/_views/CB-4.6.jpg"
     }
    },
    "infrared": {
@@ -2762,22 +2791,22 @@
     "Bx1": {
      "label": "CB-4.6 body",
      "box": [
-      248,
+      247,
       178,
-      552,
+      551,
       421
      ],
-     "max_c": 40.6,
-     "min_c": 39.5,
-     "mean_c": 39.9,
+     "max_c": 44.6,
+     "min_c": 35.3,
+     "mean_c": 39.8,
      "max_xy": [
-      396,
-      294
+      384,
+      371
      ]
     },
     "frame": {
-     "max_c": 40.6,
-     "min_c": 33.5
+     "max_c": 44.6,
+     "min_c": 22.9
     },
     "span_c": [
      22,
@@ -2884,8 +2913,8 @@
       376
      ],
      "max_c": 52.8,
-     "min_c": 37.1,
-     "mean_c": 44.4,
+     "min_c": 35.9,
+     "mean_c": 41.7,
      "max_xy": [
       402,
       300
@@ -3139,8 +3168,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/INV-4/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "healthy"
+     "kind": "splat_view",
+     "state": "healthy",
+     "file": "assets/demo/asset_packs/_views/INV-4.jpg"
     }
    },
    "infrared": {
@@ -3154,17 +3184,17 @@
       552,
       421
      ],
-     "max_c": 42.7,
-     "min_c": 39.5,
-     "mean_c": 40.7,
+     "max_c": 45.2,
+     "min_c": 35.1,
+     "mean_c": 39.0,
      "max_xy": [
-      404,
-      297
+      405,
+      282
      ]
     },
     "frame": {
-     "max_c": 42.7,
-     "min_c": 33.4
+     "max_c": 45.2,
+     "min_c": 22.8
     },
     "span_c": [
      22,
@@ -3216,8 +3246,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/MET-1/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "healthy"
+     "kind": "splat_view",
+     "state": "healthy",
+     "file": "assets/demo/asset_packs/_views/MET-1.jpg"
     }
    },
    "infrared": {
@@ -3227,21 +3258,21 @@
      "label": "MET-1 body",
      "box": [
       248,
-      178,
+      227,
       552,
-      421
+      470
      ],
-     "max_c": 39.8,
-     "min_c": 39.4,
-     "mean_c": 39.6,
+     "max_c": 41.3,
+     "min_c": 36.3,
+     "mean_c": 37.4,
      "max_xy": [
-      493,
-      193
+      404,
+      282
      ]
     },
     "frame": {
-     "max_c": 39.8,
-     "min_c": 33.5
+     "max_c": 41.3,
+     "min_c": 22.7
     },
     "span_c": [
      22,
@@ -3295,8 +3326,9 @@
     "file": "assets/demo/asset_packs/s03_fan_relapse/POI-1/camera.jpg",
     "captured": "2026-07-14T12:00",
     "source": {
-     "kind": "placeholder",
-     "state": "healthy"
+     "kind": "splat_view",
+     "state": "healthy",
+     "file": "assets/demo/asset_packs/_views/POI-1.jpg"
     }
    },
    "infrared": {
@@ -3310,17 +3342,17 @@
       552,
       421
      ],
-     "max_c": 39.8,
-     "min_c": 39.4,
-     "mean_c": 39.6,
+     "max_c": 42.4,
+     "min_c": 36.7,
+     "mean_c": 38.7,
      "max_xy": [
-      526,
-      346
+      460,
+      314
      ]
     },
     "frame": {
-     "max_c": 39.9,
-     "min_c": 33.5
+     "max_c": 42.4,
+     "min_c": 23.3
     },
     "span_c": [
      22,
